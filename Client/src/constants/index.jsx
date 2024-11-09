@@ -62,8 +62,7 @@ export const features = [
   {
     icon: <BotMessageSquare />,
     text: "Convenience",
-    description:
-      "Hastle free, fast services and easy payments.",
+    description: "Hastle free, fast services and easy payments.",
   },
   {
     icon: <Fingerprint />,
@@ -75,13 +74,12 @@ export const features = [
     icon: <ShieldHalf />,
     text: "Quality",
     description:
-      "We are committed to quality and take car care seriously. Top-notch service is our main auto motive..",
+      "We are committed to quality and take car care seriously. Top-notch service is our main auto motive.",
   },
   {
     icon: <BatteryCharging />,
-    text: "Real-Time Skilled technicians",
-    description:
-      "Benefit from expert knowledge and precision workmanship.",
+    text: "Skilled technicians",
+    description: "Benefit from expert knowledge and precision workmanship.",
   },
   {
     icon: <PlugZap />,
@@ -100,23 +98,19 @@ export const features = [
 export const checklistItems = [
   {
     title: "Select Your Car",
-    description:
-      "We Service most makes and models",
+    description: "We Service most makes and models",
   },
   {
     title: "Select The Perfect Car Service",
-    description:
-      "From our broad portfolio of Services",
+    description: "From our broad portfolio of Services",
   },
   {
     title: "Get a quote",
-    description:
-      "Get a fair and reasonable quote from our website",
+    description: "Get a fair and reasonable quote from our website",
   },
   {
     title: "Book An Appointment",
-    description:
-      "Book an appointment at a time of your convenience.",
+    description: "Book an appointment at a time of your convenience.",
   },
 ];
 
@@ -175,4 +169,64 @@ export const communityLinks = [
   // { href: "#", text: "Conferences" },
   // { href: "#", text: "Hackathons" },
   { href: "#", text: "Jobs" },
+];
+
+export const services = {
+  "drive-in": [
+    {
+      id: 1,
+      name: "EXPRESS",
+      price: "25/35",
+      description:
+        "Foamy bath, Bug off, Pressure blast, Tire scrub, Spot-free rinse & Towel dry",
+    },
+    {
+      id: 2,
+      name: "BASIC",
+      price: "35/45",
+      description:
+        "Foamy bath, Bug off, Pressure blast, Tire scrub, Spot-free rinse, Towel dry, Wheel cleaner, Tire dressing & Inside vacuum",
+    },
+    {
+      id: 3,
+      name: "PREMIUM",
+      price: "45/55",
+      description:
+        "Foamy bath, Bug off, Pressure blast, Tire scrub, Spot-free rinse, Towel dry, Wheel cleaner, Tire shine, Paint protection, Vacuum & Interior clean",
+    },
+    {
+      id: 4,
+      name: "COMPLETE",
+      price: "60/70",
+      description:
+        "Foamy bath, Bug off, Pressure blast, Tire scrub, Spot-free rinse, Towel dry, Wheel cleaner & shine, Tire dressing and shine, Paint protection & extra shine, Deep Vacuum, Adhesive removal & Leather conditioning",
+    },
+    {
+      id: 5,
+      name: "ULTIMATE",
+      price: "100/120",
+      description: "Complete Service + Wax",
+    },
+  ],
+  appointment: [
+    {
+      id: 6,
+      name: "DEEP CLEAN",
+      price: "200/250",
+      description: "Ultimate Service + Shampoo",
+    },
+    {
+      id: 7,
+      name: "POLISH",
+      price: "300/400",
+      description: "Ultimate Service + Polish",
+    },
+  ],
+};
+
+export const scents = [
+  { id: 1, name: "Vanilla" },
+  { id: 2, name: "Lavender" },
+  { id: 3, name: "New Car" },
+  { id: 4, name: "Ocean Breeze" },
 ];
