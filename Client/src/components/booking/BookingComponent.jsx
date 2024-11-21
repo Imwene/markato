@@ -14,7 +14,10 @@ const BookingComponent = () => {
     selectedService,
     selectedScent,
     bookingDetails,
+    booking,
     captcha,
+    loading,
+    error,
     handleOptionToggle,
     handleNext,
     handleBack,
@@ -28,10 +31,10 @@ const BookingComponent = () => {
 
   // Scroll to top of booking component whenever step changes
   useEffect(() => {
-    if (bookingStep === "details") {
+    if (bookingStep === "details" || bookingStep === "confirmation") {
       const element = document.getElementById("booking-component");
       if (element) {
-        const yOffset = -80; // Adjust this value based on your header height
+        const yOffset = -80;
         const y =
           element.getBoundingClientRect().top + window.pageYOffset + yOffset;
         window.scrollTo({ top: y, behavior: "smooth" });
@@ -97,7 +100,7 @@ const BookingComponent = () => {
           </>
         );
       case "confirmation":
-        return <Confirmation />;
+        return <Confirmation booking={booking} />;
       default:
         return null;
     }
@@ -105,6 +108,12 @@ const BookingComponent = () => {
 
   return (
     <div id="booking-component" className="card max-w-[1000px] mx-auto">
+      {error && (
+        <div className="bg-red-500/10 border border-red-500 text-red-500 p-4 rounded-lg mb-4">
+          {error}
+        </div>
+      )}
+
       <div className="text-center mb-8">
         <h2 className="text-2xl sm:text-3xl font-bold">
           Choose Your Service Type
@@ -113,6 +122,7 @@ const BookingComponent = () => {
           Select the service option that best fits your schedule
         </p>
       </div>
+
       <AnimatePresence mode="wait">
         <motion.div
           key={bookingStep}
@@ -120,9 +130,15 @@ const BookingComponent = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          className="pb-24" // Add padding to bottom to account for sticky button
+          className="pb-24"
         >
-          {renderStepContent()}
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+            </div>
+          ) : (
+            renderStepContent()
+          )}
         </motion.div>
       </AnimatePresence>
     </div>

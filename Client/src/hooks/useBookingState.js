@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { generateCaptcha } from "../utils";
+import { mockBookingService } from "../services/mockBookingService";
 
 export const useBookingState = () => {
   // Core booking state
@@ -17,6 +18,11 @@ export const useBookingState = () => {
     makeModel: "",
     dateTime: "",
   });
+
+  // Booking state
+  const [booking, setBooking] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Captcha state
   const [captcha, setCaptcha] = useState({ question: "", answer: "" });
@@ -58,25 +64,41 @@ export const useBookingState = () => {
   };
 
   // Booking submission handler
-  const handleBookingSubmit = (userCaptchaAnswer) => {
+  const handleBookingSubmit = async (userCaptchaAnswer) => {
     if (userCaptchaAnswer === captcha.answer) {
-      const bookingPayload = {
-        ...bookingDetails,
-        serviceType: activeOption,
-        serviceId: selectedService,
-        scentId: selectedScent,
-        timestamp: new Date().toISOString(),
-      };
+      setLoading(true);
+      setError(null);
 
-      console.log("Booking submitted:", bookingPayload);
-      setBookingStep("confirmation");
-      return { success: true, data: bookingPayload };
+      try {
+        // Prepare booking data
+        const bookingPayload = {
+          ...bookingDetails,
+          serviceType: activeOption,
+          serviceId: selectedService,
+          scentId: selectedScent,
+          timestamp: new Date().toISOString(),
+        };
+
+        console.log("Submitting booking:", bookingPayload);
+
+        // Create booking
+        const newBooking = await mockBookingService.createBooking(
+          bookingPayload
+        );
+        console.log("Booking created:", newBooking);
+        setBooking(newBooking);
+        setBookingStep("confirmation"); // Make sure this is being called
+        return { success: true, data: newBooking };
+      } catch (err) {
+        setError(err.message);
+        return { success: false, error: err.message };
+      } finally {
+        setLoading(false);
+      }
     } else {
       setCaptcha(generateCaptcha());
-      return {
-        success: false,
-        error: "CAPTCHA verification failed. Please try again.",
-      };
+      setError("CAPTCHA verification failed. Please try again.");
+      return { success: false, error: "CAPTCHA verification failed" };
     }
   };
 
@@ -91,6 +113,8 @@ export const useBookingState = () => {
       makeModel: "",
       dateTime: "",
     });
+    setBooking(null);
+    setError(null);
     setCaptcha(generateCaptcha());
   };
 
@@ -106,6 +130,9 @@ export const useBookingState = () => {
     selectedScent,
     bookingDetails,
     captcha,
+    booking,
+    loading,
+    error,
 
     // Setters
     setSelectedService,
