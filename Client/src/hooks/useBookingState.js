@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
 import { generateCaptcha } from "../utils";
 import { mockBookingService } from "../services/mockBookingService";
+import { services, scents, optionalServicesData } from "../constants";
+
+
 
 export const useBookingState = () => {
   // Core booking state
+  const [selectedOptions, setSelectedOptions] = useState([]);
   const [bookingStep, setBookingStep] = useState("service");
   const [activeOption, setActiveOption] = useState("drive-in");
 
@@ -52,15 +56,34 @@ export const useBookingState = () => {
 
   // Navigation handlers
   const handleNext = () => {
-    if (bookingStep === "service" && selectedService && selectedScent) {
-      setBookingStep("details");
+    switch (bookingStep) {
+      case "service":
+        setBookingStep("options");
+        break;
+      case "options":
+        setBookingStep("details");
+        break;
+      default:
+        break;
     }
   };
 
   const handleBack = () => {
-    if (bookingStep === "details") {
-      setBookingStep("service");
+    switch (bookingStep) {
+      case "options":
+        setBookingStep("service");
+        break;
+      case "details":
+        setBookingStep("options");
+        break;
+      default:
+        break;
     }
+  };
+
+  //handleOptionSelect
+  const handleOptionSelect = (options) => {
+    setSelectedOptions(options);
   };
 
   // Booking submission handler
@@ -70,25 +93,79 @@ export const useBookingState = () => {
       setError(null);
 
       try {
-        // Prepare booking data
+        // Get the selected service details
+        const selectedServiceDetails = services[activeOption].find(
+          (s) => s.id === selectedService
+        );
+
+        const selectedScentName =
+          scents.find((s) => s.id === selectedScent)?.name || "Unknown Scent";
+
+        // Format optional services data
+        const formattedOptionalServices = selectedOptions.map((optionId) => {
+          // Find the option details from optional services array
+          const optionDetails = optionalServicesData.find(
+            (service) => service.id === optionId
+          );
+          return {
+            serviceId: optionDetails.id,
+            name: optionDetails.name,
+            price: parseFloat(optionDetails.price),
+          };
+        });
+
+        // Generate confirmation number
+        const date = new Date();
+        const dateStr =
+          date.getFullYear().toString() +
+          (date.getMonth() + 1).toString().padStart(2, "0") +
+          date.getDate().toString().padStart(2, "0");
+        const random = Math.floor(Math.random() * 10000)
+          .toString()
+          .padStart(4, "0");
+        const confirmationNumber = `BK-${dateStr}-${random}`;
+
+        // Create booking payload
         const bookingPayload = {
-          ...bookingDetails,
+          name: bookingDetails.name,
+          contact: bookingDetails.contact,
+          makeModel: bookingDetails.makeModel,
+          dateTime: bookingDetails.dateTime,
           serviceType: activeOption,
           serviceId: selectedService,
-          scentId: selectedScent,
-          timestamp: new Date().toISOString(),
+          serviceName: selectedServiceDetails?.name,
+          selectedScent: selectedScentName,
+          servicePrice: parseFloat(selectedServiceDetails.price),
+          serviceDescription: selectedServiceDetails?.description,
+          optionalServices: formattedOptionalServices,
+          confirmationNumber: confirmationNumber,
         };
 
-        console.log("Submitting booking:", bookingPayload);
+        const response = await fetch("http://localhost:8080/api/bookings", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(bookingPayload),
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error(data.message);
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to create booking");
+        }
+
+        if (!data.success) {
+          throw new Error(data.error || "Failed to create booking");
+        }
 
         // Create booking
-        const newBooking = await mockBookingService.createBooking(
-          bookingPayload
-        );
-        console.log("Booking created:", newBooking);
-        setBooking(newBooking);
-        setBookingStep("confirmation"); // Make sure this is being called
-        return { success: true, data: newBooking };
+        setBooking(data.data);
+        setBookingStep("confirmation");
+        return { success: true, data: data.data };
       } catch (err) {
         setError(err.message);
         return { success: false, error: err.message };
@@ -128,18 +205,22 @@ export const useBookingState = () => {
     activeOption,
     selectedService,
     selectedScent,
+    selectedOptions,
     bookingDetails,
     captcha,
     booking,
     loading,
     error,
+    optionalServicesData,
 
     // Setters
     setSelectedService,
     setSelectedScent,
+    setSelectedOptions,
 
     // Handlers
     handleOptionToggle,
+    handleOptionSelect,
     handleNext,
     handleBack,
     handleInputChange,

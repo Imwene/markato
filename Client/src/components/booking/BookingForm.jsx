@@ -77,10 +77,13 @@ const BookingForm = ({
 
   const updateDateTime = (date, time) => {
     if (date && time) {
+      // Combine the date and time into the format "Fri, Dec 6, 8:00 AM"
+      const combinedDateTime = `${date}, ${time}`;
+      
       onInputChange({
         target: {
           name: "dateTime",
-          value: `${date} ${time}`,
+          value: combinedDateTime
         },
       });
     }

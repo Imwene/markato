@@ -13,21 +13,6 @@ import {
 const Confirmation = ({ booking }) => {
   if (!booking) return null;
 
-  // // Function to format the datetime for display
-  // const formatDateTime = (dateTimeStr) => {
-  //   try {
-  //     const [date, time] = dateTimeStr.split(" ");
-  //     return {
-  //       date,
-  //       time,
-  //     };
-  //   } catch (error) {
-  //     return { date: "N/A", time: "N/A" };
-  //   }
-  // };
-
-  // const { date, time } = formatDateTime(booking.dateTime);
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -41,7 +26,7 @@ const Confirmation = ({ booking }) => {
         <h2 className="text-2xl font-bold mb-2">Booking Confirmed!</h2>
         <p className="text-neutral-400">
           Confirmation number:{" "}
-          <span className="text-orange-500 font-mono">
+          <span className="text-orange-500 font-mono font-bold">
             {booking.confirmationNumber}
           </span>
         </p>
@@ -72,30 +57,42 @@ const Confirmation = ({ booking }) => {
           </div>
 
           <div className="flex items-center gap-3">
-            <Clock className="w-5 h-5 text-orange-500" />
-            <span>Estimated duration: {booking.estimatedDuration}</span>
-          </div>
-
-          <div className="flex items-center gap-3">
             <SprayCan className="w-5 h-5 text-orange-500" />
             <div>
-              <p className="font-medium">{booking.service?.name}</p>
+              <p className="font-medium">
+                {booking.serviceName} - ${booking.servicePrice}
+              </p>
               <p className="text-sm text-neutral-400">
-                {booking.service?.description}
+                {booking.serviceDescription}
+              </p>
+              <p className="text-sm text-neutral-400 mt-1">
+                Selected scent: {booking.selectedScent}
               </p>
             </div>
           </div>
+          {booking.optionalServices && booking.optionalServices.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-neutral-700">
+              <h4 className="text-lg font-medium mb-2">Optional Services</h4>
+              {booking.optionalServices.map((service, index) => (
+                <div key={index} className="flex justify-between text-sm">
+                  <span>{service.name}</span>
+                  <span className="text-orange-500">${service.price}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="space-y-4 text-neutral-400 text-sm">
         <p>
-          A confirmation email has been sent to your registered email address.
+          Please save your confirmation number:{" "}
+          <span className="font-mono font-bold">
+            {booking.confirmationNumber}
+          </span>
         </p>
-        <p>
-          Our team will contact you at {booking.contact} if any changes are
-          needed.
-        </p>
+        <p>We look forward to servicing your vehicle at the scheduled time.</p>
+        <p>Please arrive 5-10 minutes before your appointment time.</p>
       </div>
 
       <motion.button

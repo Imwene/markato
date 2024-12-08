@@ -229,4 +229,32 @@ export const scents = [
   { id: 2, name: "Lavender" },
   { id: 3, name: "New Car" },
   { id: 4, name: "Ocean Breeze" },
+  { id: 5, name: "Cool Hawaii" },
+];
+
+export const optionalServicesData = [
+  {
+    id: 1,
+    name: "Interior Sanitization",
+    description: "Deep clean and sanitize all interior surfaces",
+    price: "29.99"
+  },
+  {
+    id: 2,
+    name: "Paint Protection",
+    description: "Advanced ceramic coating for long-lasting protection",
+    price: "49.99"
+  },
+  {
+    id: 3,
+    name: "Headlight Restoration",
+    description: "Restore clarity to foggy or yellowed headlights",
+    price: "39.99"
+  },
+  {
+    id: 4,
+    name: "Pet Hair Removal",
+    description: "Thorough removal of pet hair from all surfaces",
+    price: "24.99"
+  }
 ];
