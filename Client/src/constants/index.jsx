@@ -171,40 +171,48 @@ export const communityLinks = [
   { href: "#", text: "Jobs" },
 ];
 
+// Vehicle options as described by client
+export const vehicleTypes = [
+  { id: 'sedan', label: 'Sedan', priceMultiplier: 1 },
+  { id: 'mini-suv', label: 'Mini SUV', priceMultiplier: 1.15 },
+  { id: 'suv', label: 'SUV', priceMultiplier: 1.25 },
+  { id: 'van-truck', label: 'Van/Truck', priceMultiplier: 1.4 }
+];
+
 export const services = {
   "drive-in": [
     {
       id: 1,
-      name: "EXPRESS",
-      price: "25/35",
+      name: "BASIC",
+      basePrice: 40,
       description:
         "Foamy bath, Bug off, Pressure blast, Tire scrub, Spot-free rinse & Towel dry",
     },
     {
       id: 2,
-      name: "BASIC",
-      price: "35/45",
+      name: "COMPLETE",
+      basePrice: 80,
       description:
         "Foamy bath, Bug off, Pressure blast, Tire scrub, Spot-free rinse, Towel dry, Wheel cleaner, Tire dressing & Inside vacuum",
     },
     {
       id: 3,
-      name: "PREMIUM",
-      price: "45/55",
+      name: "ULTIMATE",
+      basePrice: 130,
       description:
         "Foamy bath, Bug off, Pressure blast, Tire scrub, Spot-free rinse, Towel dry, Wheel cleaner, Tire shine, Paint protection, Vacuum & Interior clean",
     },
     {
       id: 4,
-      name: "COMPLETE",
-      price: "60/70",
+      name: "DEEP CLEAN",
+      basePrice: 300,
       description:
         "Foamy bath, Bug off, Pressure blast, Tire scrub, Spot-free rinse, Towel dry, Wheel cleaner & shine, Tire dressing and shine, Paint protection & extra shine, Deep Vacuum, Adhesive removal & Leather conditioning",
     },
     {
       id: 5,
-      name: "ULTIMATE",
-      price: "100/120",
+      name: "POLISH",
+      basePrice: 350,
       description: "Complete Service + Wax",
     },
   ],
@@ -228,8 +236,9 @@ export const scents = [
   { id: 1, name: "Vanilla" },
   { id: 2, name: "Lavender" },
   { id: 3, name: "New Car" },
-  { id: 4, name: "Ocean Breeze" },
-  { id: 5, name: "Cool Hawaii" },
+  { id: 4, name: "Eucalyptus" },
+  { id: 5, name: "Lemon" },
+  { id: 6, name: "None" },
 ];
 
 export const optionalServicesData = [

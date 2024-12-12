@@ -1,15 +1,20 @@
 import { useState, useEffect } from "react";
 import { generateCaptcha } from "../utils";
 import { mockBookingService } from "../services/mockBookingService";
-import { services, scents, optionalServicesData } from "../constants";
-
-
+import {
+  services,
+  scents,
+  optionalServicesData,
+  vehicleTypes,
+} from "../constants";
 
 export const useBookingState = () => {
   // Core booking state
+  //vehicle type state
+  const [selectedVehicleType, setSelectedVehicleType] = useState("sedan");
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [bookingStep, setBookingStep] = useState("service");
-  const [activeOption, setActiveOption] = useState("drive-in");
+  // const [activeOption, setActiveOption] = useState("drive-in");
 
   // Service selection state
   const [selectedService, setSelectedService] = useState(null);
@@ -36,6 +41,11 @@ export const useBookingState = () => {
     setCaptcha(generateCaptcha());
   }, []);
 
+  //vehicle type handler
+  const handleVehicleTypeChange = (vehicleType) => {
+    setSelectedVehicleType(vehicleType);
+  };
+
   // Form input handler
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -46,13 +56,13 @@ export const useBookingState = () => {
   };
 
   // Option toggle handler
-  const handleOptionToggle = (option) => {
-    if (option !== activeOption) {
-      setActiveOption(option);
-      setSelectedService(null);
-      setSelectedScent(null);
-    }
-  };
+  // const handleOptionToggle = (option) => {
+  //   if (option !== activeOption) {
+  //     setActiveOption(option);
+  //     setSelectedService(null);
+  //     setSelectedScent(null);
+  //   }
+  // };
 
   // Navigation handlers
   const handleNext = () => {
@@ -94,7 +104,7 @@ export const useBookingState = () => {
 
       try {
         // Get the selected service details
-        const selectedServiceDetails = services[activeOption].find(
+        const selectedServiceDetails = services["drive-in"].find(
           (s) => s.id === selectedService
         );
 
@@ -114,6 +124,14 @@ export const useBookingState = () => {
           };
         });
 
+        // Calculate price based on vehicle type
+        const multiplier =
+          vehicleTypes.find((type) => type.id === selectedVehicleType)
+            ?.priceMultiplier || 1;
+        const calculatedPrice = (
+          selectedServiceDetails.basePrice * multiplier
+        ).toFixed(2);
+
         // Generate confirmation number
         const date = new Date();
         const dateStr =
@@ -129,13 +147,14 @@ export const useBookingState = () => {
         const bookingPayload = {
           name: bookingDetails.name,
           contact: bookingDetails.contact,
+          vehicleType: selectedVehicleType,
           makeModel: bookingDetails.makeModel,
           dateTime: bookingDetails.dateTime,
-          serviceType: activeOption,
+          serviceType: "drive-in",
           serviceId: selectedService,
           serviceName: selectedServiceDetails?.name,
           selectedScent: selectedScentName,
-          servicePrice: parseFloat(selectedServiceDetails.price),
+          servicePrice: parseFloat(calculatedPrice),
           serviceDescription: selectedServiceDetails?.description,
           optionalServices: formattedOptionalServices,
           confirmationNumber: confirmationNumber,
@@ -202,7 +221,8 @@ export const useBookingState = () => {
   return {
     // State
     bookingStep,
-    activeOption,
+    //activeOption,
+    selectedVehicleType,
     selectedService,
     selectedScent,
     selectedOptions,
@@ -219,7 +239,9 @@ export const useBookingState = () => {
     setSelectedOptions,
 
     // Handlers
-    handleOptionToggle,
+    //handleOptionToggle,
+    handleVehicleTypeChange,
+    handleBack,
     handleOptionSelect,
     handleNext,
     handleBack,

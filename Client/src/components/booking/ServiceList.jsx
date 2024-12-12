@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { scents } from "../../constants";
+import { scents, vehicleTypes } from "../../constants";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 const ServiceList = ({
@@ -9,8 +9,14 @@ const ServiceList = ({
   selectedScent,
   onServiceSelect,
   onScentSelect,
+  selectedVehicleType,
 }) => {
   const [expandedService, setExpandedService] = useState(null);
+
+  const calculatePrice = (basePrice) => {
+    const multiplier = vehicleTypes.find(type => type.id === selectedVehicleType)?.priceMultiplier || 1;
+    return (basePrice * multiplier).toFixed(2);
+  };
 
   const handleServiceClick = (serviceId) => {
     onServiceSelect(serviceId);
@@ -49,9 +55,9 @@ const ServiceList = ({
                 </p>
               </div>
               <div className="flex items-center space-x-4">
-                <span className="text-lg font-bold text-orange-500">
-                  ${service.price}
-                </span>
+              <span className="text-lg font-bold text-orange-500">
+                ${calculatePrice(service.basePrice)}
+              </span>
                 {expandedService === service.id ? (
                   <ChevronUp className="w-5 h-5 text-neutral-400" />
                 ) : (

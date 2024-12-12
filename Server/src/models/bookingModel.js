@@ -10,6 +10,10 @@ const bookingSchema = new Schema({
     type: String,
     required: true
   },
+  vehicleType: {
+    type: String,
+    required: true
+  },
   makeModel: {
     type: String,
     required: true
@@ -20,7 +24,7 @@ const bookingSchema = new Schema({
   },
   serviceType: {
     type: String,
-    required: true
+    //required: true
   },
   serviceId: {
     type: Number,

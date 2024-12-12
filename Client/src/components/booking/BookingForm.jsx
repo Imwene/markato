@@ -26,7 +26,7 @@ const BookingForm = ({
     /^(\+?1)?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/;
 
   const businessHours = [
-    "8:00 AM",
+    //"8:00 AM",
     "9:00 AM",
     "10:00 AM",
     "11:00 AM",
@@ -79,11 +79,11 @@ const BookingForm = ({
     if (date && time) {
       // Combine the date and time into the format "Fri, Dec 6, 8:00 AM"
       const combinedDateTime = `${date}, ${time}`;
-      
+
       onInputChange({
         target: {
           name: "dateTime",
-          value: combinedDateTime
+          value: combinedDateTime,
         },
       });
     }
@@ -301,25 +301,28 @@ const BookingForm = ({
               </span>
             )}
           </div>
-
-          <motion.button
-            type="submit"
-            className={`w-full p-3 rounded-lg transition-colors duration-200 ${
-              isFormValid && userCaptchaAnswer && selectedDate && selectedTime
-                ? "bg-orange-500 text-white hover:bg-orange-600"
-                : "bg-neutral-700 text-neutral-400 cursor-not-allowed"
-            }`}
-            disabled={
-              !isFormValid ||
-              !userCaptchaAnswer ||
-              !selectedDate ||
-              !selectedTime
-            }
-            whileHover={isFormValid && userCaptchaAnswer ? { scale: 1.05 } : {}}
-            whileTap={isFormValid && userCaptchaAnswer ? { scale: 0.95 } : {}}
-          >
-            Complete Booking
-          </motion.button>
+          <div className="sticky bottom-0 left-0 right-0 p-4 bg-neutral-900/95 backdrop-blur-sm border-t border-neutral-800">
+            <motion.button
+              type="submit"
+              className={`w-full p-3 rounded-lg transition-colors duration-200 ${
+                isFormValid && userCaptchaAnswer && selectedDate && selectedTime
+                  ? "bg-orange-500 text-white hover:bg-orange-600"
+                  : "bg-neutral-700 text-neutral-400 cursor-not-allowed"
+              }`}
+              disabled={
+                !isFormValid ||
+                !userCaptchaAnswer ||
+                !selectedDate ||
+                !selectedTime
+              }
+              whileHover={
+                isFormValid && userCaptchaAnswer ? { scale: 1.05 } : {}
+              }
+              whileTap={isFormValid && userCaptchaAnswer ? { scale: 0.95 } : {}}
+            >
+              Complete Booking
+            </motion.button>
+          </div>
         </div>
       </form>
     </motion.div>

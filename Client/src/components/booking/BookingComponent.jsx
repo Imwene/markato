@@ -4,14 +4,16 @@ import { services } from "../../constants";
 import ServiceList from "./ServiceList";
 import BookingForm from "./BookingForm";
 import Confirmation from "./Confirmation";
-import OptionToggle from "./OptionToggle";
+//import OptionToggle from "./OptionToggle";
+import VehicleTypeSelector from "./VehicleTypeSelector";
 import OptionalServices from "./OptionalServices";
 import { useBookingState } from "../../hooks/useBookingState";
 
 const BookingComponent = () => {
   const {
     bookingStep,
-    activeOption,
+    //activeOption,
+    selectedVehicleType,
     selectedService,
     selectedScent,
     selectedOptions,
@@ -21,7 +23,8 @@ const BookingComponent = () => {
     loading,
     error,
     optionalServicesData,
-    handleOptionToggle,
+    //handleOptionToggle,
+    handleVehicleTypeChange,
     handleNext,
     handleBack,
     setSelectedService,
@@ -55,16 +58,22 @@ const BookingComponent = () => {
       case "service":
         return (
           <>
-            <OptionToggle
+            {/* <OptionToggle
               activeOption={activeOption}
               setActiveOption={handleOptionToggle}
+            /> */}
+            <VehicleTypeSelector
+              selectedType={selectedVehicleType}
+              onTypeChange={handleVehicleTypeChange}
             />
             <ServiceList
-              services={services[activeOption]}
+              //changed from activeOption as it will not be implemented at this stage
+              services={services["drive-in"]}
               selectedService={selectedService}
               selectedScent={selectedScent}
               onServiceSelect={setSelectedService}
               onScentSelect={setSelectedScent}
+              selectedVehicleType={selectedVehicleType}
             />
             <div className="sticky bottom-0 left-0 right-0 p-4 bg-neutral-900/95 backdrop-blur-sm border-t border-neutral-800">
               <motion.button
@@ -88,22 +97,22 @@ const BookingComponent = () => {
       case "options":
         return (
           <>
-          <OptionalServices
-            optionalServices={optionalServicesData}
-            selectedOptions={selectedOptions}
-            onOptionSelect={handleOptionSelect}
-            onContinue={handleNext}
-          />
-          <div className="sticky bottom-0 left-0 right-0 p-4 bg-neutral-900/95 backdrop-blur-sm border-t border-neutral-800">
-        <motion.button
-          onClick={handleBack}
-          className="w-full p-3 rounded-lg bg-gray-300 text-gray-800 hover:bg-gray-400 transition-colors duration-200"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          Back to Services
-        </motion.button>
-      </div>
+            <OptionalServices
+              optionalServices={optionalServicesData}
+              selectedOptions={selectedOptions}
+              onOptionSelect={handleOptionSelect}
+              onContinue={handleNext}
+            />
+            <div className="sticky bottom-0 left-0 right-0 p-4 bg-neutral-900/95 backdrop-blur-sm border-t border-neutral-800">
+            <motion.button
+              onClick={handleBack}
+              className="w-full p-3 rounded-lg bg-gray-300 text-gray-800 hover:bg-gray-400 transition-colors duration-200"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Back to Services
+            </motion.button>
+            </div>
           </>
         );
       case "details":
