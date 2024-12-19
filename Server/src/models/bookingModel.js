@@ -1,6 +1,6 @@
+// src/models/bookingModel.js
 import { Schema, model } from 'mongoose';
 
-// Keep existing timestamps and strict schema settings
 const bookingSchema = new Schema({
   name: {
     type: String,
@@ -22,15 +22,7 @@ const bookingSchema = new Schema({
     type: String,
     required: true
   },
-  serviceType: {
-    type: String,
-    //required: true
-  },
   serviceId: {
-    type: Number,
-    required: true
-  },
-  selectedScent: {
     type: String,
     required: true
   },
@@ -38,12 +30,12 @@ const bookingSchema = new Schema({
     type: String,
     required: true
   },
-  servicePrice: {
-    type: Number,
+  selectedScent: {
+    type: String,
     required: true
   },
-  serviceDescription: {
-    type: String,
+  servicePrice: {
+    type: Number,
     required: true
   },
   optionalServices: [{

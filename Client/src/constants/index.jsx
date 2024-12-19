@@ -173,10 +173,10 @@ export const communityLinks = [
 
 // Vehicle options as described by client
 export const vehicleTypes = [
-  { id: 'sedan', label: 'Sedan', priceMultiplier: 1 },
-  { id: 'mini-suv', label: 'Mini SUV', priceMultiplier: 1.15 },
-  { id: 'suv', label: 'SUV', priceMultiplier: 1.25 },
-  { id: 'van-truck', label: 'Van/Truck', priceMultiplier: 1.4 }
+  { id: 'sedan', label: 'Sedan'},
+  { id: 'mini-suv', label: 'Mini SUV'},
+  { id: 'suv', label: 'SUV' },
+  { id: 'van/truck', label: 'Van/Truck'}
 ];
 
 export const services = {
@@ -233,12 +233,10 @@ export const services = {
 };
 
 export const scents = [
-  { id: 1, name: "Vanilla" },
-  { id: 2, name: "Lavender" },
-  { id: 3, name: "New Car" },
-  { id: 4, name: "Eucalyptus" },
-  { id: 5, name: "Lemon" },
-  { id: 6, name: "None" },
+  { id: 1, name: "Eucalyptus Mint Tea" },
+  { id: 2, name: "Strawberry Lemon" },
+  { id: 3, name: "Lemon Concentrate" },
+  { id: 4, name: "None" },
 ];
 
 export const optionalServicesData = [
@@ -246,24 +244,30 @@ export const optionalServicesData = [
     id: 1,
     name: "Interior Sanitization",
     description: "Deep clean and sanitize all interior surfaces",
-    price: "29.99"
+    price: "20"
   },
   {
     id: 2,
-    name: "Paint Protection",
-    description: "Advanced ceramic coating for long-lasting protection",
-    price: "49.99"
+    name: "Pet hair removal",
+    description: "Thorough removal of pet hair from all surfaces",
+    price: "40"
   },
   {
     id: 3,
     name: "Headlight Restoration",
     description: "Restore clarity to foggy or yellowed headlights",
-    price: "39.99"
+    price: "45"
   },
   {
     id: 4,
-    name: "Pet Hair Removal",
-    description: "Thorough removal of pet hair from all surfaces",
-    price: "24.99"
+    name: "Seat Cloth Shampoo",
+    description: "Clean specific seat with extra attention",
+    price: "50"
+  },
+  {
+    id: 5,
+    name: "Paint Protection",
+    description: "Give restored look to your paintjob",
+    price: "50"
   }
 ];

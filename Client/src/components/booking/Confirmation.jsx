@@ -1,3 +1,4 @@
+// src/components/booking/Confirmation.jsx
 import React from "react";
 import { motion } from "framer-motion";
 import {
@@ -11,7 +12,13 @@ import {
 } from "lucide-react";
 
 const Confirmation = ({ booking }) => {
-  if (!booking) return null;
+  if (!booking) {
+    return (
+      <div className="text-center py-8 text-red-500">
+        Booking information not available
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -48,7 +55,12 @@ const Confirmation = ({ booking }) => {
 
           <div className="flex items-center gap-3">
             <Car className="w-5 h-5 text-orange-500" />
-            <span>{booking.makeModel}</span>
+            <div>
+              <span>{booking.makeModel}</span>
+              <span className="text-sm text-neutral-400 block">
+                Type: {booking.vehicleType}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -62,14 +74,12 @@ const Confirmation = ({ booking }) => {
               <p className="font-medium">
                 {booking.serviceName} - ${booking.servicePrice}
               </p>
-              <p className="text-sm text-neutral-400">
-                {booking.serviceDescription}
-              </p>
               <p className="text-sm text-neutral-400 mt-1">
                 Selected scent: {booking.selectedScent}
               </p>
             </div>
           </div>
+
           {booking.optionalServices && booking.optionalServices.length > 0 && (
             <div className="mt-4 pt-4 border-t border-neutral-700">
               <h4 className="text-lg font-medium mb-2">Optional Services</h4>
@@ -81,6 +91,13 @@ const Confirmation = ({ booking }) => {
               ))}
             </div>
           )}
+
+          <div className="mt-4 pt-4 border-t border-neutral-700">
+            <div className="flex justify-between font-bold">
+              <span>Total Price:</span>
+              <span className="text-orange-500">${booking.totalPrice}</span>
+            </div>
+          </div>
         </div>
       </div>
 

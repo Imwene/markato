@@ -1,3 +1,4 @@
+// src/components/booking/BookingForm.jsx
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
@@ -22,11 +23,9 @@ const BookingForm = ({
   });
 
   // US phone number validation regex
-  const phoneRegex =
-    /^(\+?1)?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/;
+  const phoneRegex = /^(\+?1)?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/;
 
   const businessHours = [
-    //"8:00 AM",
     "9:00 AM",
     "10:00 AM",
     "11:00 AM",
@@ -77,9 +76,7 @@ const BookingForm = ({
 
   const updateDateTime = (date, time) => {
     if (date && time) {
-      // Combine the date and time into the format "Fri, Dec 6, 8:00 AM"
       const combinedDateTime = `${date}, ${time}`;
-
       onInputChange({
         target: {
           name: "dateTime",
@@ -91,7 +88,6 @@ const BookingForm = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mark all fields as touched when submitting
     setTouchedFields({
       name: true,
       contact: true,
@@ -101,14 +97,8 @@ const BookingForm = ({
       captcha: true,
     });
 
-    // Check if form is valid before submitting
     if (e.target.checkValidity()) {
-      const result = await onSubmit(userCaptchaAnswer);
-      // You can handle the result here if needed
-      if (!result.success) {
-        // Handle error if needed
-        console.error(result.error);
-      }
+      await onSubmit(userCaptchaAnswer);
     }
   };
 

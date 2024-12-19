@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { generateCaptcha } from "../utils";
-import { mockBookingService } from "../services/mockBookingService";
+//import { mockBookingService } from "../services/mockBookingService";
+import { useServices } from "./useServices";
 import {
   services,
   scents,
@@ -10,6 +11,7 @@ import {
 
 export const useBookingState = () => {
   // Core booking state
+  const { services, refreshServices } = useServices();
   //vehicle type state
   const [selectedVehicleType, setSelectedVehicleType] = useState("sedan");
   const [selectedOptions, setSelectedOptions] = useState([]);
@@ -104,7 +106,7 @@ export const useBookingState = () => {
 
       try {
         // Get the selected service details
-        const selectedServiceDetails = services["drive-in"].find(
+        const selectedServiceDetails = services.find(
           (s) => s.id === selectedService
         );
 
@@ -125,12 +127,14 @@ export const useBookingState = () => {
         });
 
         // Calculate price based on vehicle type
-        const multiplier =
-          vehicleTypes.find((type) => type.id === selectedVehicleType)
-            ?.priceMultiplier || 1;
-        const calculatedPrice = (
-          selectedServiceDetails.basePrice * multiplier
-        ).toFixed(2);
+        const servicePrice =
+          selectedServiceDetails.vehiclePricing[selectedVehicleType];
+        const optionalServicesTotal = formattedOptionalServices.reduce(
+          (sum, service) => sum + service.price,
+          0
+        );
+
+        const totalPrice = servicePrice + optionalServicesTotal;
 
         // Generate confirmation number
         const date = new Date();
@@ -150,13 +154,13 @@ export const useBookingState = () => {
           vehicleType: selectedVehicleType,
           makeModel: bookingDetails.makeModel,
           dateTime: bookingDetails.dateTime,
-          serviceType: "drive-in",
           serviceId: selectedService,
           serviceName: selectedServiceDetails?.name,
           selectedScent: selectedScentName,
-          servicePrice: parseFloat(calculatedPrice),
-          serviceDescription: selectedServiceDetails?.description,
+          servicePrice: servicePrice,
+          features: selectedServiceDetails.features,
           optionalServices: formattedOptionalServices,
+          totalPrice: totalPrice,
           confirmationNumber: confirmationNumber,
         };
 
@@ -169,22 +173,14 @@ export const useBookingState = () => {
         });
 
         const data = await response.json();
-        if (!data.success) {
-          throw new Error(data.message);
-        }
 
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to create booking");
+        if (data.success) {
+          setBooking(bookingPayload);
+          setBookingStep("confirmation");
+          // Refresh services data after successful booking
+          await refreshServices();
+          return { success: true, booking: bookingPayload };
         }
-
-        if (!data.success) {
-          throw new Error(data.error || "Failed to create booking");
-        }
-
-        // Create booking
-        setBooking(data.data);
-        setBookingStep("confirmation");
-        return { success: true, data: data.data };
       } catch (err) {
         setError(err.message);
         return { success: false, error: err.message };
