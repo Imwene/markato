@@ -1,6 +1,6 @@
 // src/controllers/serviceController.js
 import Service from '../models/serviceModel.js';
-
+import Booking from '../models/bookingModel.js';
 export async function getAllServices(req, res) {
   try {
     const services = await Service.find({ isActive: true })
@@ -110,4 +110,69 @@ export async function deleteService(req, res) {
       error: error.message
     });
   }
-}
+}export const checkServiceName = async (req, res) => {
+    try {
+      const { name, excludeId } = req.query;
+  
+      if (!name) {
+        return res.status(400).json({
+          success: false,
+          error: 'Service name is required'
+        });
+      }
+  
+      const query = {
+        name: { $regex: new RegExp(`^${name}$`, 'i') }, // Case-insensitive exact match
+        isActive: true
+      };
+  
+      // If excludeId is provided, exclude that service from the check
+      if (excludeId) {
+        query._id = { $ne: excludeId };
+      }
+  
+      const existingService = await Service.findOne(query);
+  
+      res.json({
+        success: true,
+        exists: !!existingService
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  };
+  
+  export const checkServiceBookings = async (req, res) => {
+    try {
+      const { id } = req.params;
+  
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          error: 'Service ID is required'
+        });
+      }
+  
+      // Check for any bookings using this service
+      const bookingsCount = await Booking.countDocuments({
+        serviceId: id,
+        status: { 
+          $nin: ['cancelled', 'completed'] // Only check active bookings
+        }
+      });
+  
+      res.json({
+        success: true,
+        hasBookings: bookingsCount > 0,
+        count: bookingsCount
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  };

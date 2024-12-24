@@ -1,18 +1,15 @@
 // src/components/admin/layout/AdminLayout.jsx
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../../context/AuthContext';
 import { 
   LayoutDashboard, 
   Calendar, 
-  Settings, 
-  LogOut,
+  Settings,
   Menu,
   X
 } from 'lucide-react';
 
 const AdminLayout = () => {
-  const { logout, user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
 
@@ -27,23 +24,24 @@ const AdminLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-900">
+    <div className="min-h-screen bg-background-light">
       {/* Mobile menu button */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-neutral-800 rounded-md"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-background-light rounded-md border border-border-light shadow-sm"
       >
         {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
       {/* Sidebar */}
       <div className={`
-        fixed top-0 left-0 h-full w-64 bg-neutral-800 text-white transition-transform duration-300 ease-in-out z-40
+        fixed top-0 left-0 h-full w-64 bg-background-DEFAULT border-r border-border-light
+        transition-transform duration-300 ease-in-out z-40
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
       `}>
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-orange-500">Admin Panel</h1>
-          <p className="text-sm text-neutral-400 mt-2">{user?.email}</p>
+        <div className="p-6 border-b border-border-light">
+          <h1 className="text-2xl font-bold text-primary-light">Admin Panel</h1>
+          <p className="text-sm text-content-light mt-2">Manage your services and bookings</p>
         </div>
 
         <nav className="mt-6">
@@ -52,10 +50,10 @@ const AdminLayout = () => {
               key={item.path}
               to={item.path}
               className={`
-                flex items-center gap-3 px-6 py-3 text-sm
+                flex items-center gap-3 px-6 py-3 text-sm transition-colors
                 ${isCurrentPath(item.path) 
-                  ? 'bg-orange-500 text-white' 
-                  : 'text-neutral-300 hover:bg-neutral-700'}
+                  ? 'bg-primary-light/10 text-primary-dark border-r-2 border-primary-light' 
+                  : 'text-content-DEFAULT hover:bg-background-dark'}
               `}
             >
               {item.icon}
@@ -63,14 +61,6 @@ const AdminLayout = () => {
             </Link>
           ))}
         </nav>
-
-        <button
-          onClick={logout}
-          className="flex items-center gap-3 px-6 py-3 text-sm text-neutral-300 hover:bg-neutral-700 mt-auto absolute bottom-8 w-full"
-        >
-          <LogOut size={20} />
-          Logout
-        </button>
       </div>
 
       {/* Main content */}

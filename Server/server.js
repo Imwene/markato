@@ -1,32 +1,19 @@
+// server.js
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import serviceRoutes from './src/routes/serviceRoutes.js';  
-import bookingRoutes from './src/routes/bookingRoutes.js';  // Updated path
-import corsOptions from './src/middlewares/cors.js';  // Updated path    
-import connectDB from './src/config/database.js';  // Updated path  
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-dotenv.config();
+import routes from './src/routes/index.js';
+import connectDB from './src/config/database.js';
+import corsOptions from './src/middlewares/cors.js';
 
 const app = express();
 
-// CORS configuration
 app.use(cors(corsOptions));
-
-
 app.use(express.json());
 
 connectDB();
 
-// Routes
-app.use('/api/services', serviceRoutes);
-app.use('/api/bookings', bookingRoutes);
-
+// Use routes
+app.use('/api', routes);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {

@@ -4,7 +4,6 @@ import { services } from "../../constants";
 import ServiceList from "./ServiceList";
 import BookingForm from "./BookingForm";
 import Confirmation from "./Confirmation";
-//import OptionToggle from "./OptionToggle";
 import VehicleTypeSelector from "./VehicleTypeSelector";
 import OptionalServices from "./OptionalServices";
 import { useBookingState } from "../../hooks/useBookingState";
@@ -12,7 +11,6 @@ import { useBookingState } from "../../hooks/useBookingState";
 const BookingComponent = () => {
   const {
     bookingStep,
-    //activeOption,
     selectedVehicleType,
     selectedService,
     selectedScent,
@@ -23,7 +21,6 @@ const BookingComponent = () => {
     loading,
     error,
     optionalServicesData,
-    //handleOptionToggle,
     handleVehicleTypeChange,
     handleNext,
     handleBack,
@@ -36,7 +33,6 @@ const BookingComponent = () => {
     isFormValid,
   } = useBookingState();
 
-  // Scroll to top of booking component whenever step changes
   useEffect(() => {
     if (
       bookingStep === "details" ||
@@ -58,40 +54,17 @@ const BookingComponent = () => {
       case "service":
         return (
           <>
-            {/* <OptionToggle
-              activeOption={activeOption}
-              setActiveOption={handleOptionToggle}
-            /> */}
             <VehicleTypeSelector
               selectedType={selectedVehicleType}
               onTypeChange={handleVehicleTypeChange}
             />
             <ServiceList
-              //changed from activeOption as it will not be implemented at this stage
-              services={services["drive-in"]}
               selectedService={selectedService}
               selectedScent={selectedScent}
               onServiceSelect={setSelectedService}
               onScentSelect={setSelectedScent}
               selectedVehicleType={selectedVehicleType}
             />
-            <div className="sticky bottom-0 left-0 right-0 p-4 bg-neutral-900/95 backdrop-blur-sm border-t border-neutral-800">
-              <motion.button
-                onClick={handleNext}
-                className={`w-full p-3 rounded-lg transition-colors duration-200 ${
-                  canProceedToDetails
-                    ? "bg-primary-color text-white hover:bg-opacity-90"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
-                whileHover={canProceedToDetails ? { scale: 1.05 } : {}}
-                whileTap={canProceedToDetails ? { scale: 0.95 } : {}}
-                disabled={!canProceedToDetails}
-              >
-                {canProceedToDetails
-                  ? "Continue"
-                  : "Select a package and scent to continue"}
-              </motion.button>
-            </div>
           </>
         );
       case "options":
@@ -102,17 +75,8 @@ const BookingComponent = () => {
               selectedOptions={selectedOptions}
               onOptionSelect={handleOptionSelect}
               onContinue={handleNext}
+              onBack={handleBack}
             />
-            <div className="sticky bottom-0 left-0 right-0 p-4 bg-neutral-900/95 backdrop-blur-sm border-t border-neutral-800">
-            <motion.button
-              onClick={handleBack}
-              className="w-full p-3 rounded-lg bg-gray-300 text-gray-800 hover:bg-gray-400 transition-colors duration-200"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Back to Services
-            </motion.button>
-            </div>
           </>
         );
       case "details":
@@ -124,17 +88,8 @@ const BookingComponent = () => {
               captcha={captcha}
               onSubmit={handleBookingSubmit}
               isFormValid={isFormValid}
+              onBack={handleBack} // Make sure this is correctly passed
             />
-            <div className="sticky bottom-0 left-0 right-0 p-4 bg-neutral-900/95 backdrop-blur-sm border-t border-neutral-800">
-              <motion.button
-                onClick={handleBack}
-                className="w-full p-3 rounded-lg bg-gray-300 text-gray-800 hover:bg-gray-400 transition-colors duration-200"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Back to Addons
-              </motion.button>
-            </div>
           </>
         );
       case "confirmation":
@@ -144,15 +99,88 @@ const BookingComponent = () => {
     }
   };
 
+  const renderStepButtons = () => {
+    if (bookingStep === "confirmation") return null;
+
+    return (
+      <div className="sticky bottom-0 left-0 right-0 p-4 bg-background-light/95 backdrop-blur-sm border-t border-border-light">
+        {bookingStep === "service" && (
+          <motion.button
+            onClick={handleNext}
+            className={`w-full p-3 rounded-lg transition-colors duration-200 ${
+              canProceedToDetails
+                ? "bg-primary-light text-white hover:bg-primary-DEFAULT"
+                : "bg-background-dark text-content-light cursor-not-allowed"
+            }`}
+            whileHover={canProceedToDetails ? { scale: 1.02 } : {}}
+            whileTap={canProceedToDetails ? { scale: 0.98 } : {}}
+            disabled={!canProceedToDetails}
+          >
+            {canProceedToDetails
+              ? "Continue"
+              : "Select a package and scent to continue"}
+          </motion.button>
+        )}
+
+        {/* {bookingStep === "options" && (
+          <div className="space-y-3">
+            <motion.button
+              onClick={handleNext}
+              className="w-full p-3 rounded-lg bg-primary-light text-white hover:bg-primary-DEFAULT transition-colors duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Continue to Booking Details
+            </motion.button>
+            <motion.button
+              onClick={handleBack}
+              className="w-full p-3 rounded-lg bg-background-DEFAULT text-content-DEFAULT border border-border-DEFAULT hover:bg-background-dark transition-colors duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Back to Services
+            </motion.button>
+          </div>
+        )} */}
+
+        {/* {bookingStep === "details" && (
+          <div className="space-y-3">
+            <motion.button
+              onClick={handleBookingSubmit}
+              className={`w-full p-3 rounded-lg transition-colors duration-200 ${
+                isFormValid
+                  ? "bg-primary-light text-white hover:bg-primary-DEFAULT"
+                  : "bg-background-dark text-content-light cursor-not-allowed"
+              }`}
+              whileHover={isFormValid ? { scale: 1.02 } : {}}
+              whileTap={isFormValid ? { scale: 0.98 } : {}}
+              disabled={!isFormValid}
+            >
+              Complete Booking
+            </motion.button>
+            <motion.button
+              onClick={handleBack}
+              className="w-full p-3 rounded-lg bg-background-DEFAULT text-content-DEFAULT border border-border-DEFAULT hover:bg-background-dark transition-colors duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Back to Addons
+            </motion.button>
+          </div>
+        )} */}
+      </div>
+    );
+  };
+
   return (
     <div id="booking-component" className="card max-w-[1000px] mx-auto">
       <div className="text-center mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold">
+        <h2 className="text-2xl sm:text-3xl font-bold text-content-dark">
           {bookingStep === "options"
             ? "Enhance Your Service"
             : "Choose Your Service Type"}
         </h2>
-        <p className="text-neutral-400 mt-2">
+        <p className="text-content-light mt-2">
           {bookingStep === "options"
             ? "Add optional services to customize your experience"
             : "Select the service option that best fits your schedule"}
@@ -170,16 +198,16 @@ const BookingComponent = () => {
         >
           {loading ? (
             <div className="flex justify-center items-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light"></div>
             </div>
           ) : (
             renderStepContent()
           )}
         </motion.div>
       </AnimatePresence>
-
+      {renderStepButtons()}
       {error && (
-        <div className="bg-red-500/10 border border-red-500 text-red-500 p-4 rounded-lg mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-lg mb-4">
           {error}
         </div>
       )}

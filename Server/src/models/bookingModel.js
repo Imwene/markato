@@ -1,6 +1,22 @@
 // src/models/bookingModel.js
 import { Schema, model } from 'mongoose';
 
+const statusHistorySchema = new Schema({
+  status: {
+    type: String,
+    required: true,
+    enum: ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled']
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now
+  },
+  note: {
+    type: String,
+    default: ''
+  }
+});
+
 const bookingSchema = new Schema({
   name: {
     type: String,
@@ -9,6 +25,10 @@ const bookingSchema = new Schema({
   contact: {
     type: String,
     required: true
+  },
+  email: {
+    type: String,
+    required: false
   },
   vehicleType: {
     type: String,
@@ -30,44 +50,34 @@ const bookingSchema = new Schema({
     type: String,
     required: true
   },
-  selectedScent: {
-    type: String,
-    required: true
-  },
+  selectedScent: String,
   servicePrice: {
     type: Number,
     required: true
   },
   optionalServices: [{
-    serviceId: {
-      type: Number,
-      required: true
-    },
-    name: {
-      type: String,
-      required: true
-    },
-    price: {
-      type: Number,
-      required: true
-    }
+    serviceId: Number,
+    name: String,
+    price: Number
   }],
   totalPrice: {
     type: Number,
-    required: true,
-    default: function() {
-      const basePrice = this.servicePrice || 0;
-      const optionalTotal = (this.optionalServices || []).reduce((sum, service) => 
-        sum + (service.price || 0), 0);
-      return basePrice + optionalTotal;
-    }
+    required: true
   },
+  status: {
+    type: String,
+    enum: ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'],
+    default: 'pending'
+  },
+  statusHistory: [statusHistorySchema],
   confirmationNumber: {
     type: String,
     required: true,
-    unique: true
   }
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  strict: false  // Allow additional fields for backward compatibility
+});
 
 const Booking = model('Booking', bookingSchema);
 export default Booking;

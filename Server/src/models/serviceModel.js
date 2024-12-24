@@ -14,24 +14,27 @@ const serviceSchema = new Schema({
   vehiclePricing: {
     'sedan': {
       type: Number,
-      required: true
+      required: true,
+      min: 0
     },
     'mini-suv': {
       type: Number,
-      required: true
+      required: true,
+      min: 0
     },
     'suv': {
       type: Number,
-      required: true
+      required: true,
+      min: 0
     },
     'van/truck': {
       type: Number,
-      required: true
+      required: true,
+      min: 0
     }
   },
   category: {
     type: String,
-    required: [true, 'Service category is required'],
     enum: ['DRIVE-IN', 'APPOINTMENT'],
     default: 'DRIVE-IN'
   },
@@ -44,7 +47,8 @@ const serviceSchema = new Schema({
     default: 0
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  strict: false  // Allow additional fields for backward compatibility
 });
 
 const Service = model('Service', serviceSchema);

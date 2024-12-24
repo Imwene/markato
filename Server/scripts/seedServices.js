@@ -9,12 +9,13 @@ const services = [
   {
     name: "BASIC",
     features: [
-      "Foam Pressure hand wash",
-      "Rinse & Dry",
-      "Window & Side mirror cleaned",
-      "Wheel Cleaning & tire shine",
-      "Interior wipe down",
-      "Trunk Cleaning"
+        "Foam pressure hand wash",
+        "Rinse & Dry",
+        "Wheel cleaning & tire shine",
+        "Interior vacuum",
+        "Interior wipe down",
+        "Trunk vacuum & cleaning",
+        "Window & Side mirror cleaned",
     ],
     vehiclePricing: {
       'sedan': 40,
@@ -28,45 +29,44 @@ const services = [
   {
     name: "COMPLETE",
     features: [
-     "Foam Pressure hand wash",
-     "Rinse & Dry",
-     "Window & Side mirror cleaned",
-     "Wheel Cleaning & tire shine",
-     "Complete interior wipe down, including all plastics & leather",
-     "Trunk Cleaning",
-     "Light Stain Removal",
-     "Rubber mat wash",
-     "Leather conditioning leather"
+        "Foam pressure hand wash",
+        "Rinse & Dry",
+        "Wheel cleaning & tire shine",
+        "Interior vacuum",
+        "Complete interior wipe down, including all plastics & leather",
+        "Trunk vacuum & cleaning",
+        "Light stain Removal",
+        "Rubber mat wash",
+        "Leather conditioning lotion",
+        "Window & Side mirror cleaned",
     ],
     vehiclePricing: {
-        'sedan': 80,
-        'mini-suv': 100,
-        'suv': 120,
-        'van/truck': 160
+        'sedan': 75,
+        'mini-suv': 90,
+        'suv': 100,
+        'van/truck': 140
     },
     duration: 60,
-    sortOrder: 1
+    sortOrder: 2
   },
   {
     name: "ULTIMATE",
     features: [
-      "ALL IN COMPLETE",
-      "WAX"
+      "ALL IN COMPLETE + WAX",
     ],
     vehiclePricing: {
-        'sedan': 130,
-        'mini-suv': 150,
-        'suv': 170,
-        'van/truck': 210
+        'sedan': 125,
+        'mini-suv': 140,
+        'suv': 160,
+        'van/truck': 190
     },
     duration: 100,
-    sortOrder: 1
+    sortOrder: 3
   },
   {
     name: "DEEP CLEAN",
     features: [
-        "ALL IN COMPLETE",
-        "SHAMPOO"
+        "ALL IN COMPLETE + SHAMPOO",
     ],
     vehiclePricing: {
         'sedan': 300,
@@ -75,13 +75,12 @@ const services = [
         'van/truck': 400
     },
     duration: 200,
-    sortOrder: 1
+    sortOrder: 4
   },
   {
     name: "POLISH",
     features: [
-        "ALL IN COMPLETE",
-        "POLISH"
+        "ALL IN COMPLETE + POLISH",
     ],
     vehiclePricing: {
         'sedan': 350,
@@ -90,7 +89,7 @@ const services = [
         'van/truck': 450
     },
     duration: 250,
-    sortOrder: 1
+    sortOrder: 5
   },
 ];
 

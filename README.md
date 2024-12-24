@@ -28,47 +28,86 @@ Key Technologies:
 
 ## Directory Structure
 
-### Client Side (`/client`)
-```
-src/
-├── assets/                 # Static assets (images, videos)
-├── constants/             
-│   └── index.jsx          # App-wide constants (services, pricing, etc.)
-├── hooks/                 
-│   ├── useBookingState.js # Booking state management
-│   └── useServices.js     # Services data management
-├── components/           
-│   ├── booking/           # Booking flow components
-│   │   ├── BookingComponent.jsx  # Main booking container
-│   │   ├── BookingForm.jsx       # User details form
-│   │   ├── Confirmation.jsx      # Booking confirmation
-│   │   ├── OptionalServices.jsx  # Additional services
-│   │   ├── ServiceList.jsx       # Available services
-│   │   └── VehicleTypeSelector.jsx # Vehicle selection
-│   ├── admin/             # Admin dashboard components
-│   │   ├── layout/
-│   │   ├── bookings/
-│   │   ├── dashboard/
-│   │   └── services/
-│   └── common/            # Shared components (Navbar, Footer, etc.)
-├── context/               # React Context providers
-└── routes/               # Route configurations
-```
-
-### Server Side (`/server`)
-```
-src/
-├── models/               # Database schemas
-│   ├── bookingModel.js   # Booking data structure
-│   └── serviceModel.js   # Service offerings structure
-├── controllers/          # Business logic
-│   ├── adminController.js
-│   ├── bookingController.js
-│   └── serviceController.js
-├── routes/              # API endpoints
-├── middlewares/         # Custom middleware
-└── config/             # App configuration
-```
+📦 Project Root
+├── 📂 Client (Frontend)
+│   ├── 📂 src
+│   │   ├── 📂 components
+│   │   │   ├── 📂 ui
+│   │   │   │   ├── 📄 tooltip.jsx
+│   │   │   │   ├── 📄 badge.jsx
+│   │   │   │   ├── 📄 input.jsx
+│   │   │   │   └── 📄 table.jsx
+│   │   │   ├── 📂 admin
+│   │   │   │   ├── 📂 bookings
+│   │   │   │   │   ├── 📄 BookingManager.jsx
+│   │   │   │   │   └── 📄 StatusHistory.jsx
+│   │   │   │   ├── 📂 layout
+│   │   │   │   │   └── 📄 AdminLayout.jsx
+│   │   │   │   ├── 📂 services
+│   │   │   │   │   ├── 📄 ServiceManager.jsx
+│   │   │   │   │   └── 📄 ServiceFormModal.jsx
+│   │   │   │   └── 📂 dashboard
+│   │   │   │       └── 📄 Dashboard.jsx
+│   │   │   └── 📂 booking
+│   │   │       ├── 📄 Confirmation.jsx
+│   │   │       ├── 📄 BookingForm.jsx
+│   │   │       ├── 📄 ServiceList.jsx
+│   │   │       ├── 📄 BookingComponent.jsx
+│   │   │       ├── 📄 VehicleTypeSelector.jsx
+│   │   │       ├── 📄 OptionalServices.jsx
+│   │   │       └── 📄 OptionToggle.jsx
+│   │   ├── 📄 Workflow.jsx
+│   │   ├── 📄 HeroSection.jsx
+│   │   ├── 📄 FeatureSection.jsx
+│   │   ├── 📄 Navbar.jsx
+│   │   ├── 📄 Footer.jsx
+│   │   ├── 📂 routes
+│   │   │   └── 📄 admin.jsx
+│   │   ├── 📂 context
+│   │   │   ├── 📄 ServicesContext.jsx
+│   │   │   └── 📄 AuthContext.jsx
+│   │   ├── 📂 hooks
+│   │   │   ├── 📄 useBookingState.js
+│   │   │   └── 📄 useServices.js
+│   │   ├── 📂 utils
+│   │   │   └── 📄 index.js
+│   │   ├── 📂 constants
+│   │   │   └── 📄 index.jsx
+│   │   ├── 📄 App.jsx
+│   │   ├── 📄 main.jsx
+│   │   └── 📄 index.css
+│   ├── 📄 package.json
+│   ├── 📄 vite.config.js
+│   ├── 📄 tailwind.config.js
+│   ├── 📄 postcss.config.js
+│   └── 📄 index.html
+│
+├── 📂 Server (Backend)
+│   ├── 📂 src
+│   │   ├── 📂 controllers
+│   │   │   ├── 📄 bookingController.js
+│   │   │   ├── 📄 serviceController.js
+│   │   │   └── 📄 adminController.js
+│   │   ├── 📂 models
+│   │   │   ├── 📄 bookingModel.js
+│   │   │   ├── 📄 serviceModel.js
+│   │   │   └── 📄 index.js
+│   │   ├── 📂 routes
+│   │   │   ├── 📄 bookingRoutes.js
+│   │   │   ├── 📄 serviceRoutes.js
+│   │   │   └── 📄 index.js
+│   │   ├── 📂 middlewares
+│   │   │   ├── 📄 cors.js
+│   │   │   ├── 📄 errorHandler.js
+│   │   │   └── 📄 validator.js
+│   │   ├── 📂 config
+│   │   │   ├── 📄 database.js
+│   │   │   └── 📄 environment.js
+│   │   └── 📂 scripts
+│   │       └── 📄 seedServices.js
+│   ├── 📄 server.js
+│   ├── 📄 package.json
+│   └── 📄 package-lock.json
 
 ## Key Features
 

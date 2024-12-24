@@ -54,8 +54,9 @@ import Footer from "./components/Footer";
 import Pricing from "./components/Pricing";
 import Testimonials from "./components/Testimonials";
 import BookingComponent from "./components/booking/BookingComponent";
-import { BrowserRouter as Router } from "react-router-dom";
-import { ServicesProvider } from './context/ServicesContext';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ServicesProvider } from "./context/ServicesContext";
+import AdminRoutes from "./routes/admin";
 
 const App = () => {
   // return (
@@ -80,25 +81,44 @@ const App = () => {
   //   </>
   // );
   return (
-    <ServicesProvider>
-      <Navbar />
-      <div className="max-w-7xl mx-auto pt-20 px-6">
-        <HeroSection />
-        <div className="mb-20" id="booking-section">
-          <h2 className="text-3xl sm:text-5xl lg:text-6xl text-center mb-10 tracking-wide">
-            Book Your Service
-          </h2>
-          <BookingComponent />
-        </div>
-        <div id="workflow-section" className="mb-20">
-          <Workflow />
-        </div>
-        <FeatureSection />
-        <Footer />
-      </div>
-    </ServicesProvider>
-  );
+    <Router>
+      <Routes>
+        {/* Admin Routes */}
+        <Route
+          path="/admin/*"
+          element={
+            <ServicesProvider>
+              <AdminRoutes />
+            </ServicesProvider>
+          }
+        />
 
+        {/* Main Site Routes */}
+        <Route
+          path="/"
+          element={
+            <ServicesProvider>
+              <Navbar />
+              <div className="max-w-7xl mx-auto pt-20 px-6">
+                <HeroSection />
+                <div className="mb-20" id="booking-section">
+                  <h2 className="text-3xl sm:text-5xl lg:text-6xl text-center mb-10 tracking-wide">
+                    Book Your Service
+                  </h2>
+                  <BookingComponent />
+                </div>
+                <div id="workflow-section" className="mb-20">
+                  <Workflow />
+                </div>
+                <FeatureSection />
+                <Footer />
+              </div>
+            </ServicesProvider>
+          }
+        />
+      </Routes>
+    </Router>
+  );
 };
 
 export default App;

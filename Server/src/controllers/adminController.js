@@ -3,44 +3,91 @@ import Booking from '../models/bookingModel.js';
 import Service from '../models/serviceModel.js';
 
 // Dashboard Stats
+
 export const getDashboardStats = async (req, res) => {
   try {
+    // Get today's date and last 7 days
     const today = new Date();
-    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+    const last7Days = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
 
     // Get counts
     const totalBookings = await Booking.countDocuments();
     const pendingBookings = await Booking.countDocuments({ status: 'pending' });
     const completedBookings = await Booking.countDocuments({ status: 'completed' });
 
+    // Calculate total revenue
+    const bookings = await Booking.find();
+    const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+
+    // Get daily bookings for the last 7 days
+    const dailyBookings = await Booking.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: last7Days }
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          bookings: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          date: "$_id",
+          bookings: 1
+        }
+      },
+      { $sort: { date: 1 } }
+    ]);
+
     // Get recent bookings
     const recentBookings = await Booking.find()
       .sort({ createdAt: -1 })
-      .limit(5);
+      .limit(5)
+      .select('name serviceName totalPrice status dateTime')
+      .lean();
 
-    // Get daily bookings for the last 7 days
-    const last7Days = [...Array(7)].map((_, i) => {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      return date;
-    });
-
-    const dailyBookings = await Promise.all(
-      last7Days.map(async (date) => {
-        const startOfDay = new Date(date.setHours(0, 0, 0, 0));
-        const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+    // Format recent bookings
+    const formattedRecentBookings = recentBookings.map(booking => {
+      // Parse the date string "Tue, Dec 24, 2024, 9:00 AM"
+      try {
+        const dateTime = new Date(booking.dateTime.replace(/, (\d)/g, ' $1'));
         
-        const count = await Booking.countDocuments({
-          createdAt: { $gte: startOfDay, $lte: endOfDay }
-        });
-
         return {
-          date: date.toLocaleDateString(),
-          bookings: count
+          id: booking._id,
+          customerName: booking.name,
+          service: booking.serviceName,
+          totalPrice: booking.totalPrice,
+          status: booking.status,
+          date: dateTime.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          }),
+          time: dateTime.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          }),
+          confirmationNumber: booking.confirmationNumber
         };
-      })
-    );
+      } catch (error) {
+        console.error('Date parsing error for booking:', booking._id, error);
+        return {
+          id: booking._id,
+          customerName: booking.name,
+          service: booking.serviceName,
+          totalPrice: booking.totalPrice,
+          status: booking.status,
+          date: 'Invalid Date',
+          time: 'Invalid Time',
+          confirmationNumber: booking.confirmationNumber
+        };
+      }
+    });
 
     res.json({
       success: true,
@@ -48,9 +95,26 @@ export const getDashboardStats = async (req, res) => {
         totalBookings,
         pendingBookings,
         completedBookings,
-        recentBookings,
-        dailyBookings: dailyBookings.reverse()
+        totalRevenue,
+        dailyBookings,
+        recentBookings: formattedRecentBookings
       }
+    });
+  } catch (error) {
+    console.error('Dashboard stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+export const deleteAllBookings = async (req, res) => {
+  try {
+    await Booking.deleteMany({});
+    
+    res.json({
+      success: true,
+      message: 'All bookings have been deleted successfully'
     });
   } catch (error) {
     res.status(500).json({
@@ -59,7 +123,6 @@ export const getDashboardStats = async (req, res) => {
     });
   }
 };
-
 // Update Booking Status
 export const updateBookingStatus = async (req, res) => {
   try {
