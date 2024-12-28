@@ -1,23 +1,35 @@
 // src/components/admin/layout/AdminLayout.jsx
-import { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Calendar, 
   Settings,
+  Sliders,
   Menu,
-  X
+  X, 
+  LogOut
 } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
 
 const AdminLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
-
+  const navigate = useNavigate();
+  const { user, login ,logout } = useAuth();
   const navigationItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/admin' },
     { icon: <Calendar size={20} />, label: 'Bookings', path: '/admin/bookings' },
     { icon: <Settings size={20} />, label: 'Services', path: '/admin/services' },
+    { icon: <Sliders size={20} />, label: 'Configurations', path: '/admin/config' }
   ];
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+
 
   const isCurrentPath = (path) => {
     return location.pathname === path;
@@ -60,6 +72,15 @@ const AdminLayout = () => {
               {item.label}
             </Link>
           ))}
+          {user && ( // Conditionally render the logout button
+            <button
+              onClick={logout}
+              className="flex items-center gap-3 px-6 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors"
+            >
+              <LogOut size={20} />
+              Logout
+            </button>
+          )}
         </nav>
       </div>
 

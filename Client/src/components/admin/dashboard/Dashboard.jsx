@@ -9,6 +9,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Calendar, Users, DollarSign, Clock } from "lucide-react";
+import api from "../../../utils/api.js";
+import { useNavigate } from "react-router-dom";
+import { CONFIG } from "../../../config/config.js";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -22,6 +25,7 @@ const Dashboard = () => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDashboardStats();
@@ -29,20 +33,62 @@ const Dashboard = () => {
 
   const fetchDashboardStats = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/admin/dashboard");
-      const data = await response.json();
+      setLoading(true);
+      setError(null);
+      
+      // Using the api.get method instead of fetch
+      const data = await api.get(CONFIG.ENDPOINTS.ADMIN.DASHBOARD);
       if (data.success) {
         setStats(data.stats);
-      } else {
-        throw new Error(data.error || "Failed to fetch dashboard data");
       }
     } catch (error) {
       console.error("Failed to fetch dashboard stats:", error);
-      setError(error.message);
+      if (error.message === 'No token, authorization denied') {
+        navigate('/login');
+      } else {
+        setError(error.message);
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const handleDeleteAllBookings = async () => {
+    if (window.confirm("Are you sure you want to delete ALL bookings? This action cannot be undone.")) {
+      try {
+        // Using the api.delete method
+        const data = await api.delete(CONFIG.ENDPOINTS.ADMIN.BOOKINGS.DELETE_ALL);
+
+        if (data.success) {
+          await fetchDashboardStats();
+          alert("All bookings have been deleted successfully");
+        }
+      } catch (error) {
+        console.error("Error deleting bookings:", error);
+        alert("Failed to delete bookings");
+      }
+    }
+  };
+
+  const StatCard = ({ title, value, icon: Icon, trend }) => (
+    <div className="bg-background-light p-6 rounded-lg border border-border-light">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-content-light text-sm">{title}</p>
+          <p className="text-2xl font-bold text-content-dark mt-2">{value}</p>
+          {trend && (
+            <p className={`text-sm mt-2 ${trend >= 0 ? "text-green-500" : "text-red-500"}`}>
+              {trend >= 0 ? "+" : ""}
+              {trend}% from last week
+            </p>
+          )}
+        </div>
+        <div className="p-3 bg-primary-light/10 rounded-lg">
+          <Icon className="w-5 h-5 text-primary-DEFAULT" />
+        </div>
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -60,71 +106,24 @@ const Dashboard = () => {
     );
   }
 
-  const StatCard = ({ title, value, icon: Icon, trend }) => (
-    <div className="bg-background-light p-6 rounded-lg border border-border-light">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-content-light text-sm">{title}</p>
-          <p className="text-2xl font-bold text-content-dark mt-2">{value}</p>
-          {trend && (
-            <p
-              className={`text-sm mt-2 ${
-                trend >= 0 ? "text-green-500" : "text-red-500"
-              }`}
-            >
-              {trend >= 0 ? "+" : ""}
-              {trend}% from last week
-            </p>
-          )}
-        </div>
-        <div className="p-3 bg-primary-light/10 rounded-lg">
-          <Icon className="w-5 h-5 text-primary-DEFAULT" />
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-content-dark">Dashboard</h1>
-        <button
-          onClick={fetchDashboardStats}
-          className="px-4 py-2 text-sm bg-primary-light text-white rounded-lg hover:bg-primary-DEFAULT transition-colors"
-        >
-          Refresh Data
-        </button>
-        <button
-          onClick={async () => {
-            if (
-              window.confirm(
-                "Are you sure you want to delete ALL bookings? This action cannot be undone."
-              )
-            ) {
-              try {
-                const response = await fetch(
-                  "http://localhost:8080/api/admin/bookings/delete-all",
-                  {
-                    method: "DELETE",
-                  }
-                );
-                const data = await response.json();
-
-                if (data.success) {
-                  // Refresh the dashboard/booking list
-                  fetchDashboardStats(); // or whatever refresh function you're using
-                  alert("All bookings have been deleted successfully");
-                }
-              } catch (error) {
-                console.error("Error deleting bookings:", error);
-                alert("Failed to delete bookings");
-              }
-            }
-          }}
-          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-        >
-          Delete All Bookings
-        </button>
+        <div className="flex gap-4">
+          <button
+            onClick={fetchDashboardStats}
+            className="px-4 py-2 text-sm bg-primary-light text-white rounded-lg hover:bg-primary-DEFAULT transition-colors"
+          >
+            Refresh Data
+          </button>
+          <button
+            onClick={handleDeleteAllBookings}
+            className="px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+          >
+            Delete All Bookings
+          </button>
+        </div>
       </div>
 
       {/* Stats Overview */}
@@ -180,7 +179,12 @@ const Dashboard = () => {
               }}
               labelStyle={{ color: "#0f172a" }}
             />
-            <Bar dataKey="bookings" fill="#0cc0df" radius={[4, 4, 0, 0]} />
+            <Bar 
+              dataKey="bookings" 
+              fill="#0cc0df" 
+              radius={[4, 4, 0, 0]}
+              name="Number of Bookings"
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>

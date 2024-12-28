@@ -1,9 +1,9 @@
 // src/components/booking/ServiceList.jsx
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { scents } from "../../constants";
 import { ChevronDown, ChevronUp, Check } from "lucide-react";
 import { useServices } from "../../hooks/useServices";
+import { useConfig } from "../../hooks/useConfig";
 
 const ServiceList = ({
   selectedService,
@@ -16,6 +16,7 @@ const ServiceList = ({
 }) => {
   const [expandedService, setExpandedService] = useState(null);
   const { services, loading, error } = useServices();
+  const { scents, loading: configLoading } = useConfig(); 
 
   // Reset expanded service when vehicle type changes
   useEffect(() => {

@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { services } from "../../constants";
 import ServiceList from "./ServiceList";
 import BookingForm from "./BookingForm";
 import Confirmation from "./Confirmation";

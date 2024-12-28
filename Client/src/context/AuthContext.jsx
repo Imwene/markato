@@ -1,86 +1,111 @@
 // src/context/AuthContext.jsx
-import { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {jwtDecode} from 'jwt-decode';
+import {CONFIG} from '../config/config';
+import api from '../utils/api';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Add loading state
+  const [error, setError] = useState(null);   // Add error state
   const navigate = useNavigate();
 
-  // Check for existing session on mount
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('adminToken');
-      if (token) {
-        try {
-          const response = await fetch('http://localhost:8080/api/admin/verify', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          const data = await response.json();
-          if (data.success) {
-            setUser(data.user);
-          } else {
-            localStorage.removeItem('adminToken');
-          }
-        } catch (error) {
-          console.error('Auth verification failed:', error);
-          localStorage.removeItem('adminToken');
+    const checkAuthentication = async () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          // You might want to validate the token here (e.g., check expiry)
+          setUser(user);
         }
+      } catch (error) {
+        console.error('Authentication check failed:', error);
+        setError('Failed to check authentication.'); // Set error message
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    checkAuth();
+    checkAuthentication();
   }, []);
 
-  const login = async (credentials) => {
+  const checkTokenExpiration = (token) => {
+    if (!token) return false;
     try {
-      setLoading(true);
-      const response = await fetch('http://localhost:8080/api/admin/login', {
+      const decoded = jwtDecode(token);
+      return decoded.exp > Date.now() / 1000;
+    } catch (error) {
+      return false;
+    }
+  };
+
+const refreshToken = async () => {
+  // Implement token refresh logic
+};
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user?.token && !checkTokenExpiration(user.token)) {
+      refreshToken();
+    }
+  }, 1000 * 60 * 5); // Check every 5 minutes
+
+  return () => clearInterval(interval);
+}, []);
+
+  const login = async (email, password) => {
+    try {
+      setLoading(true); 
+      setError(null);
+
+      const response = await fetch(`${CONFIG.API_URL}${CONFIG.ENDPOINTS.AUTH.LOGIN}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials)
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
       });
-      
+
       const data = await response.json();
-      if (data.success) {
-        setUser(data.user);
-        localStorage.setItem('adminToken', data.token);
+
+      if (response.ok) {
+        const userData = {
+          ...data.user,
+          token: data.token // Store token with user data
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
         navigate('/admin');
         return { success: true };
+      } else {
+        console.error('Login failed:', data.error);
+        setError(data.error || 'Login failed.'); // Set error message
+        return { success: false, error: data.error };
       }
-      return { success: false, error: data.error };
     } catch (error) {
-      return { success: false, error: 'Login failed' };
+      console.error('Login failed:', error);
+      setError('Login failed.'); // Set generic error message
+      return { success: false, error: 'Login failed.' };
     } finally {
       setLoading(false);
     }
   };
 
   const logout = () => {
+    localStorage.removeItem('user');
     setUser(null);
-    localStorage.removeItem('adminToken');
-    navigate('/admin/login');
+    navigate('/');
   };
 
-  if (loading) {
-    return <div>Loading...</div>; 
-  }
+  const value = { user, login, logout, loading, error }; // Include loading and error
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        login, 
-        logout, 
-        isAuthenticated: !!user,
-        loading 
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

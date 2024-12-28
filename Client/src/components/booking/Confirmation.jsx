@@ -1,7 +1,7 @@
 // src/components/booking/Confirmation.jsx
 import React from "react";
 import { motion } from "framer-motion";
-import { Download, Mail } from 'lucide-react';
+import { Download, Mail } from "lucide-react";
 import {
   Calendar,
   Clock,
@@ -11,27 +11,33 @@ import {
   User,
   CheckCircle,
 } from "lucide-react";
+import { CONFIG } from "../../config/config";
+import api from "../../utils/api";
 
 const Confirmation = ({ booking }) => {
-
   const handleDownload = async () => {
     try {
-      console.log('Attempting to download PDF for:', booking.confirmationNumber); // Debug log
-      
-      const response = await fetch(`http://localhost:8080/api/bookings/${booking.confirmationNumber}/pdf`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/pdf',
-        },
-      });
-  
+      //console.log('Attempting to download PDF for:', booking.confirmationNumber);
+
+      // Use api utility but specify response type as blob
+      const response = await fetch(
+        `${CONFIG.API_URL}${CONFIG.ENDPOINTS.BOOKINGS.PDF(
+          booking.confirmationNumber
+        )}`,
+        {
+          headers: {
+            Accept: "application/pdf",
+          },
+        }
+      );
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-  
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `booking-${booking.confirmationNumber}.pdf`;
       document.body.appendChild(a);
@@ -39,30 +45,29 @@ const Confirmation = ({ booking }) => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Download failed:', error);
-      alert('Failed to download confirmation. Please try again.');
+      console.error("Download failed:", error);
+      alert("Failed to download confirmation. Please try again.");
     }
   };
 
   const handleResendEmail = async () => {
     try {
-      const response = await fetch(`http://localhost:8080/api/bookings/${booking.confirmationNumber}/resend-email`, { 
-        method: 'POST'  // Use POST method
-      });
+      // Use api utility for post request
+      const response = await api.post(
+        CONFIG.ENDPOINTS.BOOKINGS.RESEND_EMAIL(booking.confirmationNumber)
+      );
 
-      if (response.ok) {
-        // Email sent successfully
-        alert('Email resent successfully!');
+      if (response.success) {
+        alert("Email sent successfully!");
       } else {
-        const data = await response.json();
-        console.error('Error resending email:', data.error);
-        alert('Failed to resend email. Please try again.'); 
+        throw new Error(response.error || "Failed to send email");
       }
     } catch (error) {
-      console.error('Error resending email:', error);
-      alert('Failed to resend email. Please try again.');
+      console.error("Error resending email:", error);
+      alert("Failed to send email. Please try again.");
     }
   };
+
   if (!booking) {
     return (
       <div className="text-center py-8 text-red-500">
@@ -79,25 +84,25 @@ const Confirmation = ({ booking }) => {
     >
       <div className="mb-8">
         <div className="w-16 h-16 bg-primary-light rounded-full mx-auto flex items-center justify-center mb-4">
-          <CheckCircle className="w-8 h-8 text-white" />
+          <CheckCircle className="w-10 h-10 text-white" />
         </div>
-        <h2 className="text-2xl font-bold mb-2 text-content-dark">
+        <h2 className="text-3xl font-bold mb-2 text-content-dark">
           Booking Confirmed!
         </h2>
-        <p className="text-content-light">
+        <p className="text-lg text-content-light">
           Confirmation number:{" "}
-          <span className="text-primary-DEFAULT font-mono font-bold">
+          <span className="text-primary-DEFAULT font-mono font-bold text-lg">
             {booking.confirmationNumber}
           </span>
         </p>
       </div>
 
       <div className="bg-background-DEFAULT rounded-lg p-6 mb-8 border border-border-light shadow-sm">
-        <h3 className="text-xl font-semibold mb-4 text-content-dark">
+        <h3 className="text-2xl font-semibold mb-6 text-content-dark">
           Booking Details
         </h3>
 
-        <div className="space-y-4 text-left">
+        <div className="space-y-6 text-left">
           <div className="flex items-center gap-3">
             <User className="w-5 h-5 text-primary-light" />
             <span className="text-content-DEFAULT">{booking.name}</span>
@@ -154,8 +159,8 @@ const Confirmation = ({ booking }) => {
             </div>
           )}
 
-          <div className="mt-4 pt-4 border-t border-border-light">
-            <div className="flex justify-between font-bold">
+          <div className="mt-6 pt-6 border-t border-border-light">
+            <div className="flex justify-between font-bold text-lg">
               <span className="text-content-dark">Total Price:</span>
               <span className="text-primary-DEFAULT">
                 ${booking.totalPrice}
@@ -179,12 +184,12 @@ const Confirmation = ({ booking }) => {
             className="flex items-center gap-2 px-4 py-2 bg-background-DEFAULT text-content-DEFAULT border border-border-DEFAULT rounded-lg hover:bg-background-dark transition-colors"
           >
             <Mail className="w-4 h-4" />
-            Resend Email
+            Send Email
           </button>
         )}
       </div>
 
-      <div className="space-y-4 text-content-light text-sm">
+      <div className="space-y-4 text-content-light text-base mt-10">
         <p>
           Please save your confirmation number:{" "}
           <span className="font-mono font-bold text-primary-DEFAULT">
