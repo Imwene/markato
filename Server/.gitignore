@@ -1,4 +1,9 @@
 node_modules/
 *.env
+*.env.local
+*.env.development
+*.env.test
+*.env.production
 /Docs
 .DS_Store
+.gitignore

@@ -1,9 +1,15 @@
 // src/components/booking/VehicleTypeSelector.jsx
 import React from 'react';
-import { vehicleTypes } from '../../constants';
+import { useConfig } from '../../hooks/useConfig'; // Import useConfig
 import { ChevronDown } from 'lucide-react';
 
 const VehicleTypeSelector = ({ selectedType, onTypeChange }) => {
+  const { vehicleTypes, loading } = useConfig(); // Access vehicleTypes from context
+
+  if (loading) {
+    return <div>Loading vehicle types...</div>
+  }
+
   return (
     <div className="relative mb-6">
       <label htmlFor="vehicleType" className="block text-sm font-medium text-content-DEFAULT mb-2">
@@ -20,7 +26,7 @@ const VehicleTypeSelector = ({ selectedType, onTypeChange }) => {
         >
           {vehicleTypes.map((type) => (
             <option key={type.id} value={type.id}>
-              {type.label}
+              {type.label} 
             </option>
           ))}
         </select>

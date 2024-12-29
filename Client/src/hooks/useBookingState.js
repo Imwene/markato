@@ -2,12 +2,15 @@
 import { useState, useEffect } from "react";
 import { generateCaptcha } from "../utils";
 import { useServices } from "./useServices";
-import { scents, optionalServicesData, vehicleTypes } from "../constants";
+import { useConfig } from "./useConfig";
+import { CONFIG } from "../config/config";
+//import { scents, optionalServicesData, vehicleTypes } from "../constants";
 
 export const useBookingState = () => {
   // Core booking state
   const { services } = useServices();
-  const [selectedVehicleType, setSelectedVehicleType] = useState("sedan");
+  const { vehicleTypes, scents, optionalServices} = useConfig();
+  const [selectedVehicleType, setSelectedVehicleType] = useState(vehicleTypes[0]?.id || "sedan");
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [bookingStep, setBookingStep] = useState("service");
 
@@ -88,202 +91,13 @@ export const useBookingState = () => {
   };
 
   // Optional services handler - updated to handle single option toggle
-  const handleOptionSelect = (options) => {
-    console.log('Setting options:', options); // Debug log
-    setSelectedOptions(options);
-  };
+// Optional services handler
+const handleOptionSelect = (options) => {
+  setSelectedOptions(options);
+};
 
-  // Booking submission handler
-  // const handleBookingSubmit = async (userCaptchaAnswer) => {
-  //   if (userCaptchaAnswer === captcha.answer) {
-  //     setLoading(true);
-  //     setError(null);
 
-  //     try {
-  //       const selectedServiceDetails = services.find(
-  //         (s) => s.id === selectedService
-  //       );
-
-  //       const selectedScentName =
-  //         scents.find((s) => s.id === selectedScent)?.name || "None";
-
-  //       const formattedOptionalServices = selectedOptions.map((optionId) => {
-  //         const optionDetails = optionalServicesData.find(
-  //           (service) => service.id === optionId
-  //         );
-  //         return {
-  //           serviceId: optionDetails.id,
-  //           name: optionDetails.name,
-  //           price: parseFloat(optionDetails.price),
-  //         };
-  //       });
-
-  //       const servicePrice =
-  //         selectedServiceDetails.vehiclePricing[selectedVehicleType];
-  //       const optionalServicesTotal = formattedOptionalServices.reduce(
-  //         (sum, service) => sum + service.price,
-  //         0
-  //       );
-
-  //       const totalPrice = servicePrice + optionalServicesTotal;
-
-  //       const date = new Date();
-  //       const dateStr =
-  //         date.getFullYear().toString() +
-  //         (date.getMonth() + 1).toString().padStart(2, "0") +
-  //         date.getDate().toString().padStart(2, "0");
-  //       const random = Math.floor(Math.random() * 10000)
-  //         .toString()
-  //         .padStart(4, "0");
-  //       const confirmationNumber = `BK-${dateStr}-${random}`;
-
-  //       const bookingPayload = {
-  //         name: bookingDetails.name,
-  //         contact: bookingDetails.contact,
-  //         vehicleType: selectedVehicleType,
-  //         makeModel: bookingDetails.makeModel,
-  //         dateTime: bookingDetails.dateTime,
-  //         serviceId: selectedService,
-  //         serviceName: selectedServiceDetails?.name,
-  //         selectedScent: selectedScentName,
-  //         servicePrice: servicePrice,
-  //         features: selectedServiceDetails.features,
-  //         optionalServices: formattedOptionalServices,
-  //         totalPrice: totalPrice,
-  //         confirmationNumber: confirmationNumber,
-  //       };
-
-  //       const response = await fetch("http://localhost:8080/api/bookings", {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         body: JSON.stringify(bookingPayload),
-  //       });
-
-  //       const data = await response.json();
-
-  //       if (data.success) {
-  //         setBooking(bookingPayload);
-  //         setBookingStep("confirmation");
-  //         return { success: true, booking: bookingPayload };
-  //       }
-  //     } catch (err) {
-  //       setError(err.message);
-  //       return { success: false, error: err.message };
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   } else {
-  //     setCaptcha(generateCaptcha());
-  //     setError("CAPTCHA verification failed. Please try again.");
-  //     return { success: false, error: "CAPTCHA verification failed" };
-  //   }
-  // };
-
-  // In handleBookingSubmit
-// const handleBookingSubmit = async (userCaptchaAnswer) => {
-//   console.log('Starting booking submission:', {
-//     userCaptchaAnswer,
-//     captchaAnswer: captcha.answer,
-//     selectedService,
-//     services,  // Log all services to see their ID structure
-//     selectedServiceDetails: services.find(s => s._id === selectedService || s.id === selectedService)
-//   });
-
-//   if (userCaptchaAnswer === captcha.answer) {
-//     setLoading(true);
-//     setError(null);
-
-//     try {
-//       // Updated service finding logic
-//       const selectedServiceDetails = services.find(
-//         (s) => s._id === selectedService || s.id === selectedService
-//       );
-
-//       console.log('Service details found:', { selectedServiceDetails });
-
-//       const selectedScentName =
-//         scents.find((s) => s.id === selectedScent)?.name || "None";
-
-//       const formattedOptionalServices = selectedOptions.map((optionId) => {
-//         const optionDetails = optionalServicesData.find(
-//           (service) => service.id.toString() === optionId.toString()
-//         );
-//         return {
-//           serviceId: optionDetails.id,
-//           name: optionDetails.name,
-//           price: parseFloat(optionDetails.price),
-//         };
-//       });
-
-//       console.log('Formatted data:', {
-//         selectedScentName,
-//         formattedOptionalServices,
-//         vehicleType: selectedVehicleType
-//       });
-
-//       const servicePrice =
-//         selectedServiceDetails.vehiclePricing[selectedVehicleType];
-//       const optionalServicesTotal = formattedOptionalServices.reduce(
-//         (sum, service) => sum + service.price,
-//         0
-//       );
-
-//       const totalPrice = servicePrice + optionalServicesTotal;
-
-//       const bookingPayload = {
-//         name: bookingDetails.name,
-//         contact: bookingDetails.contact,
-//         vehicleType: selectedVehicleType,
-//         makeModel: bookingDetails.makeModel,
-//         dateTime: bookingDetails.dateTime,
-//         serviceId: selectedService,
-//         serviceName: selectedServiceDetails?.name,
-//         selectedScent: selectedScentName,
-//         servicePrice: servicePrice,
-//         features: selectedServiceDetails.features,
-//         optionalServices: formattedOptionalServices,
-//         totalPrice: totalPrice,
-//         confirmationNumber: confirmationNumber,
-//       };
-
-//       console.log('Final payload:', bookingPayload);
-
-//       const response = await fetch("http://localhost:8080/api/bookings", {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//         },
-//         body: JSON.stringify(bookingPayload),
-//       });
-
-//       const data = await response.json();
-//       console.log('Server response:', data);
-
-//       if (data.success) {
-//         setBooking(bookingPayload);
-//         setBookingStep("confirmation");
-//         return { success: true, booking: bookingPayload };
-//       }
-//     } catch (err) {
-//       console.error('Booking error:', err);
-//       setError(err.message);
-//       return { success: false, error: err.message };
-//     } finally {
-//       setLoading(false);
-//     }
-//   } else {
-//     console.log('CAPTCHA mismatch:', {
-//       provided: userCaptchaAnswer,
-//       expected: captcha.answer
-//     });
-//     setCaptcha(generateCaptcha());
-//     setError("CAPTCHA verification failed. Please try again.");
-//     return { success: false, error: "CAPTCHA verification failed" };
-//   }
-// };
-
+// Booking submission handler
 const handleBookingSubmit = async (userCaptchaAnswer) => {
   if (userCaptchaAnswer === captcha.answer) {
     setLoading(true);
@@ -294,12 +108,12 @@ const handleBookingSubmit = async (userCaptchaAnswer) => {
         (s) => s._id === selectedService || s.id === selectedService
       );
 
-      const selectedScentName =
-        scents.find((s) => s.id === selectedScent)?.name || "None";
+      const selectedScentDetails = scents.find(s => s.id === selectedScent);
+      const selectedScentName = selectedScentDetails?.name || "None";
 
       const formattedOptionalServices = selectedOptions.map((optionId) => {
-        const optionDetails = optionalServicesData.find(
-          (service) => service.id.toString() === optionId.toString()
+        const optionDetails = optionalServices.find(
+          service => service.id.toString() === optionId.toString()
         );
         return {
           serviceId: optionDetails.id,
@@ -307,6 +121,7 @@ const handleBookingSubmit = async (userCaptchaAnswer) => {
           price: parseFloat(optionDetails.price),
         };
       });
+
 
       const servicePrice =
         selectedServiceDetails.vehiclePricing[selectedVehicleType];
@@ -317,13 +132,14 @@ const handleBookingSubmit = async (userCaptchaAnswer) => {
 
       const totalPrice = servicePrice + optionalServicesTotal;
 
-      // Generate confirmation number
       const date = new Date();
       const dateStr =
-        date.getFullYear().toString() +
-        (date.getMonth() + 1).toString().padStart(2, "0") +
-        date.getDate().toString().padStart(2, "0");
-      const random = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+      (date.getMonth() + 1).toString().padStart(2, "0") +
+      date.getDate().toString().padStart(2, "0") +
+      date.getFullYear().toString() ;
+      const random = Math.floor(Math.random() * 10000)
+        .toString()
+        .padStart(4, "0");
       const confirmationNumber = `BK-${dateStr}-${random}`;
 
       const bookingPayload = {
@@ -335,16 +151,16 @@ const handleBookingSubmit = async (userCaptchaAnswer) => {
         dateTime: bookingDetails.dateTime,
         serviceId: selectedService,
         serviceName: selectedServiceDetails?.name,
-        selectedScent: selectedScentName,
+        selectedScent: selectedScentName || "None",
         servicePrice: servicePrice,
         features: selectedServiceDetails.features,
         optionalServices: formattedOptionalServices,
         totalPrice: totalPrice,
         confirmationNumber: confirmationNumber,
-        status: 'pending' // Add initial status
+        status: 'pending'
       };
 
-      const response = await fetch("http://localhost:8080/api/bookings", {
+      const response = await fetch(`${CONFIG.API_URL}${CONFIG.ENDPOINTS.BOOKINGS.BASE}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -374,6 +190,7 @@ const handleBookingSubmit = async (userCaptchaAnswer) => {
     return { success: false, error: "CAPTCHA verification failed" };
   }
 };
+
 
   // Reset booking state
   const resetBookingState = () => {
@@ -408,10 +225,9 @@ const handleBookingSubmit = async (userCaptchaAnswer) => {
     booking,
     loading,
     error,
-    optionalServicesData: optionalServicesData.map(service => ({
-      ...service,
-      id: service.id.toString() // Ensure IDs are strings for consistency
-    })),
+    optionalServices,
+    vehicleTypes,
+    scents,
 
     // Setters
     setSelectedService,
@@ -422,7 +238,6 @@ const handleBookingSubmit = async (userCaptchaAnswer) => {
     handleVehicleTypeChange,
     handleBack,
     handleOptionSelect,
-    
     handleNext,
     handleInputChange,
     handleBookingSubmit,

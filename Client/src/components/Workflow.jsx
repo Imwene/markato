@@ -5,7 +5,7 @@ import { checklistItems } from "../constants";
 
 const Workflow = () => {
   return (
-    <div>
+    <div id="how-it-works">
       <h2 className="text-3xl sm:text-5xl lg:text-6xl text-center mb-16 tracking-wide font-bold text-content-dark">
         How we{" "}
         <span className="bg-gradient-to-r from-primary-light to-primary-DEFAULT bg-clip-text text-transparent">

@@ -3,7 +3,7 @@ import { features } from "../constants";
 
 const FeatureSection = () => {
   return (
-    <div className="relative mt-20 border-b border-border-light min-h-[800px]">
+    <div id="why-choose-us" className="relative mt-20 border-b border-border-light min-h-[800px]">
       <div className="text-center">
         <h2 className="text-3xl sm:text-5xl lg:text-6xl mt-10 lg:mt-20 tracking-wide font-bold text-content-dark">
           Why Choose{" "}

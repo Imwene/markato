@@ -24,7 +24,7 @@ const HeroSection = () => {
       </h1>
       
       <p className="mt-10 text-lg text-center text-content-light max-w-4xl">
-        Your car deserves nothing but the best car repair and services in town.
+        Your car deserves nothing but the best detailing services in town.
         Book a seamless car service experience with us.
       </p>
       

@@ -10,8 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from "../../ui/table";
+import api from "../../../utils/api";
+import { CONFIG } from "../../../config/config";
+import { useConfig } from "../../../hooks/useConfig";
 
 const ServiceManager = () => {
+  const { vehicleTypes } = useConfig();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingService, setEditingService] = useState(null);
@@ -21,17 +25,12 @@ const ServiceManager = () => {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      setError(null);
-      const response = await fetch("http://localhost:8080/api/services");
-      const data = await response.json();
+      const data = await api.get(CONFIG.ENDPOINTS.SERVICES.BASE);
       if (data.success) {
         setServices(data.data);
-      } else {
-        setError(data.error || "Failed to fetch services");
       }
     } catch (error) {
-      console.error("Error fetching services:", error);
-      setError("Failed to connect to the server");
+      setError(error.message);
     } finally {
       setLoading(false);
     }
@@ -61,22 +60,19 @@ const ServiceManager = () => {
   };
 
   const handleDeleteService = async (serviceId) => {
-    if (window.confirm("Are you sure you want to mark this service as inactive?")) {
+    if (
+      window.confirm("Are you sure you want to mark this service as inactive?")
+    ) {
       try {
-        const response = await fetch(
-          `http://localhost:8080/api/services/${serviceId}`,
-          {
-            method: "DELETE", // This should call the backend method to set isActive to false
-          }
+        const data = await api.delete(
+          CONFIG.ENDPOINTS.SERVICES.BY_ID(serviceId)
         );
-        const data = await response.json();
         if (data.success) {
-          // Instead of filtering, update the service's active status
-          setServices(services.map(s => 
-            s._id === serviceId 
-              ? { ...s, isActive: false } 
-              : s
-          ));
+          setServices(
+            services.map((s) =>
+              s._id === serviceId ? { ...s, isActive: false } : s
+            )
+          );
         }
       } catch (error) {
         console.error("Error updating service status:", error);
@@ -95,7 +91,9 @@ const ServiceManager = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-content-dark">Service Management</h1>
+        <h1 className="text-2xl font-bold text-content-dark">
+          Service Management
+        </h1>
         <button
           onClick={handleAddService}
           className="flex items-center gap-2 px-4 py-2 bg-primary-light text-white rounded-lg 
@@ -134,14 +132,16 @@ const ServiceManager = () => {
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1">
-                    {Object.entries(service.vehiclePricing).map(
-                      ([vehicle, price]) => (
-                        <div key={vehicle} className="text-sm">
-                          <span className="text-content-light capitalize">{vehicle}: </span>
-                          <span className="text-primary-DEFAULT">${price}</span>
-                        </div>
-                      )
-                    )}
+                    {vehicleTypes.map((vehicleType) => (
+                      <div key={vehicleType.id} className="text-sm">
+                        <span className="text-content-light capitalize">
+                          {vehicleType.label}:
+                        </span>
+                        <span className="text-primary-DEFAULT">
+                          ${service.vehiclePricing[vehicleType.id] || 0}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </TableCell>
                 <TableCell>

@@ -12,6 +12,8 @@ import { Input } from "../../ui/input";
 import { Badge } from "../../ui/badge";
 import { Tooltip } from "../../ui/tooltip";
 import { Search } from "lucide-react";
+import api from '../../../utils/api';
+import {CONFIG } from '../../../config/config';
 
 const BookingManager = () => {
   const [bookings, setBookings] = useState([]);
@@ -29,15 +31,9 @@ const BookingManager = () => {
 
   const fetchBookings = async () => {
     try {
-      setLoading(true);
-      const response = await fetch("http://localhost:8080/api/bookings");
-      const data = await response.json();
+      const data = await api.get(CONFIG.ENDPOINTS.BOOKINGS.BASE);
       if (data.success) {
-        const processedBookings = data.data.map((booking) => ({
-          ...booking,
-          status: booking.status || "pending",
-        }));
-        setBookings(processedBookings);
+        setBookings(data.data);
       }
     } catch (error) {
       console.error("Failed to fetch bookings:", error);
@@ -56,24 +52,17 @@ const BookingManager = () => {
 
   const confirmStatusChange = async () => {
     if (!selectedBooking || !newStatus) return;
-
+  
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/bookings/${selectedBooking._id}/status`,
+      const response = await api.put(
+        CONFIG.ENDPOINTS.BOOKINGS.UPDATE_STATUS(selectedBooking._id),
         {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            status: newStatus,
-            note: statusNote,
-          }),
+          status: newStatus,
+          note: statusNote,
         }
       );
-
-      const data = await response.json();
-      if (data.success) {
+  
+      if (response.success) {
         setBookings(
           bookings.map((b) =>
             b._id === selectedBooking._id ? { ...b, status: newStatus } : b

@@ -1,17 +1,20 @@
 // src/components/admin/services/ServiceFormModal.jsx
 import React, { useState } from 'react';
 import { X, Plus, Minus } from 'lucide-react';
+import api from '../../../utils/api';
+import {CONFIG} from '../../../config/config';
+import { useConfig } from '../../../hooks/useConfig';
 
 const ServiceFormModal = ({ service, onClose, onSave }) => {
+  const { vehicleTypes } = useConfig();
   const [formData, setFormData] = useState({
     name: service?.name || '',
     features: service?.features || [''],
-    vehiclePricing: service?.vehiclePricing || {
-      'sedan': 0,
-      'mini-suv': 0,
-      'suv': 0,
-      'van/truck': 0
-    },
+    vehiclePricing: service?.vehiclePricing || 
+      vehicleTypes.reduce((acc, type) => ({
+        ...acc,
+        [type.id]: 0
+      }), {}),
     category: service?.category || 'DRIVE-IN',
     isActive: service?.isActive ?? true,
     sortOrder: service?.sortOrder || 0
@@ -83,36 +86,21 @@ const ServiceFormModal = ({ service, onClose, onSave }) => {
     if (!validateForm() || submitting) {
       return;
     }
-
+  
     try {
       setSubmitting(true);
       
       const url = service?._id 
-        ? `/api/services/${service._id}`
-        : '/api/services';
+  ? CONFIG.ENDPOINTS.SERVICES.BY_ID(service._id)
+  : CONFIG.ENDPOINTS.SERVICES.BASE;
         
-      const response = await fetch(url, {
-        method: service?._id ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          features: formData.features.filter(f => f.trim()) // Remove empty features
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save service');
-      }
-
-      const data = await response.json();
-      
+      const data = service?._id 
+        ? await api.put(url, formData)
+        : await api.post(url, formData);
+  
       if (data.success) {
         onSave(data.data);
         onClose();
-      } else {
-        throw new Error(data.error || 'Failed to save service');
       }
     } catch (error) {
       setErrors(prev => ({
@@ -209,28 +197,28 @@ const ServiceFormModal = ({ service, onClose, onSave }) => {
 
           {/* Vehicle Pricing */}
           <div>
-            <label className="block text-sm font-medium mb-2">Pricing</label>
-            <div className="grid grid-cols-2 gap-4">
-              {Object.entries(formData.vehiclePricing).map(([vehicle, price]) => (
-                <div key={vehicle}>
-                  <label className="block text-sm text-content-light mb-1 capitalize">
-                    {vehicle}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={price}
-                    onChange={(e) => handlePriceChange(vehicle, e.target.value)}
-                    className="w-full p-2 bg-background-light border border-border-DEFAULT rounded-lg"
-                  />
-                </div>
-              ))}
-            </div>
-            {errors.pricing && (
-              <p className="text-red-500 text-sm mt-1">{errors.pricing}</p>
-            )}
+      <label className="block text-sm font-medium mb-2">Pricing</label>
+      <div className="grid grid-cols-2 gap-4">
+        {vehicleTypes.map((vehicleType) => (
+          <div key={vehicleType.id}>
+            <label className="block text-sm text-content-light mb-1 capitalize">
+              {vehicleType.label}
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.vehiclePricing[vehicleType.id] || 0}
+              onChange={(e) => handlePriceChange(vehicleType.id, e.target.value)}
+              className="w-full p-2 bg-background-light border border-border-DEFAULT rounded-lg"
+            />
           </div>
+        ))}
+      </div>
+      {errors.pricing && (
+        <p className="text-red-500 text-sm mt-1">{errors.pricing}</p>
+      )}
+    </div>
 
           {/* Status */}
           <div className="flex items-center gap-2">
