@@ -3,7 +3,7 @@ import { resourcesLinks, platformLinks, communityLinks } from "../constants";
 
 const Footer = () => {
   return (
-    <footer className="mt-20 border-t py-10 border-border-light bg-background-DEFAULT">
+    <footer className="mt-10 border-t py-8 border-border-light bg-background-DEFAULT">
       {/* <div className="grid grid-cols-2 lg:grid-cols-3 gap-8">
         <div>
           <h3 className="text-md font-semibold mb-4 text-content-dark">Resources</h3>

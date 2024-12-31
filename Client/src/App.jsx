@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { Suspense, lazy, useEffect } from "react";
 import { ServicesProvider } from "./context/ServicesContext";
 import { ConfigProvider } from "./context/ConfigContext";
 import { AuthProvider } from "./context/AuthContext";
@@ -8,7 +8,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 // Eagerly load critical components
 import Navbar from "./components/Navbar";
 import LoadingSpinner from "./components/ui/LoadingSpinner";
-import { performanceMonitor } from './utils/performance';
+import { performanceMonitor } from "./utils/performance";
 
 // In your App.jsx
 
@@ -19,44 +19,46 @@ const HeroSection = lazy(() => import("./components/HeroSection"));
 const FeatureSection = lazy(() => import("./components/FeatureSection"));
 const Workflow = lazy(() => import("./components/Workflow"));
 const Footer = lazy(() => import("./components/Footer"));
-const BookingComponent = lazy(() => import("./components/booking/BookingComponent"));
+const BookingComponent = lazy(() =>
+  import("./components/booking/BookingComponent")
+);
 const BusinessMap = lazy(() => import("./components/BusinessMap"));
 
 const App = () => {
-
   useEffect(() => {
-    performanceMonitor.startTiming('appMount');
+    performanceMonitor.startTiming("appMount");
     return () => {
-      const duration = performanceMonitor.endTiming('appMount');
+      const duration = performanceMonitor.endTiming("appMount");
       performanceMonitor.logPerformance({
-        metric: 'appMount',
-        duration
+        metric: "appMount",
+        duration,
       });
     };
   }, []);
-  
+
   useEffect(() => {
     const interval = setInterval(() => {
       cacheManager.clearExpired();
     }, 1000 * 60 * 60); // Run every hour
-  
+
     return () => clearInterval(interval);
   }, []);
-  
 
   return (
     <Router>
       <AuthProvider>
         <ConfigProvider>
           <ServicesProvider>
-            <Suspense fallback={
-              <div className="flex justify-center items-center min-h-screen">
-                <LoadingSpinner />
-              </div>
-            }>
+            <Suspense
+              fallback={
+                <div className="flex justify-center items-center min-h-screen">
+                  <LoadingSpinner />
+                </div>
+              }
+            >
               <Routes>
                 <Route path="/login" element={<Login />} />
-                
+
                 {/* Admin Routes */}
                 <Route
                   path="/admin/*"
@@ -73,19 +75,19 @@ const App = () => {
                   element={
                     <>
                       <Navbar />
-                      <div className="max-w-7xl mx-auto pt-20 px-6">
+                      <div className="max-w-7xl mx-auto pt-10 px-6">
                         <HeroSection />
-                        <div className="mb-20" id="booking-section">
-                          <h2 className="text-3xl sm:text-5xl lg:text-6xl text-center mb-10 tracking-wide">
+                        <div className="mb-10" id="booking-section">
+                          <h2 className="text-3xl sm:text-5xl lg:text-6xl text-center mb-6 tracking-wide">
                             Book Your Service
                           </h2>
                           <BookingComponent />
                         </div>
-                        <div id="workflow-section" className="mb-20">
+                        <div id="workflow-section" className="mb-10">
                           <Workflow />
                         </div>
                         <FeatureSection />
-                        <BusinessMap/>
+                        <BusinessMap />
                         <Footer />
                       </div>
                     </>

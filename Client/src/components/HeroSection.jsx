@@ -8,13 +8,14 @@ const HeroSection = () => {
     const element = document.getElementById(sectionId);
     if (element) {
       const yOffset = -80;
-      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      const y =
+        element.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: "smooth" });
     }
   };
 
   return (
-    <div className="flex flex-col items-center mt-6 lg:mt-20">
+    <div className="flex flex-col items-center mt-4 lg:mt-10">
       <h1 className="text-4xl sm:text-6xl lg:text-7xl text-center tracking-wide font-bold text-content-dark">
         Welcome to
         <span className="bg-gradient-to-r from-primary-light to-primary-dark bg-clip-text text-transparent">
@@ -22,13 +23,13 @@ const HeroSection = () => {
           Markato Auto Detailing
         </span>
       </h1>
-      
-      <p className="mt-10 text-lg text-center text-content-light max-w-4xl">
-        Your car deserves nothing but the best detailing services in town.
-        Book a seamless car service experience with us.
+
+      <p className="mt-6 text-lg text-center text-content-light max-w-4xl">
+        Your car deserves nothing but the best detailing services in town. Book
+        a seamless car service experience with us.
       </p>
-      
-      <div className="flex justify-center my-10 gap-4">
+
+      <div className="flex justify-center my-6 gap-4">
         <button
           onClick={() => scrollToSection("booking-section")}
           className="bg-gradient-to-r from-primary-light to-primary-DEFAULT 
@@ -37,7 +38,7 @@ const HeroSection = () => {
         >
           View Services
         </button>
-        
+
         <button
           onClick={() => scrollToSection("workflow-section")}
           className="py-3 px-6 rounded-md border border-border-DEFAULT
