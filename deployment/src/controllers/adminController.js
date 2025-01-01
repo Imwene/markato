@@ -193,3 +193,47 @@ export const getAllBookings = async (req, res) => {
     });
   }
 };
+
+// Get Weekly Bookings
+export const getWeeklyBookings = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    // Parse dates from strings to Date objects
+    const parsedStartDate = new Date(startDate);
+    const parsedEndDate = new Date(endDate);
+    
+    // Build date strings for each day in the range
+    const dates = [];
+    const currentDate = new Date(parsedStartDate);
+    while (currentDate <= parsedEndDate) {
+      dates.push(
+        currentDate.toLocaleString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        })
+      );
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Create query using $or to match any of the dates
+    const bookings = await Booking.find({
+      dateTime: {
+        $regex: new RegExp(dates.map(date => `^${date}`).join('|'))
+      }
+    }).sort({ dateTime: 1 });
+
+    console.log('Date patterns:', dates);
+    console.log('Found bookings:', bookings.length);
+    
+    res.json({
+      success: true,
+      data: bookings
+    });
+  } catch (error) {
+    console.error('Weekly bookings error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

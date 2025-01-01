@@ -2,6 +2,8 @@
 import PDFDocument from "pdfkit";
 import Booking from "../models/bookingModel.js";
 import { sendBookingConfirmation } from "../services/emailService.js";
+import { sendAdminNotification } from "../services/emailService.js";
+
 
 export async function createBooking(req, res) {
   try {
@@ -23,7 +25,13 @@ export async function createBooking(req, res) {
     const booking = new Booking(bookingData);
     const savedBooking = await booking.save();
 
-    //console.log('Saved booking:', savedBooking);
+    //send admin notification
+    try {
+      await sendAdminNotification(savedBooking);
+    } catch (emailError) {
+      // Log the error but don't fail the booking creation
+      console.error('Failed to send admin notification:', emailError);
+    }
 
     res.status(201).json({
       success: true,
@@ -220,6 +228,9 @@ export const generateBookingPDF = async (req, res) => {
         align: "center",
       });
     doc.text("Please present this confirmation at the time of service.", {
+      align: "center",
+    });
+    doc.text("Contact us at +14158899108 or markatoautodetail@gmail.com.", {
       align: "center",
     });
 
