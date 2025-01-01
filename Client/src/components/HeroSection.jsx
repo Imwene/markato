@@ -16,15 +16,15 @@ const HeroSection = () => {
 
   return (
     <div className="flex flex-col items-center mt-4 lg:mt-10">
-      <h1 className="text-4xl sm:text-6xl lg:text-7xl text-center tracking-wide font-bold text-content-dark">
+      <h1 className="text-4xl sm:text-6xl lg:text-7xl text-center tracking-wide font-bold text-content-dark dark:text-white">
         Welcome to
-        <span className="bg-gradient-to-r from-primary-light to-primary-dark bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-primary-light to-primary-dark dark:from-orange-500 dark:to-orange-600 bg-clip-text text-transparent">
           {" "}
           Markato Auto Detailing
         </span>
       </h1>
 
-      <p className="mt-6 text-lg text-center text-content-light max-w-4xl">
+      <p className="mt-6 text-lg text-center text-content-light dark:text-stone-400 max-w-4xl">
         Your car deserves nothing but the best detailing services in town. Book
         a seamless car service experience with us.
       </p>
@@ -33,17 +33,21 @@ const HeroSection = () => {
         <button
           onClick={() => scrollToSection("booking-section")}
           className="bg-gradient-to-r from-primary-light to-primary-DEFAULT 
-                   text-white py-3 px-6 rounded-md hover:opacity-90 transition-opacity
-                   shadow-lg shadow-primary-light/20"
+          dark:from-orange-500 dark:to-orange-600
+          text-white py-3 px-6 rounded-md hover:opacity-90 transition-opacity
+          shadow-lg shadow-primary-light/20 dark:shadow-orange-500/20"
         >
           View Services
         </button>
 
         <button
           onClick={() => scrollToSection("workflow-section")}
-          className="py-3 px-6 rounded-md border border-border-DEFAULT
-                   text-content-DEFAULT hover:bg-background-dark 
-                   hover:border-border-dark transition-colors"
+          className="py-3 px-6 rounded-md 
+          border border-border-DEFAULT dark:border-stone-700
+          text-content-DEFAULT dark:text-white 
+          hover:bg-background-dark dark:hover:bg-stone-800
+          hover:border-border-dark dark:hover:border-stone-600 
+          transition-colors"
         >
           How we work
         </button>
@@ -58,8 +62,8 @@ const HeroSection = () => {
               muted
               playsInline
               className="w-full h-full object-cover rounded-lg 
-                       border border-primary-light/20 
-                       shadow-lg shadow-primary-light/10"
+              border border-primary-light/20 dark:border-orange-500/20 
+              shadow-lg shadow-primary-light/10 dark:shadow-orange-500/10"
             >
               <source src={video1} type="video/mp4" />
               Your browser does not support the video tag.
@@ -72,8 +76,8 @@ const HeroSection = () => {
               muted
               playsInline
               className="w-full h-full object-cover rounded-lg 
-                       border border-primary-light/20 
-                       shadow-lg shadow-primary-light/10"
+              border border-primary-light/20 dark:border-orange-500/20 
+              shadow-lg shadow-primary-light/10 dark:shadow-orange-500/10"
             >
               <source src={video2} type="video/mp4" />
               Your browser does not support the video tag.

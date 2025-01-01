@@ -13,6 +13,7 @@ export const useBookingState = () => {
   const [selectedVehicleType, setSelectedVehicleType] = useState(vehicleTypes[0]?.id || "sedan");
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [bookingStep, setBookingStep] = useState("service");
+  const [isCaptchaValid, setIsCaptchaValid] = useState(false);
 
   // Service selection state
   const [selectedService, setSelectedService] = useState(null);
@@ -95,6 +96,7 @@ export const useBookingState = () => {
 const handleOptionSelect = (options) => {
   setSelectedOptions(options);
 };
+
 
 
 // Booking submission handler

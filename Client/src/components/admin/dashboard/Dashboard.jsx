@@ -12,8 +12,13 @@ import { Calendar, Users, DollarSign, Clock } from "lucide-react";
 import api from "../../../utils/api.js";
 import { useNavigate } from "react-router-dom";
 import { CONFIG } from "../../../config/config.js";
+import ThemeToggle from "../../ui/ThemeToggle.jsx";
+import WeeklyAppointments from "./WeeklyAppointments";
 
 const Dashboard = () => {
+
+  const isDark = ThemeToggle.isDark;
+
   const [stats, setStats] = useState({
     totalBookings: 0,
     pendingBookings: 0,
@@ -71,20 +76,25 @@ const Dashboard = () => {
   };
 
   const StatCard = ({ title, value, icon: Icon, trend }) => (
-    <div className="bg-background-light p-6 rounded-lg border border-border-light">
+    <div className="bg-background-light dark:bg-stone-800 p-6 rounded-lg 
+                    border border-border-light dark:border-stone-700">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-content-light text-sm">{title}</p>
-          <p className="text-2xl font-bold text-content-dark mt-2">{value}</p>
+          <p className="text-content-light dark:text-stone-400 text-sm">{title}</p>
+          <p className="text-2xl font-bold text-content-dark dark:text-white mt-2">
+            {value}
+          </p>
           {trend && (
-            <p className={`text-sm mt-2 ${trend >= 0 ? "text-green-500" : "text-red-500"}`}>
+            <p className={`text-sm mt-2 ${
+              trend >= 0 ? "text-green-500 dark:text-green-400" : 
+                          "text-red-500 dark:text-red-400"}`}>
               {trend >= 0 ? "+" : ""}
               {trend}% from last week
             </p>
           )}
         </div>
-        <div className="p-3 bg-primary-light/10 rounded-lg">
-          <Icon className="w-5 h-5 text-primary-DEFAULT" />
+        <div className="p-3 bg-primary-light/10 dark:bg-orange-500/10 rounded-lg">
+          <Icon className="w-5 h-5 text-primary-DEFAULT dark:text-orange-500" />
         </div>
       </div>
     </div>
@@ -93,7 +103,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light dark:border-orange-500"></div>
       </div>
     );
   }
@@ -154,48 +164,55 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* Bookings Chart */}
-      <div className="h-[400px] bg-background-light rounded-lg p-6 border border-border-light">
-        <h3 className="text-lg font-semibold mb-4 text-content-dark">
-          Daily Bookings
-        </h3>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={stats.dailyBookings}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis
-              dataKey="date"
-              tick={{ fill: "#64748b" }}
-              axisLine={{ stroke: "#cbd5e1" }}
-            />
-            <YAxis
-              tick={{ fill: "#64748b" }}
-              axisLine={{ stroke: "#cbd5e1" }}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#ffffff",
-                border: "1px solid #e2e8f0",
-                borderRadius: "0.5rem",
-              }}
-              labelStyle={{ color: "#0f172a" }}
-            />
-            <Bar 
-              dataKey="bookings" 
-              fill="#0cc0df" 
-              radius={[4, 4, 0, 0]}
-              name="Number of Bookings"
-            />
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="mt-6">
+        <WeeklyAppointments />
       </div>
 
+      {/* Bookings Chart */}
+      <div className="h-[400px] bg-background-light dark:bg-stone-800 rounded-lg p-6 
+                border border-border-light dark:border-stone-700">
+  <h3 className="text-lg font-semibold mb-4 text-content-dark dark:text-white">
+    Daily Bookings
+  </h3>
+  <ResponsiveContainer width="100%" height="100%">
+    <BarChart data={stats.dailyBookings}>
+      <CartesianGrid strokeDasharray="3 3" 
+                     stroke="#e2e8f0" 
+                     strokeOpacity={isDark ? 0.1 : 1} />
+      <XAxis
+        dataKey="date"
+        tick={{ fill: isDark ? "#94a3b8" : "#64748b" }}
+        axisLine={{ stroke: isDark ? "#334155" : "#cbd5e1" }}
+      />
+      <YAxis
+        tick={{ fill: isDark ? "#94a3b8" : "#64748b" }}
+        axisLine={{ stroke: isDark ? "#334155" : "#cbd5e1" }}
+      />
+      <Tooltip
+        contentStyle={{
+          backgroundColor: isDark ? "#1c1917" : "#ffffff",
+          border: `1px solid ${isDark ? "#334155" : "#e2e8f0"}`,
+          borderRadius: "0.5rem",
+          color: isDark ? "#ffffff" : "#0f172a"
+        }}
+      />
+      <Bar 
+        dataKey="bookings" 
+        fill={isDark ? "#f97316" : "#0cc0df"}
+        radius={[4, 4, 0, 0]}
+      />
+    </BarChart>
+  </ResponsiveContainer>
+</div>
+
       {/* Recent Bookings */}
-      <div className="bg-background-light rounded-lg border border-border-light">
-        <div className="p-6 border-b border-border-light">
-          <h3 className="text-lg font-semibold text-content-dark">
-            Recent Bookings
-          </h3>
-        </div>
+      <div className="bg-background-light dark:bg-stone-800 rounded-lg 
+                border border-border-light dark:border-stone-700">
+  <div className="p-6 border-b border-border-light dark:border-stone-700">
+    <h3 className="text-lg font-semibold text-content-dark dark:text-white">
+      Recent Bookings
+    </h3>
+  </div>
         <div className="divide-y divide-border-light">
           {stats.recentBookings.map((booking) => (
             <div

@@ -1,4 +1,3 @@
-// src/components/booking/ServiceList.jsx
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp, Check } from "lucide-react";
@@ -11,14 +10,13 @@ const ServiceList = ({
   onServiceSelect,
   onScentSelect,
   selectedVehicleType,
-  onContinue,  // Add this prop
-  canProceedToDetails  // Add this prop
+  onContinue,
+  canProceedToDetails
 }) => {
   const [expandedService, setExpandedService] = useState(null);
   const { services, loading, error } = useServices();
-  const { scents, loading: configLoading } = useConfig(); 
+  const { scents, loading: configLoading } = useConfig();
 
-  // Reset expanded service when vehicle type changes
   useEffect(() => {
     setExpandedService(null);
     onServiceSelect(null);
@@ -28,19 +26,16 @@ const ServiceList = ({
   const handleServiceClick = (service) => {
     const serviceId = service._id || service.id;
     if (serviceId === expandedService) {
-      // If clicking the expanded service, just close it
       setExpandedService(null);
     } else {
-      // If clicking a new service, expand it and select it
       setExpandedService(serviceId);
       onServiceSelect(serviceId);
-      // Reset scent selection when changing service
       onScentSelect(null);
     }
   };
 
   const handleScentSelect = (e, scentId) => {
-    e.stopPropagation(); // Prevent service expansion toggle
+    e.stopPropagation();
     onScentSelect(scentId);
   };
 
@@ -50,15 +45,15 @@ const ServiceList = ({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light"></div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light dark:border-orange-500" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-8 text-red-600">
+      <div className="text-center py-8 text-red-600 dark:text-red-400">
         {error}
       </div>
     );
@@ -72,11 +67,10 @@ const ServiceList = ({
           <motion.div
             key={serviceId}
             className={`
-              bg-background-light rounded-lg overflow-hidden 
-              ${
-                selectedService === serviceId
-                  ? "border-2 border-primary-light shadow-lg shadow-primary-light/10"
-                  : "border border-border-DEFAULT hover:border-border-dark"
+              rounded-lg overflow-hidden relative  
+              ${selectedService === serviceId
+                ? "ring-2 ring-primary-light dark:ring-orange-500" 
+                : "" 
               }
             `}
             initial={{ opacity: 0, y: 20 }}
@@ -84,35 +78,37 @@ const ServiceList = ({
             transition={{ duration: 0.3 }}
           >
             <div
-              className="p-4 cursor-pointer hover:bg-background-dark transition-colors duration-200"
+              className="p-4 cursor-pointer border border-border-light dark:border-stone-700 rounded-lg 
+                         bg-background-light dark:bg-stone-800
+                         hover:bg-background-dark dark:hover:bg-stone-700 transition-colors duration-200" 
               onClick={() => handleServiceClick(service)}
             >
               <div className="flex justify-between items-center">
                 <div className="flex-grow">
-                  <h3 className="text-lg font-semibold text-content-dark">
+                  <h3 className="text-lg font-semibold text-content-dark dark:text-white">
                     {service.name}
                   </h3>
                   <ul className="mt-2 space-y-1">
                     {service.features?.map((feature, index) => (
                       <li 
                         key={`${serviceId}-feature-${index}`}
-                        className="flex items-center text-sm text-content-light"
+                        className="flex items-center text-sm text-content-light dark:text-stone-400"
                       >
-                        <Check className="w-4 h-4 mr-2 text-primary-light" />
+                        <Check className="w-4 h-4 mr-2 text-primary-light dark:text-orange-500" />
                         {feature}
                       </li>
                     ))}
                   </ul>
                 </div>
                 <div className="flex flex-col items-end ml-4">
-                  <span className="text-lg font-bold text-primary-DEFAULT">
+                  <span className="text-lg font-bold text-primary-DEFAULT dark:text-orange-500">
                     ${getPrice(service)}
                   </span>
                   <div className="mt-2">
                     {expandedService === serviceId ? (
-                      <ChevronUp className="w-5 h-5 text-content-light" />
+                      <ChevronUp className="w-5 h-5 text-content-light dark:text-stone-500" />
                     ) : (
-                      <ChevronDown className="w-5 h-5 text-content-light" />
+                      <ChevronDown className="w-5 h-5 text-content-light dark:text-stone-500" />
                     )}
                   </div>
                 </div>
@@ -126,10 +122,10 @@ const ServiceList = ({
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="border-t border-border-light"
+                  className="border-t border-border-light dark:border-stone-700"
                 >
-                  <div className="p-4 bg-background-DEFAULT">
-                    <h4 className="text-sm font-semibold text-content-DEFAULT mb-3">
+                  <div className="p-4 bg-background-DEFAULT dark:bg-stone-900">
+                    <h4 className="text-sm font-semibold text-content-DEFAULT dark:text-white mb-3">
                       Select your preferred scent:
                     </h4>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -139,10 +135,9 @@ const ServiceList = ({
                           onClick={(e) => handleScentSelect(e, scent.id)}
                           className={`
                             p-3 rounded-lg text-sm font-medium transition-all duration-200
-                            ${
-                              selectedScent === scent.id
-                                ? "bg-primary-light text-white shadow-lg shadow-primary-light/30"
-                                : "bg-background-light text-content-DEFAULT hover:bg-background-dark border border-border-light"
+                            ${selectedScent === scent.id
+                              ? "bg-primary-light dark:bg-orange-500 text-white shadow-lg shadow-primary-light/30 dark:shadow-orange-500/30"
+                              : "bg-background-light dark:bg-stone-800 text-content-DEFAULT dark:text-stone-300 hover:bg-background-dark dark:hover:bg-stone-700 border border-border-light dark:border-stone-700"
                             }
                           `}
                           whileHover={{ scale: 1.02 }}
@@ -159,11 +154,12 @@ const ServiceList = ({
           </motion.div>
         );
       })}
+
       {canProceedToDetails && (
-        <div className="sticky bottom-0 left-0 right-0 p-4 bg-background-light/95 backdrop-blur-sm border-t border-border-light">
+        <div className="sticky bottom-0 left-0 right-0 p-4 bg-background-light/95 dark:bg-stone-900/95 backdrop-blur-sm border-t border-border-light dark:border-stone-700">
           <motion.button
             onClick={onContinue}
-            className="w-full p-3 rounded-lg bg-primary-light text-white hover:bg-primary-DEFAULT transition-colors duration-200"
+            className="w-full p-3 rounded-lg bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600 transition-colors duration-200"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >

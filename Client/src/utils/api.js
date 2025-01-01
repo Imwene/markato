@@ -21,7 +21,7 @@ const api = {
       if (!response.ok) {
         throw new Error(data.error || 'API request failed');
       }
-
+      
       return data;
     } catch (error) {
       console.error('API Error:', error);

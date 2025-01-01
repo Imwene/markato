@@ -12,7 +12,9 @@ import { Plus, Edit2, Save, X, ArrowUp, ArrowDown } from "lucide-react";
 import api from "../../../utils/api";
 import { CONFIG } from "../../../config/config.js";
 
+
 const ConfigurationManager = () => {
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("vehicleTypes");
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [scents, setScents] = useState([]);
@@ -29,21 +31,30 @@ const ConfigurationManager = () => {
     switch (type) {
       case "vehicle-types":
         return {
+          // Vehicle types use string IDs, so we'll handle this differently
           id: "",
           label: "",
           isActive: true,
           sortOrder: 0,
         };
       case "scents":
+        // For scents, auto-increment numeric ID
+        const nextScentId = scents.length > 0
+          ? Math.max(...scents.map(scent => scent.id)) + 1
+          : 1;
         return {
-          id: "",
+          id: nextScentId,
           name: "",
           isActive: true,
           sortOrder: 0,
         };
       case "optional-services":
+        // For optional services, auto-increment numeric ID
+        const nextServiceId = optionalServices.length > 0
+          ? Math.max(...optionalServices.map(service => service.id)) + 1
+          : 1;
         return {
-          id: "",
+          id: nextServiceId,
           name: "",
           description: "",
           price: 0,
@@ -64,6 +75,7 @@ const ConfigurationManager = () => {
   const fetchConfigurations = async () => {
     try {
       setLoading(true);
+      
       const [vehicleTypesData, scentsData, optionalServicesData] =
         await Promise.all([
           api.get(CONFIG.ENDPOINTS.CONFIG.VEHICLE_TYPES),
@@ -85,29 +97,47 @@ const ConfigurationManager = () => {
   const handleSave = async (type) => {
     try {
       let response;
-
-      if (editingId === "new") {
-        // Create new item
-        response = await api.post(CONFIG.ENDPOINTS.CONFIG.BASE(type), editForm);
-        //console.log("Creating new item:", type, editForm);
+      let payload = { ...editForm };
+  
+      // Handle ID conversions based on type
+      if (type === "vehicle-types") {
+        // Vehicle types use string IDs, validate it's not empty
+        if (!payload.id.trim()) {
+          setError("Vehicle type ID cannot be empty");
+          return;
+        }
       } else {
-        // Update existing item
+        // Scents and optional services use numeric IDs
+        payload.id = parseInt(payload.id);
+        if (isNaN(payload.id) || payload.id < 1) {
+          setError("ID must be a positive number");
+          return;
+        }
+        
+        // Add price conversion for optional services
+        if (type === "optional-services") {
+          payload.price = parseFloat(payload.price);
+        }
+      }
+  
+      if (editingId === "new") {
+        response = await api.post(CONFIG.ENDPOINTS.CONFIG.BASE(type), payload);
+      } else {
         response = await api.put(
           CONFIG.ENDPOINTS.CONFIG.BY_ID(type, editingId),
-          editForm
+          payload
         );
-        //console.log("Updating item:", type, editingId, editForm);
       }
-
+  
       if (response.success) {
-        await fetchConfigurations(); // Refresh the list
+        await fetchConfigurations();
         setEditingId(null);
         setEditForm({});
-      } else {
-        console.error("Save failed:", response.error);
+        setError(null);
       }
     } catch (error) {
       console.error("Error saving configuration:", error);
+      setError(error.message);
     }
   };
 
@@ -145,7 +175,9 @@ const ConfigurationManager = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 
+                        border-primary-light dark:border-orange-500">
+        </div>
       </div>
     );
   }
@@ -158,8 +190,8 @@ const ConfigurationManager = () => {
             onClick={() => setActiveTab("vehicleTypes")}
             className={`px-1 py-4 border-b-2 text-sm font-medium ${
               activeTab === "vehicleTypes"
-                ? "border-primary-light text-primary-light"
-                : "border-transparent text-content-light hover:text-content-DEFAULT hover:border-border-DEFAULT"
+                ? "border-primary-light text-primary-light dark:border-orange-500 dark:text-orange-500"
+                : "border-transparent text-content-light hover:text-content-DEFAULT hover:border-border-DEFAULT dark:text-stone-400 dark:hover:text-stone-200 dark:hover:border-stone-700"
             }`}
           >
             Vehicle Types
@@ -168,8 +200,8 @@ const ConfigurationManager = () => {
             onClick={() => setActiveTab("scents")}
             className={`px-1 py-4 border-b-2 text-sm font-medium ${
               activeTab === "scents"
-                ? "border-primary-light text-primary-light"
-                : "border-transparent text-content-light hover:text-content-DEFAULT hover:border-border-DEFAULT"
+                ? "border-primary-light text-primary-light dark:border-orange-500 dark:text-orange-500"
+                : "border-transparent text-content-light hover:text-content-DEFAULT hover:border-border-DEFAULT dark:text-stone-400 dark:hover:text-stone-200 dark:hover:border-stone-700"
             }`}
           >
             Scents
@@ -178,8 +210,8 @@ const ConfigurationManager = () => {
             onClick={() => setActiveTab("optionalServices")}
             className={`px-1 py-4 border-b-2 text-sm font-medium ${
               activeTab === "optionalServices"
-                ? "border-primary-light text-primary-light"
-                : "border-transparent text-content-light hover:text-content-DEFAULT hover:border-border-DEFAULT"
+                ? "border-primary-light text-primary-light dark:border-orange-500 dark:text-orange-500"
+                : "border-transparent text-content-light hover:text-content-DEFAULT hover:border-border-DEFAULT dark:text-stone-400 dark:hover:text-stone-200 dark:hover:border-stone-700"
             }`}
           >
             Optional Services
@@ -191,16 +223,22 @@ const ConfigurationManager = () => {
         {activeTab === "vehicleTypes" && (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Vehicle Types</h3>
+              <h3 className="text-lg font-semibold text-content-dark dark:text-white">Vehicle Types</h3>
               <button
                 onClick={() => handleAddItem("vehicle-types")}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-primary-light text-white rounded-lg hover:bg-primary-DEFAULT transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm 
+                bg-primary-light dark:bg-orange-500 text-white rounded-lg 
+                hover:bg-primary-DEFAULT dark:hover:bg-orange-600 
+                transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Add Vehicle Type
               </button>
             </div>
-            <div className="w-full overflow-x-auto bg-background-light rounded-lg border border-border-light relative z-0">
+            <div className="w-full overflow-x-auto 
+                bg-background-light dark:bg-stone-800 rounded-lg 
+                border border-border-light dark:border-stone-700 
+                relative z-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -216,14 +254,16 @@ const ConfigurationManager = () => {
                   <TableRow>
                     <TableCell>-</TableCell>
                     <TableCell>
-                      <Input
-                        type="text"
-                        value={editForm.id || ""}
-                        onChange={(e) =>
-                          setEditForm({ ...editForm, id: e.target.value })
-                        }
-                        placeholder="Enter ID"
-                      />
+                    <Input
+  type="text"
+  value={editForm.id || ""}
+  onChange={(e) =>
+    setEditForm({ ...editForm, id: e.target.value })
+  }
+  placeholder="Enter ID (e.g., sedan, suv)"
+  className="lowercase"
+  required
+/>
                     </TableCell>
                     <TableCell>
                       <Input
@@ -244,7 +284,10 @@ const ConfigurationManager = () => {
                             isActive: e.target.value === "true",
                           })
                         }
-                        className="p-2 border rounded-md"
+                        className="p-2 border rounded-md 
+             bg-background-light dark:bg-stone-800
+             border-border-DEFAULT dark:border-stone-700
+             text-content-DEFAULT dark:text-white"
                       >
                         <option value="true">Active</option>
                         <option value="false">Inactive</option>
@@ -254,7 +297,8 @@ const ConfigurationManager = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleSave("vehicle-types")}
-                          className="p-1 text-green-600 hover:bg-green-50 rounded"
+                          className="p-1 text-green-600 dark:text-green-400 
+                          hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
                         >
                           <Save className="w-4 h-4" />
                         </button>
@@ -263,7 +307,8 @@ const ConfigurationManager = () => {
                             setEditingId(null);
                             setEditForm({});
                           }}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded"
+                          className="p-1 text-red-600 dark:text-red-400 
+                          hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -279,7 +324,7 @@ const ConfigurationManager = () => {
                           onClick={() =>
                             handleSort("vehicle-types", type._id, "up")
                           }
-                          className="p-1 hover:bg-background-dark rounded"
+                          className="p-1 hover:bg-background-dark dark:hover:bg-stone-700 rounded"
                         >
                           <ArrowUp className="w-4 h-4" />
                         </button>
@@ -287,7 +332,7 @@ const ConfigurationManager = () => {
                           onClick={() =>
                             handleSort("vehicle-types", type._id, "down")
                           }
-                          className="p-1 hover:bg-background-dark rounded"
+                          className="p-1 hover:bg-background-dark dark:hover:bg-stone-700 rounded"
                         >
                           <ArrowDown className="w-4 h-4" />
                         </button>
@@ -327,7 +372,10 @@ const ConfigurationManager = () => {
                               isActive: e.target.value === "true",
                             })
                           }
-                          className="p-2 border rounded-md"
+                          className="p-2 border rounded-md 
+             bg-background-light dark:bg-stone-800
+             border-border-DEFAULT dark:border-stone-700
+             text-content-DEFAULT dark:text-white"
                         >
                           <option value="true">Active</option>
                           <option value="false">Inactive</option>
@@ -336,8 +384,8 @@ const ConfigurationManager = () => {
                         <span
                           className={`px-2 py-1 rounded-full text-xs ${
                             type.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+      : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
                           }`}
                         >
                           {type.isActive ? "Active" : "Inactive"}
@@ -349,13 +397,15 @@ const ConfigurationManager = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleSave("vehicle-types")}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded"
+                            className="p-1 text-green-600 dark:text-green-400 
+                            hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
                           >
                             <Save className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                            className="p-1 text-red-600 dark:text-red-400 
+                            hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -363,7 +413,7 @@ const ConfigurationManager = () => {
                       ) : (
                         <button
                           onClick={() => handleEdit(type)}
-                          className="p-1 hover:bg-background-dark rounded"
+                          className="p-1 hover:bg-background-dark dark:hover:bg-stone-700 rounded"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -381,16 +431,22 @@ const ConfigurationManager = () => {
         {activeTab === "scents" && (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Scents</h3>
+              <h3 className="text-lg font-semibold text-content-dark dark:text-white">Scents</h3>
               <button
                 onClick={() => handleAddItem("scents")}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-primary-light text-white rounded-lg hover:bg-primary-DEFAULT transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm 
+                bg-primary-light dark:bg-orange-500 text-white rounded-lg 
+                hover:bg-primary-DEFAULT dark:hover:bg-orange-600 
+                transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Add Scent
               </button>
             </div>
-            <div className="w-full overflow-x-auto bg-background-light rounded-lg border border-border-light relative z-0">
+            <div className="w-full overflow-x-auto 
+                bg-background-light dark:bg-stone-800 rounded-lg 
+                border border-border-light dark:border-stone-700 
+                relative z-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -406,17 +462,18 @@ const ConfigurationManager = () => {
                   <TableRow>
                     <TableCell>-</TableCell>
                     <TableCell>
-                      <Input
-                        type="number"
-                        value={editForm.id || ""}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            id: parseInt(e.target.value),
-                          })
-                        }
-                        placeholder="Enter ID"
-                      />
+                    <Input
+  type="number"
+  value={editForm.id || ""}
+  onChange={(e) =>
+    setEditForm({ ...editForm, id: e.target.value })
+  }
+  placeholder="ID will be auto-assigned"
+  min="1"
+  step="1"
+  required
+  disabled={editingId === "new"} // Disable editing for new items since it's auto-assigned
+/>
                     </TableCell>
                     <TableCell>
                       <Input
@@ -437,7 +494,10 @@ const ConfigurationManager = () => {
                             isActive: e.target.value === "true",
                           })
                         }
-                        className="p-2 border rounded-md"
+                        className="p-2 border rounded-md 
+             bg-background-light dark:bg-stone-800
+             border-border-DEFAULT dark:border-stone-700
+             text-content-DEFAULT dark:text-white"
                       >
                         <option value="true">Active</option>
                         <option value="false">Inactive</option>
@@ -447,7 +507,8 @@ const ConfigurationManager = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleSave("scents")}
-                          className="p-1 text-green-600 hover:bg-green-50 rounded"
+                          className="p-1 text-green-600 dark:text-green-400 
+                          hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
                         >
                           <Save className="w-4 h-4" />
                         </button>
@@ -456,7 +517,8 @@ const ConfigurationManager = () => {
                             setEditingId(null);
                             setEditForm({});
                           }}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded"
+                          className="p-1 text-red-600 dark:text-red-400 
+                          hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -470,7 +532,7 @@ const ConfigurationManager = () => {
                       <div className="flex gap-1">
                         <button
                           onClick={() => handleSort("scents", scent._id, "up")}
-                          className="p-1 hover:bg-background-dark rounded"
+                          className="p-1 hover:bg-background-dark dark:hover:bg-stone-700 rounded"
                         >
                           <ArrowUp className="w-4 h-4" />
                         </button>
@@ -478,7 +540,7 @@ const ConfigurationManager = () => {
                           onClick={() =>
                             handleSort("scents", scent._id, "down")
                           }
-                          className="p-1 hover:bg-background-dark rounded"
+                          className="p-1 hover:bg-background-dark dark:hover:bg-stone-700 rounded"
                         >
                           <ArrowDown className="w-4 h-4" />
                         </button>
@@ -522,7 +584,10 @@ const ConfigurationManager = () => {
                               isActive: e.target.value === "true",
                             })
                           }
-                          className="p-2 border rounded-md"
+                          className="p-2 border rounded-md 
+             bg-background-light dark:bg-stone-800
+             border-border-DEFAULT dark:border-stone-700
+             text-content-DEFAULT dark:text-white"
                         >
                           <option value="true">Active</option>
                           <option value="false">Inactive</option>
@@ -531,8 +596,8 @@ const ConfigurationManager = () => {
                         <span
                           className={`px-2 py-1 rounded-full text-xs ${
                             scent.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+      : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
                           }`}
                         >
                           {scent.isActive ? "Active" : "Inactive"}
@@ -544,13 +609,15 @@ const ConfigurationManager = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleSave("scents")}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded"
+                            className="p-1 text-green-600 dark:text-green-400 
+                            hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
                           >
                             <Save className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                            className="p-1 text-red-600 dark:text-red-400 
+                            hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -558,7 +625,7 @@ const ConfigurationManager = () => {
                       ) : (
                         <button
                           onClick={() => handleEdit(scent)}
-                          className="p-1 hover:bg-background-dark rounded"
+                          className="p-1 hover:bg-background-dark dark:hover:bg-stone-700 rounded"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -577,16 +644,22 @@ const ConfigurationManager = () => {
         {activeTab === "optionalServices" && (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Optional Services</h3>
+              <h3 className="text-lg font-semibold text-content-dark dark:text-white">Optional Services</h3>
               <button
                 onClick={() => handleAddItem("optional-services")}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-primary-light text-white rounded-lg hover:bg-primary-DEFAULT transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm 
+                bg-primary-light dark:bg-orange-500 text-white rounded-lg 
+                hover:bg-primary-DEFAULT dark:hover:bg-orange-600 
+                transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Add Optional Service
               </button>
             </div>
-            <div className="w-full overflow-x-auto bg-background-light rounded-lg border border-border-light relative z-0">
+            <div className="w-full overflow-x-auto 
+                bg-background-light dark:bg-stone-800 rounded-lg 
+                border border-border-light dark:border-stone-700 
+                relative z-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -604,17 +677,18 @@ const ConfigurationManager = () => {
                   <TableRow>
                     <TableCell>-</TableCell>
                     <TableCell>
-                      <Input
-                        type="number"
-                        value={editForm.id || ""}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            id: parseInt(e.target.value),
-                          })
-                        }
-                        placeholder="Enter ID"
-                      />
+                    <Input
+  type="number"
+  value={editForm.id || ""}
+  onChange={(e) =>
+    setEditForm({ ...editForm, id: e.target.value })
+  }
+  placeholder="ID will be auto-assigned"
+  min="1"
+  step="1"
+  required
+  disabled={editingId === "new"} // Disable editing for new items since it's auto-assigned
+/>
                     </TableCell>
                     <TableCell>
                       <Input
@@ -661,7 +735,10 @@ const ConfigurationManager = () => {
                             isActive: e.target.value === "true",
                           })
                         }
-                        className="p-2 border rounded-md"
+                        className="p-2 border rounded-md 
+             bg-background-light dark:bg-stone-800
+             border-border-DEFAULT dark:border-stone-700
+             text-content-DEFAULT dark:text-white"
                       >
                         <option value="true">Active</option>
                         <option value="false">Inactive</option>
@@ -671,7 +748,8 @@ const ConfigurationManager = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleSave("optional-services")}
-                          className="p-1 text-green-600 hover:bg-green-50 rounded"
+                          className="p-1 text-green-600 dark:text-green-400 
+                          hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
                         >
                           <Save className="w-4 h-4" />
                         </button>
@@ -680,7 +758,8 @@ const ConfigurationManager = () => {
                             setEditingId(null);
                             setEditForm({});
                           }}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded"
+                          className="p-1 text-red-600 dark:text-red-400 
+                          hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -696,7 +775,7 @@ const ConfigurationManager = () => {
                           onClick={() =>
                             handleSort("optional-services", service._id, "up")
                           }
-                          className="p-1 hover:bg-background-dark rounded"
+                          className="p-1 hover:bg-background-dark dark:hover:bg-stone-700 rounded"
                         >
                           <ArrowUp className="w-4 h-4" />
                         </button>
@@ -704,7 +783,7 @@ const ConfigurationManager = () => {
                           onClick={() =>
                             handleSort("optional-services", service._id, "down")
                           }
-                          className="p-1 hover:bg-background-dark rounded"
+                          className="p-1 hover:bg-background-dark dark:hover:bg-stone-700 rounded"
                         >
                           <ArrowDown className="w-4 h-4" />
                         </button>
@@ -779,7 +858,10 @@ const ConfigurationManager = () => {
                               isActive: e.target.value === "true",
                             })
                           }
-                          className="p-2 border rounded-md"
+                          className="p-2 border rounded-md 
+             bg-background-light dark:bg-stone-800
+             border-border-DEFAULT dark:border-stone-700
+             text-content-DEFAULT dark:text-white"
                         >
                           <option value="true">Active</option>
                           <option value="false">Inactive</option>
@@ -788,8 +870,8 @@ const ConfigurationManager = () => {
                         <span
                           className={`px-2 py-1 rounded-full text-xs ${
                             service.isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+      : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
                           }`}
                         >
                           {service.isActive ? "Active" : "Inactive"}
@@ -801,13 +883,15 @@ const ConfigurationManager = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleSave("optional-services")}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded"
+                            className="p-1 text-green-600 dark:text-green-400 
+                            hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
                           >
                             <Save className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded"
+                            className="p-1 text-red-600 dark:text-red-400 
+                            hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -815,7 +899,7 @@ const ConfigurationManager = () => {
                       ) : (
                         <button
                           onClick={() => handleEdit(service)}
-                          className="p-1 hover:bg-background-dark rounded"
+                          className="p-1 hover:bg-background-dark dark:hover:bg-stone-700 rounded"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>

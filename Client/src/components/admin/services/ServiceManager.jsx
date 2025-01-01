@@ -83,7 +83,7 @@ const ServiceManager = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light dark:border-orange-500" />
       </div>
     );
   }
@@ -91,40 +91,45 @@ const ServiceManager = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-content-dark">
+        <h1 className="text-2xl font-bold text-content-dark dark:text-white">
           Service Management
         </h1>
         <button
           onClick={handleAddService}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-light text-white rounded-lg 
-                   hover:bg-primary-DEFAULT transition-colors"
+          className="flex items-center gap-2 px-4 py-2 
+                   bg-primary-light dark:bg-orange-500 text-white rounded-lg 
+                   hover:bg-primary-DEFAULT dark:hover:bg-orange-600 
+                   transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add Service
         </button>
       </div>
 
-      <div className="w-full overflow-x-auto bg-background-light rounded-lg border border-border-light relative z-0">
+      <div className="w-full overflow-x-auto 
+                    bg-background-light dark:bg-stone-800 
+                    rounded-lg border border-border-light dark:border-stone-700 
+                    relative z-0">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Service Name</TableHead>
-              <TableHead>Features</TableHead>
-              <TableHead>Pricing</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-content-light dark:text-stone-400">Service Name</TableHead>
+              <TableHead className="text-content-light dark:text-stone-400">Features</TableHead>
+              <TableHead className="text-content-light dark:text-stone-400">Pricing</TableHead>
+              <TableHead className="text-content-light dark:text-stone-400">Status</TableHead>
+              <TableHead className="text-right text-content-light dark:text-stone-400">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {services.map((service) => (
               <TableRow key={service._id}>
-                <TableCell className="font-medium text-content-DEFAULT">
+                <TableCell className="font-medium text-content-DEFAULT dark:text-white">
                   {service.name}
                 </TableCell>
                 <TableCell>
                   <ul className="list-disc list-inside">
                     {service.features.map((feature, index) => (
-                      <li key={index} className="text-sm text-content-light">
+                      <li key={index} className="text-sm text-content-light dark:text-stone-400">
                         {feature}
                       </li>
                     ))}
@@ -134,10 +139,10 @@ const ServiceManager = () => {
                   <div className="space-y-1">
                     {vehicleTypes.map((vehicleType) => (
                       <div key={vehicleType.id} className="text-sm">
-                        <span className="text-content-light capitalize">
+                        <span className="text-content-light dark:text-stone-400 capitalize">
                           {vehicleType.label}:
                         </span>
-                        <span className="text-primary-DEFAULT">
+                        <span className="text-primary-DEFAULT dark:text-orange-500 ml-1">
                           ${service.vehiclePricing[vehicleType.id] || 0}
                         </span>
                       </div>
@@ -148,8 +153,8 @@ const ServiceManager = () => {
                   <span
                     className={`px-2 py-1 rounded-full text-xs ${
                       service.isActive
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
                     }`}
                   >
                     {service.isActive ? "Active" : "Inactive"}
@@ -159,13 +164,15 @@ const ServiceManager = () => {
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => handleEditService(service)}
-                      className="p-2 hover:bg-background-dark rounded-lg transition-colors text-content-light"
+                      className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 
+                               rounded-lg transition-colors text-content-light dark:text-stone-400"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteService(service._id)}
-                      className="p-2 hover:bg-background-dark rounded-lg transition-colors text-red-500"
+                      className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 
+                               rounded-lg transition-colors text-red-500"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -186,19 +193,16 @@ const ServiceManager = () => {
           }}
           onSave={(updatedService) => {
             if (editingService?._id) {
-              // Update existing service
               setServices(
                 services.map((s) =>
                   s._id === updatedService._id ? updatedService : s
                 )
               );
             } else {
-              // Add new service
               setServices([...services, updatedService]);
             }
             setIsModalOpen(false);
             setEditingService(null);
-            //fetchServices(); // Refresh the list
           }}
         />
       )}

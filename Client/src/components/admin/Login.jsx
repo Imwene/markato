@@ -37,12 +37,20 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background-light">
-      <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-lg">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-content-dark">Admin Login</h2>
-          <p className="text-content-light mt-2">Enter your credentials to access the admin panel</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center 
+                bg-background-light dark:bg-stone-900">
+  <div className="max-w-md w-full p-6 
+                  bg-white dark:bg-stone-800 
+                  rounded-lg shadow-lg">
+    <div className="text-center mb-8">
+      <h2 className="text-2xl font-bold 
+                     text-content-dark dark:text-white">
+        Admin Login
+      </h2>
+      <p className="text-content-light dark:text-stone-400 mt-2">
+        Enter your credentials to access the admin panel
+      </p>
+    </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {(loginError || error) && (
@@ -60,9 +68,13 @@ const Login = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 
-                       focus:ring-primary-light bg-background-light border-border-DEFAULT
-                       text-content-DEFAULT placeholder:text-content-light"
+              className="w-full p-3 border rounded-lg
+              focus:outline-none focus:ring-2 
+              focus:ring-primary-light dark:focus:ring-orange-500
+              bg-background-light dark:bg-stone-900
+              border-border-DEFAULT dark:border-stone-700
+              text-content-DEFAULT dark:text-white
+              placeholder:text-content-light dark:placeholder:text-stone-500"
               placeholder="Enter your email"
               required
             />
@@ -77,9 +89,13 @@ const Login = () => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 
-                       focus:ring-primary-light bg-background-light border-border-DEFAULT
-                       text-content-DEFAULT placeholder:text-content-light"
+              className="w-full p-3 border rounded-lg
+              focus:outline-none focus:ring-2 
+              focus:ring-primary-light dark:focus:ring-orange-500
+              bg-background-light dark:bg-stone-900
+              border-border-DEFAULT dark:border-stone-700
+              text-content-DEFAULT dark:text-white
+              placeholder:text-content-light dark:placeholder:text-stone-500"
               placeholder="Enter your password"
               required
             />
@@ -87,8 +103,11 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full p-3 bg-primary-light text-white rounded-lg 
-                     hover:bg-primary-DEFAULT transition-colors"
+            className="w-full p-3 
+            bg-primary-light dark:bg-orange-500 
+            text-white rounded-lg 
+            hover:bg-primary-DEFAULT dark:hover:bg-orange-600 
+            transition-colors"
           >
             Sign In
           </button>

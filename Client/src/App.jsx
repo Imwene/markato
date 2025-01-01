@@ -4,11 +4,13 @@ import { ServicesProvider } from "./context/ServicesContext";
 import { ConfigProvider } from "./context/ConfigContext";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ThemeToggle from "./components/ui/ThemeToggle";
 
 // Eagerly load critical components
 import Navbar from "./components/Navbar";
 import LoadingSpinner from "./components/ui/LoadingSpinner";
 import { performanceMonitor } from "./utils/performance";
+import { cacheManager } from "./utils/performance";
 
 // In your App.jsx
 
@@ -56,6 +58,7 @@ const App = () => {
                 </div>
               }
             >
+              <ThemeToggle />
               <Routes>
                 <Route path="/login" element={<Login />} />
 

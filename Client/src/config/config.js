@@ -8,7 +8,8 @@ export const CONFIG = {
         DASHBOARD: '/admin/dashboard',
         BOOKINGS: {
           BASE: '/admin/bookings',
-          DELETE_ALL: '/admin/bookings/delete-all'
+          DELETE_ALL: '/admin/bookings/delete-all',
+          WEEKLY: '/admin/bookings/weekly',
         }
       },
       CONFIG: {

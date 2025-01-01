@@ -102,14 +102,14 @@ const BookingComponent = () => {
     if (bookingStep === "confirmation") return null;
 
     return (
-      <div className="sticky bottom-0 left-0 right-0 p-4 bg-background-light/95 backdrop-blur-sm border-t border-border-light">
+      <div className="sticky bottom-0 left-0 right-0 p-4 bg-background-light/95 dark:bg-stone-900/95 backdrop-blur-sm border-t border-border-light dark:border-stone-700">
         {bookingStep === "service" && (
           <motion.button
             onClick={handleNext}
             className={`w-full p-3 rounded-lg transition-colors duration-200 ${
               canProceedToDetails
-                ? "bg-primary-light text-white hover:bg-primary-DEFAULT"
-                : "bg-background-dark text-content-light cursor-not-allowed"
+                ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
+                : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
             }`}
             whileHover={canProceedToDetails ? { scale: 1.02 } : {}}
             whileTap={canProceedToDetails ? { scale: 0.98 } : {}}
@@ -120,66 +120,19 @@ const BookingComponent = () => {
               : "Select a package and scent to continue"}
           </motion.button>
         )}
-
-        {/* {bookingStep === "options" && (
-          <div className="space-y-3">
-            <motion.button
-              onClick={handleNext}
-              className="w-full p-3 rounded-lg bg-primary-light text-white hover:bg-primary-DEFAULT transition-colors duration-200"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Continue to Booking Details
-            </motion.button>
-            <motion.button
-              onClick={handleBack}
-              className="w-full p-3 rounded-lg bg-background-DEFAULT text-content-DEFAULT border border-border-DEFAULT hover:bg-background-dark transition-colors duration-200"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Back to Services
-            </motion.button>
-          </div>
-        )} */}
-
-        {/* {bookingStep === "details" && (
-          <div className="space-y-3">
-            <motion.button
-              onClick={handleBookingSubmit}
-              className={`w-full p-3 rounded-lg transition-colors duration-200 ${
-                isFormValid
-                  ? "bg-primary-light text-white hover:bg-primary-DEFAULT"
-                  : "bg-background-dark text-content-light cursor-not-allowed"
-              }`}
-              whileHover={isFormValid ? { scale: 1.02 } : {}}
-              whileTap={isFormValid ? { scale: 0.98 } : {}}
-              disabled={!isFormValid}
-            >
-              Complete Booking
-            </motion.button>
-            <motion.button
-              onClick={handleBack}
-              className="w-full p-3 rounded-lg bg-background-DEFAULT text-content-DEFAULT border border-border-DEFAULT hover:bg-background-dark transition-colors duration-200"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Back to Addons
-            </motion.button>
-          </div>
-        )} */}
       </div>
     );
   };
 
   return (
-    <div id="booking-component" className="card max-w-[1000px] mx-auto">
+    <div id="booking-component" className="max-w-[1000px] mx-auto">
       <div className="text-center mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-content-dark">
+        <h2 className="text-2xl sm:text-3xl font-bold text-content-dark dark:text-white">
           {bookingStep === "options"
             ? "Enhance Your Service"
             : "Choose Your Service Type"}
         </h2>
-        <p className="text-content-light mt-2">
+        <p className="text-content-light dark:text-stone-400 mt-2">
           {bookingStep === "options"
             ? "Add optional services to customize your experience"
             : "Select the service option that best fits your schedule"}
@@ -193,21 +146,23 @@ const BookingComponent = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          className="pb-24"
+          className="rounded-lg border-border-DEFAULT dark:border-stone-700 bg-background-light dark:bg-stone-800 overflow-hidden"
         >
           {loading ? (
             <div className="flex justify-center items-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light dark:border-orange-500" />
             </div>
           ) : (
             renderStepContent()
           )}
         </motion.div>
       </AnimatePresence>
+
       {renderStepButtons()}
+      
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-lg mb-4">
-          {error}
+        <div className="mt-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800">
+          <p className="text-red-600 dark:text-red-400">{error}</p>
         </div>
       )}
     </div>

@@ -129,22 +129,28 @@ const BookingForm = ({
   };
 
   const isValidPhoneNumber = (phone) => phoneRegex.test(phone);
-
-  const selectClassName = `
-    w-full p-3 pl-4 pr-10 border border-border-DEFAULT rounded-lg 
-    bg-background-light focus:ring-2 focus:ring-primary-light 
-    text-content-DEFAULT appearance-none cursor-pointer 
-    hover:border-border-dark transition-colors
-  `;
+  
 
   const inputClassName = `
-    w-full p-3 border rounded-lg focus:outline-none focus:ring-2 
-    focus:ring-primary-light bg-background-light border-border-DEFAULT
-    text-content-DEFAULT placeholder:text-content-light
-  `;
+  w-full p-3 rounded-lg shadow-sm transition-colors duration-200
+  focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-orange-500
+  bg-white dark:bg-stone-800 
+  text-content-DEFAULT dark:text-white 
+  placeholder:text-content-light dark:placeholder:text-stone-400
+  hover:bg-gray-50 dark:hover:bg-stone-700/50
+`;
+
+  const selectClassName = `
+  w-full p-3 rounded-lg shadow-sm transition-colors duration-200
+  focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-orange-500
+  bg-white dark:bg-stone-800 
+  text-content-DEFAULT dark:text-white 
+  placeholder:text-content-light dark:placeholder:text-stone-400
+  hover:bg-gray-50 dark:hover:bg-stone-700/50
+`;
 
   return (
-    <div className="relative pb-32">
+    <div className="relative">
       {" "}
       {/* Added padding bottom for sticky buttons */}
       <motion.div
@@ -153,7 +159,7 @@ const BookingForm = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h2 className="text-2xl font-bold mb-4 text-content-dark">
+        <h2 className="text-2xl font-bold mb-4 text-content-dark dark:text-white">
           Booking Details
         </h2>
 
@@ -307,7 +313,7 @@ const BookingForm = ({
                   ))}
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <ChevronDown className="h-4 w-4 text-content-light" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-content-light dark:text-stone-400 pointer-events-none" />
                 </div>
                 {touchedFields.date && !selectedDate && (
                   <span className="text-red-500 text-sm mt-1" id="dateError">
@@ -350,10 +356,10 @@ const BookingForm = ({
             </div>
 
             {/* CAPTCHA */}
-            <div className="bg-background-DEFAULT p-4 rounded-lg border border-border-DEFAULT">
+            <div className="p-4 rounded-lg border-2 border-border-DEFAULT dark:border-stone-700 bg-background-DEFAULT dark:bg-stone-800">
               <label
                 htmlFor="captcha"
-                className="block mb-2 font-semibold text-content-dark"
+                className="block mb-2 font-medium text-content-dark dark:text-white"
               >
                 {captcha.question}
               </label>
@@ -377,45 +383,18 @@ const BookingForm = ({
           </div>
         </form>
       </motion.div>
-      {/* Navigation Buttons - Outside form but inside container */}
-      {/* <div className="fixed bottom-0 left-0 right-0 p-4 bg-background-light/95 backdrop-blur-sm border-t border-border-light">
-        <div className="max-w-[1000px] mx-auto space-y-3">
-          <motion.button
-            type="button"
-            onClick={handleSubmitForm}
-            disabled={!isFormValid}
-            className={`w-full p-3 rounded-lg transition-colors duration-200 ${
-              isFormValid
-                ? "bg-primary-light text-white hover:bg-primary-DEFAULT"
-                : "bg-background-dark text-content-light cursor-not-allowed"
-            }`}
-            whileHover={isFormValid ? { scale: 1.02 } : {}}
-            whileTap={isFormValid ? { scale: 0.98 } : {}}
-          >
-            Complete Booking
-          </motion.button>
-          <motion.button
-            type="button"
-            onClick={onBack}
-            className="w-full p-3 rounded-lg bg-background-DEFAULT text-content-DEFAULT border border-border-DEFAULT hover:bg-background-dark transition-colors duration-200"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            Back to Addons
-          </motion.button>
-        </div>
-      </div> */}
+      
       {/* Navigation Buttons - Change from fixed to sticky */}
-      <div className="sticky bottom-0 left-0 right-0 p-4 bg-background-light/95 backdrop-blur-sm border-t border-border-light">
+      <div className="sticky bottom-0 left-0 right-0 p-4 bg-background-light/95 dark:bg-stone-900/95 backdrop-blur-sm border-t border-border-light dark:border-stone-700">
         <div className="max-w-[1000px] mx-auto space-y-3">
           <motion.button
             type="button"
             onClick={handleSubmitForm}
             disabled={!isFormValid}
             className={`w-full p-3 rounded-lg transition-colors duration-200 ${
-              !isFormValid // Changed condition here
-                ? "bg-background-dark text-content-light cursor-not-allowed"
-                : "bg-primary-light text-white hover:bg-primary-DEFAULT"
+              isFormValid  // Removed the ! to fix the condition
+                ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
+                : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
             }`}
             whileHover={isFormValid ? { scale: 1.02 } : {}}
             whileTap={isFormValid ? { scale: 0.98 } : {}}
@@ -425,7 +404,7 @@ const BookingForm = ({
           <motion.button
             type="button"
             onClick={handleBack}
-            className="w-full p-3 rounded-lg bg-background-DEFAULT text-content-DEFAULT border border-border-DEFAULT hover:bg-background-dark transition-colors duration-200"
+            className="w-full p-3 rounded-lg bg-background-DEFAULT dark:bg-stone-800 text-content-DEFAULT dark:text-white border border-border-DEFAULT dark:border-stone-700 hover:bg-background-dark dark:hover:bg-stone-700 transition-colors duration-200"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >

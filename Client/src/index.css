@@ -6,18 +6,42 @@
 
 :root {
   font-family: "Poppins", sans-serif;
-  /* Removed color-scheme: dark */
-  background-color: theme('colors.background.light');
-  color: theme('colors.content.DEFAULT');
+  background-color: var(--background-light); /* Use background-light variable */
+  color: var(--content-DEFAULT); /* Use content-DEFAULT variable */ 
 }
 
 * {
-  /* Optional: Add smooth transitions for color changes */
   transition-property: color, background-color, border-color;
   transition-duration: 200ms;
 }
 
-.logo {
-  width: 150px; /* Adjust as needed */
-  height: auto;  /* Maintain aspect ratio */
+/* index.css with improved dark mode styles */
+@layer base {
+  :root {
+    --primary-light: #facc15;    
+    --primary-DEFAULT: #fbbf24;  
+    --primary-dark: #f59e0b;     
+
+    --background-light: #ffffff;  
+    --background-DEFAULT: #f3f4f6;
+    --background-dark: #e5e7eb;   
+
+    --content-light: #4b5563;     
+    --content-DEFAULT: #374151;   
+    --content-dark: #1f2937;      
+  }
+
+  .dark {
+    --primary-light: #f97316;    
+    --primary-DEFAULT: #ea580c; 
+    --primary-dark: #c2410c;    
+    
+    --background-light: #1c1917;  
+    --background-DEFAULT: #292524;
+    --background-dark: #1c1917;   
+    
+    --content-light: #d6d3d1;    
+    --content-DEFAULT: #e7e5e4;   
+    --content-dark: #f5f5f4;      
+  }
 }

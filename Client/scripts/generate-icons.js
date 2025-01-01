@@ -11,7 +11,7 @@ const sizes = [
 ];
 
 async function generateIcons() {
-  const inputSvg = await fs.readFile('src/assets/markato-icon.svg');
+  const inputSvg = await fs.readFile('src/assets/markato-logo.svg');
   
   for (const { size, name } of sizes) {
     await sharp(inputSvg)

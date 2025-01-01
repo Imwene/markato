@@ -1,7 +1,7 @@
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import markatoLogo from "../assets/markato-logo.svg";
+import markatoLogo from "../assets/png_markato.png";
 import { navItems } from "../constants";
 
 const Navbar = () => {
@@ -15,17 +15,16 @@ const Navbar = () => {
   const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId.replace("#", ""));
     if (element) {
-      const yOffset = -80; // Adjust this value based on your navbar height
-      const y =
-        element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      const yOffset = -72; // Reduced from -80 to match new navbar height
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: "smooth" });
-      setMobileDrawerOpen(false); // Close the mobile menu after clicking
+      setMobileDrawerOpen(false);
     }
   };
 
   return (
-    <nav className="sticky top-0 z-50 py-3 bg-background-light/80 backdrop-blur-lg border-b border-border-light shadow-sm">
-      <div className="container px-4 mx-auto relative lg:text-sm">
+    <nav className="sticky top-0 z-50 py-3 bg-background-light/80 dark:bg-stone-900/80 backdrop-blur-lg border-b border-border-light dark:border-stone-800 shadow-sm">
+      <div className="container px-4 mx-auto relative">
         <div className="flex justify-between items-center">
           <div className="flex items-center flex-shrink-0">
             <Link
@@ -33,20 +32,25 @@ const Navbar = () => {
               className="flex items-center"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             >
-              <img className="logo" src={markatoLogo} alt="Markato" />
-              {/* <span className="text-xl tracking-tight font-semibold text-content-dark">
-                Markato
-              </span> */}
+              <img 
+                className="h-10 sm:h-14 w-auto object-contain
+                         dark:[filter:brightness(0)_invert(1)_brightness(100%)_contrast(100%)]
+                         transition-[filter] duration-300"
+                src={markatoLogo} 
+                alt="Markato Auto Detail" 
+              />
             </Link>
           </div>
 
-          <ul className="hidden lg:flex ml-14 space-x-12">
+          <ul className="hidden lg:flex space-x-8 text-sm">
             {navItems.map((item, index) => (
               <li key={index}>
                 <Link
-                  to={item.href} // Use Link component for internal links
-                  onClick={() => scrollToSection(item.href)} // Scroll to section on click
-                  className="text-content-DEFAULT hover:text-primary-light transition-colors cursor-pointer"
+                  to={item.href}
+                  onClick={() => scrollToSection(item.href)}
+                  className="text-content-DEFAULT hover:text-red-600
+                    dark:text-stone-400 dark:hover:text-red-500
+                    transition-colors cursor-pointer"
                 >
                   {item.label}
                 </Link>
@@ -54,29 +58,29 @@ const Navbar = () => {
             ))}
           </ul>
 
-          <div className="lg:hidden md:flex flex-col justify-end">
-            <button
-              onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)}
-              className="p-2 text-content-DEFAULT hover:bg-background-dark rounded-md transition-colors"
-              aria-label={mobileDrawerOpen ? "Close menu" : "Open menu"}
-            >
-              {mobileDrawerOpen ? <X /> : <Menu />}
-            </button>
-          </div>
+          <button
+            onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)}
+            className="lg:hidden p-1.5 text-content-DEFAULT dark:text-stone-400
+              hover:bg-background-dark dark:hover:bg-stone-800
+              rounded-md transition-colors"
+            aria-label={mobileDrawerOpen ? "Close menu" : "Open menu"}
+          >
+            {mobileDrawerOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
 
         {mobileDrawerOpen && (
-          <div
-            className="fixed inset-x-0 top-[73px] z-20 bg-background-light border-b border-border-light 
-                        p-6 flex flex-col items-center lg:hidden animate-in fade-in slide-in-from-top"
-          >
-            <ul className="w-full space-y-4">
+          <div className="absolute inset-x-0 top-full bg-background-light dark:bg-stone-900 border-b border-border-light dark:border-stone-800 shadow-lg lg:hidden animate-in slide-in-from-top duration-200">
+            <ul className="py-2">
               {navItems.map((item, index) => (
-                <li key={index} className="text-center">
+                <li key={index}>
                   <Link
                     to={item.href}
                     onClick={() => scrollToSection(item.href)}
-                    className="block w-full py-2 text-content-DEFAULT hover:text-primary-light transition-colors"
+                    className="block px-4 py-2 text-content-DEFAULT dark:text-stone-400
+                      hover:bg-background-dark dark:hover:bg-stone-800
+                      hover:text-red-600 dark:hover:text-red-500
+                      transition-colors"
                   >
                     {item.label}
                   </Link>

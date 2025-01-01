@@ -60,7 +60,9 @@ const Tooltip = ({ children, content }) => {
             top: `${position.top}px`,
             left: `${position.left}px`,
           }}
-          className="z-50 w-64 p-2 text-sm bg-background-light border border-border-DEFAULT rounded-lg shadow-lg text-content-DEFAULT"
+          className="z-50 w-64 p-2 text-sm bg-background-light dark:bg-stone-800 
+          border border-border-DEFAULT dark:border-stone-700 
+          rounded-lg shadow-lg text-content-DEFAULT dark:text-white"
         >
           {content}
         </div>

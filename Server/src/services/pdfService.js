@@ -1,5 +1,7 @@
 import PDFDocument from 'pdfkit';
+import dotenv from 'dotenv';
 
+dotenv.config();
 export const generateBookingPDF = (booking) => {
   const doc = new PDFDocument();
   
@@ -13,6 +15,9 @@ export const generateBookingPDF = (booking) => {
   doc.text(`Vehicle: ${booking.makeModel} (${booking.vehicleType})`);
   doc.moveDown();
   doc.text(`Total Amount: $${booking.totalPrice}`);
+  doc.moveDown();
+  doc.text('Thank you for booking with us!');
+  doc.text(`Contact us at `)
 
   return doc;
 };
