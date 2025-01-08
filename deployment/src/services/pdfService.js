@@ -17,7 +17,7 @@ export const generateBookingPDF = (booking) => {
   doc.text(`Total Amount: $${booking.totalPrice}`);
   doc.moveDown();
   doc.text('Thank you for booking with us!');
-  doc.text(`Contact us at +14158899108 or markatoautodetail@gmail.com.`);
+  doc.text(`Contact us at `)
 
   return doc;
 };

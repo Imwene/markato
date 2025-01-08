@@ -56,7 +56,7 @@ const Footer = () => {
 
       <div className="mt-10 pt-8 border-t border-border-light dark:border-stone-800">
         <p className="text-center text-content-light dark:text-stone-400 text-sm">
-          © 2024 Markato Auto Detailing. All rights reserved.
+          © 2025 Markato Auto Detailing. All rights reserved.
         </p>
       </div>
     </footer>

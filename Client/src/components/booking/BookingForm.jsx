@@ -2,13 +2,13 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-
+import { CONFIG } from "../../config/config";
 const BookingForm = ({
   bookingDetails,
   onInputChange,
   captcha,
   onSubmit,
-  isFormValid,
+  isFormValid: parentIsFormValid,
   onBack,
 }) => {
   const [userCaptchaAnswer, setUserCaptchaAnswer] = useState("");
@@ -23,6 +23,7 @@ const BookingForm = ({
     captcha: false,
     email: false,
   });
+  const [slotAvailability, setSlotAvailability] = useState({});
 
   const phoneRegex =
     /^(\+?1)?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/;
@@ -32,6 +33,8 @@ const BookingForm = ({
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
+
+  const isFormValid = parentIsFormValid && userCaptchaAnswer.trim().length > 0;
 
   const businessHours = [
     "9:00 AM",
@@ -95,9 +98,8 @@ const BookingForm = ({
     updateDateTime(selectedDate, time);
   };
 
-  const updateDateTime = (date, time) => {
+  const updateDateTime = async (date, time) => {
     if (date && time) {
-      // Format the datetime in a standard way
       const formattedDate = new Date(date);
       const combinedDateTime = `${formattedDate.toLocaleDateString("en-US", {
         weekday: "short",
@@ -105,31 +107,85 @@ const BookingForm = ({
         day: "numeric",
         year: "numeric",
       })}, ${time}`;
-
-      onInputChange({
-        target: {
-          name: "dateTime",
-          value: combinedDateTime,
-        },
-      });
+  
+      try {
+        const response = await fetch(
+          `${CONFIG.API_URL}/bookings/check-slot?dateTime=${encodeURIComponent(
+            combinedDateTime
+          )}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+  
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+  
+        const data = await response.json();
+        console.log('Slot availability response:', data); // Debug log
+  
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to check slot availability');
+        }
+  
+        if (!data.available) {
+          alert(`This time slot is fully booked (${data.currentBookings}/${data.maxBookingsPerSlot} bookings). Please select another time.`);
+          setSelectedTime(null);
+          return;
+        }
+  
+        // Update the booking details with the new dateTime
+        onInputChange({
+          target: {
+            name: "dateTime",
+            value: combinedDateTime,
+          },
+        });
+  
+        // Update touched fields state
+        setTouchedFields((prev) => ({
+          ...prev,
+          date: true,
+          time: true,
+        }));
+      } catch (error) {
+        console.error("Error checking slot availability:", error);
+        alert(`Error checking time slot availability: ${error.message}`);
+        setSelectedTime(null);
+      }
     }
   };
+
+  const hasAllRequiredFields = 
+  bookingDetails.name?.trim() &&
+  bookingDetails.contact?.trim() &&
+  bookingDetails.makeModel?.trim() &&
+  selectedDate &&
+  selectedTime &&
+  userCaptchaAnswer.trim();
 
   const handleSubmitForm = (e) => {
     e.preventDefault();
     setTouchedFields({
       ...touchedFields,
-      email: true
+      email: true,
+      captcha: true, // Make sure to mark captcha as touched
     });
-  
-    if (isFormValid && (!bookingDetails.email || isValidEmail(bookingDetails.email))) {
+
+    if (
+      hasAllRequiredFields &&
+      (!bookingDetails.email || isValidEmail(bookingDetails.email))
+    ) {
       const answer = userCaptchaAnswer.trim();
       onSubmit(answer);
     }
   };
 
   const isValidPhoneNumber = (phone) => phoneRegex.test(phone);
-  
 
   const inputClassName = `
   w-full p-3 rounded-lg shadow-sm transition-colors duration-200
@@ -148,6 +204,18 @@ const BookingForm = ({
   placeholder:text-content-light dark:placeholder:text-stone-400
   hover:bg-gray-50 dark:hover:bg-stone-700/50
 `;
+
+  const renderTimeOptions = () => {
+    return businessHours.map((time, index) => {
+      const isAvailable =
+        slotAvailability[`${selectedDate}, ${time}`]?.available !== false;
+      return (
+        <option key={index} value={time} disabled={!isAvailable}>
+          {time} {!isAvailable ? "(Fully Booked)" : ""}
+        </option>
+      );
+    });
+  };
 
   return (
     <div className="relative">
@@ -338,11 +406,7 @@ const BookingForm = ({
                   <option value="" disabled>
                     Select Time
                   </option>
-                  {businessHours.map((time, index) => (
-                    <option key={index} value={time}>
-                      {time}
-                    </option>
-                  ))}
+                  {renderTimeOptions()}
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <ChevronDown className="h-4 w-4 text-content-light" />
@@ -383,24 +447,25 @@ const BookingForm = ({
           </div>
         </form>
       </motion.div>
-      
       {/* Navigation Buttons - Change from fixed to sticky */}
       <div className="sticky bottom-0 left-0 right-0 p-4 bg-background-light/95 dark:bg-stone-900/95 backdrop-blur-sm border-t border-border-light dark:border-stone-700">
-        <div className="max-w-[1000px] mx-auto space-y-3">
-          <motion.button
-            type="button"
-            onClick={handleSubmitForm}
-            disabled={!isFormValid}
-            className={`w-full p-3 rounded-lg transition-colors duration-200 ${
-              isFormValid  // Removed the ! to fix the condition
-                ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
-                : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
-            }`}
-            whileHover={isFormValid ? { scale: 1.02 } : {}}
-            whileTap={isFormValid ? { scale: 0.98 } : {}}
-          >
-            Complete Booking
-          </motion.button>
+      <div className="max-w-[1000px] mx-auto space-y-3">
+        <motion.button
+          type="button"
+          onClick={handleSubmitForm}
+          disabled={!isFormValid}
+          className={`w-full p-3 rounded-lg transition-colors duration-200 ${
+            isFormValid
+              ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
+              : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
+          }`}
+          whileHover={isFormValid ? { scale: 1.02 } : {}}
+          whileTap={isFormValid ? { scale: 0.98 } : {}}
+        >
+          {hasAllRequiredFields
+            ? "Complete Booking"
+            : "Please Fill All Required Fields"}
+        </motion.button>
           <motion.button
             type="button"
             onClick={handleBack}

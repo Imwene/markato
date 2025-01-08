@@ -1,6 +1,5 @@
-// src/context/ConfigContext.jsx
-import { createContext, useState, useEffect } from 'react';
-import { CONFIG } from '../config/config';
+import { createContext, useState, useEffect } from "react";
+import { CONFIG } from "../config/config";
 
 export const ConfigContext = createContext(null);
 
@@ -10,134 +9,125 @@ export const ConfigProvider = ({ children }) => {
   const [optionalServices, setOptionalServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [retryCount, setRetryCount] = useState(0);
 
-  const fetchWithRetry = async (url, retryDelay = 1000) => {
+  const fetchConfig = async () => {
     try {
-      const response = await fetch(url);
-      
-      if (response.status === 429) {
-        // If we get rate limited, wait and retry
-        if (retryCount < 3) { // Max 3 retries
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
-          setRetryCount(prev => prev + 1);
-          return fetchWithRetry(url, retryDelay * 2); // Exponential backoff
-        } else {
-          throw new Error('Rate limit exceeded. Please try again later.');
-        }
+      setLoading(true);
+      setError(null);
+
+      // Fetch all config data in parallel with Promise.allSettled
+      const [vehicleTypesResult, scentsResult, optionalServicesResult] =
+        await Promise.allSettled([
+          fetch(
+            `${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.VEHICLE_TYPES}`
+          ).then((res) => res.json()),
+          fetch(`${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.SCENTS}`).then(
+            (res) => res.json()
+          ),
+          fetch(
+            `${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.OPTIONAL_SERVICES}`
+          ).then((res) => res.json()),
+        ]);
+
+      // Handle results individually
+      if (
+        vehicleTypesResult.status === "fulfilled" &&
+        vehicleTypesResult.value.success
+      ) {
+        setVehicleTypes(vehicleTypesResult.value.data);
+      } else {
+        console.error(
+          "Failed to load vehicle types:",
+          vehicleTypesResult.reason
+        );
       }
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (scentsResult.status === "fulfilled" && scentsResult.value.success) {
+        setScents(scentsResult.value.data);
+      } else {
+        console.error("Failed to load scents:", scentsResult.reason);
       }
 
-      const data = await response.json();
-      return data;
+      if (
+        optionalServicesResult.status === "fulfilled" &&
+        optionalServicesResult.value.success
+      ) {
+        setOptionalServices(optionalServicesResult.value.data);
+      } else {
+        console.error(
+          "Failed to load optional services:",
+          optionalServicesResult.reason
+        );
+      }
+
+      // Check if any requests failed
+      const failures = [
+        vehicleTypesResult,
+        scentsResult,
+        optionalServicesResult,
+      ]
+        .filter((result) => result.status === "rejected")
+        .map((result) => result.reason);
+
+      if (failures.length > 0) {
+        throw new Error("Some configuration data failed to load");
+      }
     } catch (error) {
-      console.error(`Error fetching ${url}:`, error);
-      throw error;
+      setError(error.message);
+      console.error("Config loading error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     let isMounted = true;
 
-    const fetchConfig = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch all config data sequentially to avoid rate limiting
-        const vehicleTypesData = await fetchWithRetry(
-          `${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.VEHICLE_TYPES}`
-        );
-        if (!isMounted) return;
-        
-        const scentsData = await fetchWithRetry(
-          `${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.SCENTS}`
-        );
-        if (!isMounted) return;
-        
-        const optionalServicesData = await fetchWithRetry(
-          `${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.OPTIONAL_SERVICES}`
-        );
-        if (!isMounted) return;
-
-        if (vehicleTypesData.success) setVehicleTypes(vehicleTypesData.data);
-        if (scentsData.success) setScents(scentsData.data);
-        if (optionalServicesData.success) setOptionalServices(optionalServicesData.data);
-
-      } catch (error) {
-        if (isMounted) {
-          setError(error.message);
-          console.error('Config loading error:', error);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+    const loadConfig = async () => {
+      if (isMounted) {
+        await fetchConfig();
       }
     };
 
-    fetchConfig();
+    loadConfig();
 
     return () => {
       isMounted = false;
     };
-  }, []); // Empty dependency array - only run on mount
-
-  const refreshConfig = async () => {
-    setRetryCount(0); // Reset retry count
-    try {
-      setLoading(true);
-      setError(null);
-
-      const vehicleTypesData = await fetchWithRetry(
-        `${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.VEHICLE_TYPES}`
-      );
-      const scentsData = await fetchWithRetry(
-        `${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.SCENTS}`
-      );
-      const optionalServicesData = await fetchWithRetry(
-        `${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.OPTIONAL_SERVICES}`
-      );
-
-      if (vehicleTypesData.success) setVehicleTypes(vehicleTypesData.data);
-      if (scentsData.success) setScents(scentsData.data);
-      if (optionalServicesData.success) setOptionalServices(optionalServicesData.data);
-
-    } catch (error) {
-      setError(error.message);
-      console.error('Config refresh error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, []);
 
   const value = {
-    vehicleTypes: vehicleTypes.filter(type => type.isActive),
-    scents: scents.filter(scent => scent.isActive),
-    optionalServices: optionalServices.filter(service => service.isActive),
+    vehicleTypes: vehicleTypes.filter((type) => type.isActive),
+    scents: scents.filter((scent) => scent.isActive),
+    optionalServices: optionalServices.filter((service) => service.isActive),
     loading,
     error,
-    refreshConfig
+    refreshConfig: fetchConfig,
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-20">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light"></div>
-    </div>;
+    return (
+      <div className="flex justify-center items-center min-h-20">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light"></div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="text-red-500 p-4 text-center">
-      Error loading configuration: {error}
-    </div>;
+    return (
+      <div className="text-red-500 p-4 text-center">
+        Error loading configuration: {error}
+        <button
+          onClick={fetchConfig}
+          className="mt-2 px-4 py-2 bg-primary-light text-white rounded hover:bg-primary-DEFAULT"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   return (
-    <ConfigContext.Provider value={value}>
-      {children}
-    </ConfigContext.Provider>
+    <ConfigContext.Provider value={value}>{children}</ConfigContext.Provider>
   );
 };

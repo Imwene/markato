@@ -9,8 +9,10 @@ import { CONFIG } from "../config/config";
 export const useBookingState = () => {
   // Core booking state
   const { services } = useServices();
-  const { vehicleTypes, scents, optionalServices} = useConfig();
-  const [selectedVehicleType, setSelectedVehicleType] = useState(vehicleTypes[0]?.id || "sedan");
+  const { vehicleTypes, scents, optionalServices } = useConfig();
+  const [selectedVehicleType, setSelectedVehicleType] = useState(
+    vehicleTypes[0]?.id || "sedan"
+  );
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [bookingStep, setBookingStep] = useState("service");
   const [isCaptchaValid, setIsCaptchaValid] = useState(false);
@@ -23,7 +25,7 @@ export const useBookingState = () => {
   const [bookingDetails, setBookingDetails] = useState({
     name: "",
     contact: "",
-    email:"",
+    email: "",
     makeModel: "",
     dateTime: "",
   });
@@ -92,107 +94,121 @@ export const useBookingState = () => {
   };
 
   // Optional services handler - updated to handle single option toggle
-// Optional services handler
-const handleOptionSelect = (options) => {
-  setSelectedOptions(options);
-};
+  // Optional services handler
+  const handleOptionSelect = (options) => {
+    setSelectedOptions(options);
+  };
 
+  // Booking submission handler
+  const handleBookingSubmit = async (userCaptchaAnswer) => {
+    if (userCaptchaAnswer === captcha.answer) {
+      setLoading(true);
+      setError(null);
 
-
-// Booking submission handler
-const handleBookingSubmit = async (userCaptchaAnswer) => {
-  if (userCaptchaAnswer === captcha.answer) {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const selectedServiceDetails = services.find(
-        (s) => s._id === selectedService || s.id === selectedService
-      );
-
-      const selectedScentDetails = scents.find(s => s.id === selectedScent);
-      const selectedScentName = selectedScentDetails?.name || "None";
-
-      const formattedOptionalServices = selectedOptions.map((optionId) => {
-        const optionDetails = optionalServices.find(
-          service => service.id.toString() === optionId.toString()
+      try {
+        // Check slot availability one final time before submission
+        const availabilityResponse = await fetch(
+          `${CONFIG.API_URL}/bookings/check-slot?dateTime=${encodeURIComponent(
+            bookingDetails.dateTime
+          )}`
         );
-        return {
-          serviceId: optionDetails.id,
-          name: optionDetails.name,
-          price: parseFloat(optionDetails.price),
+        console.log(availabilityResponse);
+        const availabilityData = await availabilityResponse.json();
+
+        if (!availabilityData.available) {
+          throw new Error(
+            "This time slot is no longer available. Please select another time."
+          );
+        }
+
+        const selectedServiceDetails = services.find(
+          (s) => s._id === selectedService || s.id === selectedService
+        );
+
+        const selectedScentDetails = scents.find((s) => s.id === selectedScent);
+        const selectedScentName = selectedScentDetails?.name || "None";
+
+        const formattedOptionalServices = selectedOptions.map((optionId) => {
+          const optionDetails = optionalServices.find(
+            (service) => service.id.toString() === optionId.toString()
+          );
+          return {
+            serviceId: optionDetails.id,
+            name: optionDetails.name,
+            price: parseFloat(optionDetails.price),
+          };
+        });
+
+        const servicePrice =
+          selectedServiceDetails.vehiclePricing[selectedVehicleType];
+        const optionalServicesTotal = formattedOptionalServices.reduce(
+          (sum, service) => sum + service.price,
+          0
+        );
+
+        const totalPrice = servicePrice + optionalServicesTotal;
+
+        const date = new Date();
+        const dateStr =
+          (date.getMonth() + 1).toString().padStart(2, "0") +
+          date.getDate().toString().padStart(2, "0") +
+          date.getFullYear().toString();
+        const random = Math.floor(Math.random() * 10000)
+          .toString()
+          .padStart(4, "0");
+        const confirmationNumber = `BK-${dateStr}-${random}`;
+
+        const bookingPayload = {
+          name: bookingDetails.name,
+          contact: bookingDetails.contact,
+          email: bookingDetails.email || null,
+          vehicleType: selectedVehicleType,
+          makeModel: bookingDetails.makeModel,
+          dateTime: bookingDetails.dateTime,
+          serviceId: selectedService,
+          serviceName: selectedServiceDetails?.name,
+          selectedScent: selectedScentName || "None",
+          servicePrice: servicePrice,
+          features: selectedServiceDetails.features,
+          optionalServices: formattedOptionalServices,
+          totalPrice: totalPrice,
+          confirmationNumber: confirmationNumber,
+          status: "pending",
         };
-      });
 
+        const response = await fetch(
+          `${CONFIG.API_URL}${CONFIG.ENDPOINTS.BOOKINGS.BASE}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(bookingPayload),
+          }
+        );
 
-      const servicePrice =
-        selectedServiceDetails.vehiclePricing[selectedVehicleType];
-      const optionalServicesTotal = formattedOptionalServices.reduce(
-        (sum, service) => sum + service.price,
-        0
-      );
+        const data = await response.json();
 
-      const totalPrice = servicePrice + optionalServicesTotal;
-
-      const date = new Date();
-      const dateStr =
-      (date.getMonth() + 1).toString().padStart(2, "0") +
-      date.getDate().toString().padStart(2, "0") +
-      date.getFullYear().toString() ;
-      const random = Math.floor(Math.random() * 10000)
-        .toString()
-        .padStart(4, "0");
-      const confirmationNumber = `BK-${dateStr}-${random}`;
-
-      const bookingPayload = {
-        name: bookingDetails.name,
-        contact: bookingDetails.contact,
-        email: bookingDetails.email || null,
-        vehicleType: selectedVehicleType,
-        makeModel: bookingDetails.makeModel,
-        dateTime: bookingDetails.dateTime,
-        serviceId: selectedService,
-        serviceName: selectedServiceDetails?.name,
-        selectedScent: selectedScentName || "None",
-        servicePrice: servicePrice,
-        features: selectedServiceDetails.features,
-        optionalServices: formattedOptionalServices,
-        totalPrice: totalPrice,
-        confirmationNumber: confirmationNumber,
-        status: 'pending'
-      };
-
-      const response = await fetch(`${CONFIG.API_URL}${CONFIG.ENDPOINTS.BOOKINGS.BASE}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(bookingPayload),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setBooking(bookingPayload);
-        setBookingStep("confirmation");
-        return { success: true, booking: bookingPayload };
-      } else {
-        throw new Error(data.error || 'Failed to create booking');
+        if (data.success) {
+          setBooking(bookingPayload);
+          setBookingStep("confirmation");
+          return { success: true, booking: bookingPayload };
+        } else {
+          throw new Error(data.error || "Failed to create booking");
+        }
+      } catch (err) {
+        console.error("Booking error:", err);
+        setError(err.message);
+        return { success: false, error: err.message };
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Booking error:', err);
-      setError(err.message);
-      return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
+    } else {
+      setCaptcha(generateCaptcha());
+      setError("CAPTCHA verification failed. Please try again.");
+      return { success: false, error: "CAPTCHA verification failed" };
     }
-  } else {
-    setCaptcha(generateCaptcha());
-    setError("CAPTCHA verification failed. Please try again.");
-    return { success: false, error: "CAPTCHA verification failed" };
-  }
-};
-
+  };
 
   // Reset booking state
   const resetBookingState = () => {
@@ -213,7 +229,12 @@ const handleBookingSubmit = async (userCaptchaAnswer) => {
 
   // Validation helpers
   const canProceedToDetails = selectedService && selectedScent;
-  const isFormValid = Object.values(bookingDetails).every(Boolean);
+  const isFormValid =
+    Object.values(bookingDetails).every(Boolean) &&
+    bookingDetails.dateTime && // Make sure dateTime is set
+    selectedService &&
+    selectedVehicleType &&
+    captcha.answer;
 
   return {
     // State
@@ -248,5 +269,6 @@ const handleBookingSubmit = async (userCaptchaAnswer) => {
     // Validation
     canProceedToDetails,
     isFormValid,
+    isCaptchaValid,
   };
 };

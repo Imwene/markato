@@ -1,8 +1,7 @@
 // src/controllers/bookingController.js
 import PDFDocument from "pdfkit";
 import Booking from "../models/bookingModel.js";
-import { sendBookingConfirmation } from "../services/emailService.js";
-import { sendAdminNotification } from "../services/emailService.js";
+import { sendBookingConfirmation, sendAdminNotification, sendCancellationConfirmation } from "../services/emailService.js";
 
 
 export async function createBooking(req, res) {
@@ -30,7 +29,7 @@ export async function createBooking(req, res) {
       await sendAdminNotification(savedBooking);
     } catch (emailError) {
       // Log the error but don't fail the booking creation
-      console.error('Failed to send admin notification:', emailError);
+      console.error("Failed to send admin notification:", emailError);
     }
 
     res.status(201).json({
@@ -230,9 +229,6 @@ export const generateBookingPDF = async (req, res) => {
     doc.text("Please present this confirmation at the time of service.", {
       align: "center",
     });
-    doc.text("Contact us at +14158899108 or markatoautodetail@gmail.com.", {
-      align: "center",
-    });
 
     // Finalize PDF file
     doc.end();
@@ -257,5 +253,144 @@ export const resendBookingEmail = async (req, res) => {
     res.json({ success: true });
   } else {
     res.status(500).json({ error: "Failed to send email" });
+  }
+};
+
+export const checkSlotAvailability = async (req, res) => {
+  try {
+    const { dateTime } = req.query;
+    
+    // The dateTime comes in format: "Wed, Jan 8, 2025, 11:00 AM"
+    // First, let's split the date and time
+    const [datePart, timePart] = dateTime.split(', ').slice(-2);
+    
+    // Create a regex pattern to match this exact date and time
+    const dateTimePattern = `^${dateTime.split(', ').slice(0, -1).join(', ')}, ${timePart}$`;
+    
+    // Count bookings for this exact date and time slot
+    const bookingsCount = await Booking.countDocuments({
+      dateTime: { $regex: new RegExp(dateTimePattern) },
+      status: { $nin: ['cancelled'] }
+    });
+
+    // For debugging
+    console.log('Checking availability for:', dateTime);
+    console.log('Pattern used:', dateTimePattern);
+    console.log('Bookings found:', bookingsCount);
+
+    const maxBookingsPerSlot = 2; // You can adjust this number
+    const isAvailable = bookingsCount < maxBookingsPerSlot;
+
+    res.json({
+      success: true,
+      available: isAvailable,
+      currentBookings: bookingsCount,
+      maxBookingsPerSlot,
+      requestedDateTime: dateTime,
+      pattern: dateTimePattern // Including this for debugging
+    });
+  } catch (error) {
+    console.error('Slot availability check error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error checking slot availability',
+      details: error.message
+    });
+  }
+};
+
+export const showCancellationPage = async (req, res) => {
+  try {
+    const { confirmationNumber, email } = req.params;
+    const decodedEmail = Buffer.from(email, 'base64').toString();
+    
+    const booking = await Booking.findOne({ 
+      confirmationNumber: confirmationNumber,
+      email: decodedEmail,
+      status: { $nin: ['cancelled', 'completed'] }
+    });
+
+    if (!booking) {
+      return res.render('error', { 
+        message: 'Booking not found or already cancelled/completed'
+      });
+    }
+
+    const appointmentTime = new Date(booking.dateTime);
+    const now = new Date();
+    const hoursUntilAppointment = (appointmentTime - now) / (1000 * 60 * 60);
+
+    if (hoursUntilAppointment < 24) {
+      return res.render('error', {
+        message: 'Cancellations must be made at least 24 hours before the appointment'
+      });
+    }
+
+    return res.render('cancel-booking', {
+      booking,
+      email: decodedEmail
+    });
+
+  } catch (error) {
+    console.error('Error showing cancellation page:', error);
+    return res.render('error', { 
+      message: 'Error processing cancellation request'
+    });
+  }
+};
+
+export const confirmCancellation = async (req, res) => {
+  try {
+    const { confirmationNumber, email } = req.params;
+    const decodedEmail = Buffer.from(email, 'base64').toString();
+
+    const booking = await Booking.findOne({ 
+      confirmationNumber: confirmationNumber,
+      email: decodedEmail,
+      status: { $nin: ['cancelled', 'completed'] }
+    });
+
+    if (!booking) {
+      return res.render('error', { 
+        message: 'Booking not found or already cancelled/completed'
+      });
+    }
+
+    const appointmentTime = new Date(booking.dateTime);
+    const now = new Date();
+    const hoursUntilAppointment = (appointmentTime - now) / (1000 * 60 * 60);
+
+    if (hoursUntilAppointment < 24) {
+      return res.render('error', {
+        message: 'Cancellations must be made at least 24 hours before the appointment'
+      });
+    }
+
+    // Update booking status
+    booking.status = 'cancelled';
+    booking.statusHistory.push({
+      status: 'cancelled',
+      timestamp: new Date(),
+      note: 'Cancelled by customer through email link'
+    });
+
+    await booking.save();
+
+    // Send cancellation confirmation email
+    try {
+      await sendCancellationConfirmation(booking);
+    } catch (emailError) {
+      console.error('Failed to send cancellation email:', emailError);
+      // Continue with cancellation even if email fails
+    }
+
+    // Redirect to success page
+    return res.render('cancellation-success');
+
+  } catch (error) {
+    console.error('Error confirming cancellation:', error);
+    return res.render('error', { 
+      message: 'Error processing cancellation request' 
+    });
   }
 };

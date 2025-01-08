@@ -1,5 +1,5 @@
 export const CONFIG = {
-    API_URL: import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL2 || 'http://localhost:8080/api',
+    API_URL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
     ENDPOINTS: {
       AUTH: {
         LOGIN: '/auth/login',

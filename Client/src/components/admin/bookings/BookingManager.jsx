@@ -30,11 +30,17 @@ const BookingManager = () => {
 
   const fetchBookings = async () => {
     try {
+      setLoading(true);
       const data = await api.get(CONFIG.ENDPOINTS.BOOKINGS.BASE);
       if (data.success) {
         setBookings(data.data);
       }
     } catch (error) {
+      // Check if it's an auth error
+      if (error.message.includes("token")) {
+        // Redirect to login
+        window.location.href = "/login";
+      }
       console.error("Failed to fetch bookings:", error);
     } finally {
       setLoading(false);
@@ -338,9 +344,11 @@ const BookingManager = () => {
                           </div>
                         }
                       >
-                        <div className="text-sm text-primary-DEFAULT dark:text-orange-500 
+                        <div
+                          className="text-sm text-primary-DEFAULT dark:text-orange-500 
                 hover:text-primary-light dark:hover:text-orange-600 
-                cursor-pointer">
+                cursor-pointer"
+                        >
                           {" "}
                           {/* Updated hover class */}+
                           {booking.optionalServices.length} add-ons

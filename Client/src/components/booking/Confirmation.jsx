@@ -49,18 +49,24 @@ const Confirmation = ({ booking }) => {
       alert("Failed to download confirmation. Please try again.");
     }
   };
-
   const handleResendEmail = async () => {
     try {
-      // Use api utility for post request
-      const response = await api.post(
-        CONFIG.ENDPOINTS.BOOKINGS.RESEND_EMAIL(booking.confirmationNumber)
+      const response = await fetch(
+        `${CONFIG.API_URL}/bookings/${booking.confirmationNumber}/resend-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
       );
-
-      if (response.success) {
+  
+      const data = await response.json();
+  
+      if (response.ok && data.success) {
         alert("Email sent successfully!");
       } else {
-        throw new Error(response.error || "Failed to send email");
+        throw new Error(data.error || "Failed to send email");
       }
     } catch (error) {
       console.error("Error resending email:", error);
