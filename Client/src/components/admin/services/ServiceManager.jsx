@@ -22,6 +22,75 @@ const ServiceManager = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState(null);
 
+  const renderMobileCard = (service) => (
+    <div key={service._id} className="p-4 bg-white dark:bg-stone-800 rounded-lg border border-border-light dark:border-stone-700 mb-4">
+      {/* Service Header */}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="font-medium text-content-DEFAULT dark:text-white">
+            {service.name}
+          </h3>
+          <span
+            className={`inline-block mt-1 px-2 py-1 rounded-full text-xs ${
+              service.isActive
+                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+            }`}
+          >
+            {service.isActive ? "Active" : "Inactive"}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleEditService(service)}
+            className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors text-content-light dark:text-stone-400"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => handleDeleteService(service._id)}
+            className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors text-red-500"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+  
+      {/* Features */}
+      <div className="mb-4">
+        <h4 className="text-sm font-medium text-content-light dark:text-stone-400 mb-2">
+          Features
+        </h4>
+        <ul className="list-disc list-inside space-y-1">
+          {service.features.map((feature, index) => (
+            <li key={index} className="text-sm text-content-DEFAULT dark:text-stone-300">
+              {feature}
+            </li>
+          ))}
+        </ul>
+      </div>
+  
+      {/* Pricing */}
+      <div>
+        <h4 className="text-sm font-medium text-content-light dark:text-stone-400 mb-2">
+          Pricing
+        </h4>
+        <div className="grid grid-cols-2 gap-2">
+          {vehicleTypes.map((vehicleType) => (
+            <div key={vehicleType.id} className="text-sm">
+              <span className="text-content-light dark:text-stone-400 capitalize">
+                {vehicleType.label}
+              </span>
+              <span className="text-primary-DEFAULT dark:text-orange-500 ml-2">
+                ${service.vehiclePricing[vehicleType.id] || 0}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   const fetchServices = async () => {
     try {
       setLoading(true);
@@ -102,14 +171,20 @@ const ServiceManager = () => {
                    transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Add Service
+          <span className="hidden sm:inline">Add Service</span>
+        <span className="sm:hidden">Add</span>
         </button>
       </div>
 
-      <div className="w-full overflow-x-auto 
-                    bg-background-light dark:bg-stone-800 
-                    rounded-lg border border-border-light dark:border-stone-700 
-                    relative z-0">
+      {/* Mobile View */}
+    <div className="lg:hidden space-y-4">
+      {services.map(renderMobileCard)}
+    </div>
+
+      <div className="hidden lg:block w-full overflow-x-auto 
+                  bg-background-light dark:bg-stone-800 
+                  rounded-lg border border-border-light dark:border-stone-700 
+                  relative z-0">
         <Table>
           <TableHeader>
             <TableRow>

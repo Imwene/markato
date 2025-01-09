@@ -299,20 +299,21 @@ export const checkSlotAvailability = async (req, res) => {
   }
 };
 
-export const showCancellationPage = async (req, res) => {
+export const checkCancellation = async (req, res) => {
   try {
     const { confirmationNumber, email } = req.params;
     const decodedEmail = Buffer.from(email, 'base64').toString();
-    
+
     const booking = await Booking.findOne({ 
-      confirmationNumber: confirmationNumber,
+      confirmationNumber,
       email: decodedEmail,
       status: { $nin: ['cancelled', 'completed'] }
     });
 
     if (!booking) {
-      return res.render('error', { 
-        message: 'Booking not found or already cancelled/completed'
+      return res.status(404).json({
+        success: false,
+        error: 'Booking not found or already cancelled/completed'
       });
     }
 
@@ -321,38 +322,39 @@ export const showCancellationPage = async (req, res) => {
     const hoursUntilAppointment = (appointmentTime - now) / (1000 * 60 * 60);
 
     if (hoursUntilAppointment < 24) {
-      return res.render('error', {
-        message: 'Cancellations must be made at least 24 hours before the appointment'
+      return res.status(400).json({
+        success: false,
+        error: 'Cancellations must be made at least 24 hours before the appointment'
       });
     }
 
-    return res.render('cancel-booking', {
-      booking,
-      email: decodedEmail
+    res.json({
+      success: true,
+      booking
     });
-
   } catch (error) {
-    console.error('Error showing cancellation page:', error);
-    return res.render('error', { 
-      message: 'Error processing cancellation request'
+    res.status(500).json({
+      success: false,
+      error: 'Server error'
     });
   }
 };
 
-export const confirmCancellation = async (req, res) => {
+export const cancelBooking = async (req, res) => {
   try {
     const { confirmationNumber, email } = req.params;
     const decodedEmail = Buffer.from(email, 'base64').toString();
 
     const booking = await Booking.findOne({ 
-      confirmationNumber: confirmationNumber,
+      confirmationNumber,
       email: decodedEmail,
       status: { $nin: ['cancelled', 'completed'] }
     });
 
     if (!booking) {
-      return res.render('error', { 
-        message: 'Booking not found or already cancelled/completed'
+      return res.status(404).json({
+        success: false,
+        error: 'Booking not found or already cancelled/completed'
       });
     }
 
@@ -361,36 +363,36 @@ export const confirmCancellation = async (req, res) => {
     const hoursUntilAppointment = (appointmentTime - now) / (1000 * 60 * 60);
 
     if (hoursUntilAppointment < 24) {
-      return res.render('error', {
-        message: 'Cancellations must be made at least 24 hours before the appointment'
+      return res.status(400).json({
+        success: false,
+        error: 'Cancellations must be made at least 24 hours before the appointment'
       });
     }
 
-    // Update booking status
     booking.status = 'cancelled';
     booking.statusHistory.push({
       status: 'cancelled',
       timestamp: new Date(),
-      note: 'Cancelled by customer through email link'
+      note: 'Cancelled by customer through cancellation page'
     });
 
     await booking.save();
 
-    // Send cancellation confirmation email
+    // Send cancellation confirmation emails
     try {
       await sendCancellationConfirmation(booking);
     } catch (emailError) {
       console.error('Failed to send cancellation email:', emailError);
-      // Continue with cancellation even if email fails
     }
 
-    // Redirect to success page
-    return res.render('cancellation-success');
-
+    res.json({
+      success: true,
+      message: 'Booking cancelled successfully'
+    });
   } catch (error) {
-    console.error('Error confirming cancellation:', error);
-    return res.render('error', { 
-      message: 'Error processing cancellation request' 
+    res.status(500).json({
+      success: false,
+      error: 'Server error'
     });
   }
 };

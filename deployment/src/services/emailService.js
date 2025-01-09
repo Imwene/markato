@@ -149,8 +149,8 @@ const createAdminEmailTemplate = (booking) => {
 
 const createEmailTemplate = (booking) => {
 
-  const encodedEmail = Buffer.from(booking.email || '').toString('base64');
-const cancelUrl = `${process.env.FRONTEND_URL}/api/bookings/cancel/${booking.confirmationNumber}/${encodedEmail}`;
+  const encodedEmail = Buffer.from(booking.email).toString('base64');
+  const cancelUrl = `${process.env.FRONTEND_URL}/cancel-booking/${booking.confirmationNumber}/${encodedEmail}`;
 
   const optionalServicesSection = booking.optionalServices?.length > 0 
     ? `
@@ -520,6 +520,7 @@ const createAdminCancellationEmailTemplate = (booking) => {
     </div>
   `;
 };
+
 
 export const sendAdminNotification = async (booking) => {
   try {
