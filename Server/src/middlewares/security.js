@@ -17,6 +17,15 @@ export const rateLimiter = rateLimit({
   max: process.env.NODE_ENV === 'production' ? 200 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
+  // Use X-Forwarded-For header from Nginx
+  keyGenerator: (req) => {
+    const forwardedFor = req.headers['x-forwarded-for'];
+    if (forwardedFor) {
+      // Get the first IP in X-Forwarded-For chain
+      return forwardedFor.split(',')[0].trim();
+    }
+    return req.ip;
+  },
   message: {
     success: false,
     error: 'Too many requests from this IP, please try again later.'
