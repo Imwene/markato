@@ -1,8 +1,9 @@
-// src/components/booking/BookingForm.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { CONFIG } from "../../config/config";
+
 const BookingForm = ({
   bookingDetails,
   onInputChange,
@@ -11,43 +12,87 @@ const BookingForm = ({
   isFormValid: parentIsFormValid,
   onBack,
 }) => {
-  const [userCaptchaAnswer, setUserCaptchaAnswer] = useState("");
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedTime, setSelectedTime] = useState(null);
-  const [touchedFields, setTouchedFields] = useState({
-    name: false,
-    contact: false,
-    makeModel: false,
-    date: false,
-    time: false,
-    captcha: false,
-    email: false,
+  // React Hook Form setup
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isValid },
+    watch,
+    setValue,
+    trigger,
+    setError,
+    clearErrors,
+  } = useForm({
+    mode: "onChange",
+    defaultValues: {
+      name: bookingDetails.name || "",
+      contact: bookingDetails.contact || "",
+      email: bookingDetails.email || "",
+      makeModel: bookingDetails.makeModel || "",
+      date: "",
+      time: "",
+      captchaAnswer: "",
+    },
   });
-  const [slotAvailability, setSlotAvailability] = useState({});
 
-  const phoneRegex =
-    /^(\+?1)?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/;
+  // State for availability checking
+  const [timeSlots, setTimeSlots] = useState({});
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const watchedDate = watch("date");
+  const watchedTime = watch("time");
 
-  const isValidEmail = (email) => {
-    if (!email) return true; // Empty email is valid since it's optional
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const isFormValid = parentIsFormValid && userCaptchaAnswer.trim().length > 0;
-
+  // Business hours
   const businessHours = [
-    "9:00 AM",
-    "10:00 AM",
-    "11:00 AM",
-    "12:00 PM",
-    "1:00 PM",
-    "2:00 PM",
-    "3:00 PM",
-    "4:00 PM",
-    "5:00 PM",
+    "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
+    "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM",
   ];
 
+  // Form validation rules
+  const validationRules = {
+    name: {
+      required: "Name is required",
+      pattern: {
+        value: /^[a-zA-Z\s]*$/,
+        message: "Please enter a valid name (letters only)",
+      },
+      minLength: {
+        value: 2,
+        message: "Name must be at least 2 characters long",
+      },
+    },
+    contact: {
+      required: "Phone number is required",
+      pattern: {
+        value: /^(\+?1)?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/,
+        message: "Please enter a valid US phone number (e.g., 123-456-7890)",
+      },
+    },
+    email: {
+      pattern: {
+        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        message: "Please enter a valid email address",
+      },
+    },
+    makeModel: {
+      required: "Car make and model is required",
+      minLength: {
+        value: 2,
+        message: "Car make and model must be at least 2 characters long",
+      },
+    },
+    date: {
+      required: "Please select a date",
+    },
+    time: {
+      required: "Please select a time",
+    },
+    captchaAnswer: {
+      required: "Please answer the CAPTCHA",
+      validate: value => value.trim() === captcha.answer || "Incorrect CAPTCHA answer",
+    },
+  };
+
+  // Generate available dates
   const generateDates = () => {
     const dates = [];
     const current = new Date();
@@ -56,10 +101,7 @@ const BookingForm = ({
       const date = new Date(current);
       date.setDate(current.getDate() + i);
 
-      // Format date in a standard way: YYYY-MM-DD
       const formattedDate = date.toISOString().split("T")[0];
-
-      // Format display date
       const displayDate = date.toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
@@ -67,160 +109,170 @@ const BookingForm = ({
       });
 
       dates.push({
-        value: formattedDate, // This will be used for the actual value
-        display: displayDate, // This will be shown to the user
+        value: formattedDate,
+        display: displayDate,
       });
     }
     return dates;
   };
 
-  const handleBlur = (fieldName) => {
-    setTouchedFields((prev) => ({
-      ...prev,
-      [fieldName]: true,
-    }));
-  };
+  // Check availability for a specific date
+  const checkDateAvailability = async (date) => {
+    if (!date) return;
+    
+    setIsCheckingAvailability(true);
 
-  const handleBack = (e) => {
-    e.preventDefault();
-    onBack(); // This calls the passed onBack prop
-  };
-
-  const handleDateChange = (e) => {
-    const date = e.target.value;
-    setSelectedDate(date);
-    updateDateTime(date, selectedTime);
-  };
-
-  const handleTimeChange = (e) => {
-    const time = e.target.value;
-    setSelectedTime(time);
-    updateDateTime(selectedDate, time);
-  };
-
-  const updateDateTime = async (date, time) => {
-    if (date && time) {
-      const formattedDate = new Date(date);
-      const combinedDateTime = `${formattedDate.toLocaleDateString("en-US", {
+    try {
+      const formattedDate = new Date(date).toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",
         year: "numeric",
-      })}, ${time}`;
-  
-      try {
-        const response = await fetch(
-          `${CONFIG.API_URL}/bookings/check-slot?dateTime=${encodeURIComponent(
-            combinedDateTime
-          )}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-  
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-  
-        const data = await response.json();
-        console.log('Slot availability response:', data); // Debug log
-  
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to check slot availability');
-        }
-  
-        if (!data.available) {
-          alert(`This time slot is fully booked (${data.currentBookings}/${data.maxBookingsPerSlot} bookings). Please select another time.`);
-          setSelectedTime(null);
-          return;
-        }
-  
-        // Update the booking details with the new dateTime
-        onInputChange({
-          target: {
-            name: "dateTime",
-            value: combinedDateTime,
+      });
+
+      const response = await fetch(
+        `${CONFIG.API_URL}/bookings/check-date-slots?date=${encodeURIComponent(formattedDate)}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
           },
-        });
-  
-        // Update touched fields state
-        setTouchedFields((prev) => ({
-          ...prev,
-          date: true,
-          time: true,
-        }));
-      } catch (error) {
-        console.error("Error checking slot availability:", error);
-        alert(`Error checking time slot availability: ${error.message}`);
-        setSelectedTime(null);
-      }
-    }
-  };
-
-  const hasAllRequiredFields = 
-  bookingDetails.name?.trim() &&
-  bookingDetails.contact?.trim() &&
-  bookingDetails.makeModel?.trim() &&
-  selectedDate &&
-  selectedTime &&
-  userCaptchaAnswer.trim();
-
-  const handleSubmitForm = (e) => {
-    e.preventDefault();
-    setTouchedFields({
-      ...touchedFields,
-      email: true,
-      captcha: true, // Make sure to mark captcha as touched
-    });
-
-    if (
-      hasAllRequiredFields &&
-      (!bookingDetails.email || isValidEmail(bookingDetails.email))
-    ) {
-      const answer = userCaptchaAnswer.trim();
-      onSubmit(answer);
-    }
-  };
-
-  const isValidPhoneNumber = (phone) => phoneRegex.test(phone);
-
-  const inputClassName = `
-  w-full p-3 rounded-lg shadow-sm transition-colors duration-200
-  focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-orange-500
-  bg-white dark:bg-stone-800 
-  text-content-DEFAULT dark:text-white 
-  placeholder:text-content-light dark:placeholder:text-stone-400
-  hover:bg-gray-50 dark:hover:bg-stone-700/50
-`;
-
-  const selectClassName = `
-  w-full p-3 rounded-lg shadow-sm transition-colors duration-200
-  focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-orange-500
-  bg-white dark:bg-stone-800 
-  text-content-DEFAULT dark:text-white 
-  placeholder:text-content-light dark:placeholder:text-stone-400
-  hover:bg-gray-50 dark:hover:bg-stone-700/50
-`;
-
-  const renderTimeOptions = () => {
-    return businessHours.map((time, index) => {
-      const isAvailable =
-        slotAvailability[`${selectedDate}, ${time}`]?.available !== false;
-      return (
-        <option key={index} value={time} disabled={!isAvailable}>
-          {time} {!isAvailable ? "(Fully Booked)" : ""}
-        </option>
+        }
       );
-    });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setTimeSlots(data.slots);
+    } catch (error) {
+      console.error("Error checking availability:", error);
+      setTimeSlots({});
+    } finally {
+      setIsCheckingAvailability(false);
+    }
   };
+
+  // Watch for date changes
+  useEffect(() => {
+    if (watchedDate) {
+      checkDateAvailability(watchedDate);
+    }
+  }, [watchedDate]);
+
+  // Check single slot availability
+  const checkSlotAvailability = async (date, time) => {
+    if (!date || !time) return false;
+
+    const formattedDate = new Date(date);
+    const combinedDateTime = `${formattedDate.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })}, ${time}`;
+
+    try {
+      const response = await fetch(
+        `${CONFIG.API_URL}/bookings/check-slot?dateTime=${encodeURIComponent(
+          combinedDateTime
+        )}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.success || !data.available) {
+        setValue("time", "");
+        return false;
+      }
+
+      onInputChange({
+        target: {
+          name: "dateTime",
+          value: combinedDateTime,
+        },
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error checking slot availability:", error);
+      setValue("time", "");
+      return false;
+    }
+  };
+
+  // Form submission handler
+  const onFormSubmit = async (data) => {
+    try {
+      // Validate all fields before submission
+      const isFormValid = await trigger();
+      if (!isFormValid) return;
+
+      // Format date and time
+      const formattedDate = new Date(data.date);
+      const dateTime = `${formattedDate.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })}, ${data.time}`;
+
+      // Check final availability
+      const isSlotAvailable = await checkSlotAvailability(data.date, data.time);
+      if (!isSlotAvailable) {
+        setError("time", {
+          type: "manual",
+          message: "This time slot is no longer available"
+        });
+        return;
+      }
+
+      // Create complete booking data
+      const bookingData = {
+        ...data,
+        dateTime,
+      };
+
+      // Submit booking
+      const result = await onSubmit(bookingData);
+      
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to create booking');
+      }
+
+    } catch (error) {
+      setError("root.serverError", {
+        type: "manual",
+        message: error.message || "Failed to create booking"
+      });
+    }
+  };
+
+  // Styles
+  const inputClassName = `
+    w-full p-3 rounded-lg shadow-sm transition-colors duration-200
+    focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-orange-500
+    bg-white dark:bg-stone-800 
+    text-content-DEFAULT dark:text-white 
+    placeholder:text-content-light dark:placeholder:text-stone-400
+    hover:bg-gray-50 dark:hover:bg-stone-700/50
+    ${errors ? "border-red-500" : "border-border-DEFAULT dark:border-stone-700"}
+  `;
+
 
   return (
     <div className="relative">
-      {" "}
-      {/* Added padding bottom for sticky buttons */}
       <motion.div
         className="space-y-4"
         initial={{ opacity: 0, y: 20 }}
@@ -231,254 +283,252 @@ const BookingForm = ({
           Booking Details
         </h2>
 
-        <form
-          onSubmit={(e) => e.preventDefault()}
-          className="space-y-4"
-          noValidate
-        >
-          {/* Your form fields here */}
-          <div className="space-y-4">
-            {/* Name field */}
-            <div className="relative">
-              <label htmlFor="name" className="sr-only">
-                Your Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                placeholder="Your Name"
-                value={bookingDetails.name}
-                onChange={onInputChange}
-                onBlur={() => handleBlur("name")}
-                required
-                minLength={2}
-                pattern="^[a-zA-Z\s]*$"
-                className={inputClassName}
-                aria-describedby="nameError"
-              />
-              {touchedFields.name && bookingDetails.name.length === 0 && (
-                <span className="text-red-500 text-sm mt-1" id="nameError">
-                  Name is required
-                </span>
+        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4" noValidate>
+          {/* Form Level Error */}
+          {errors.root?.serverError && (
+            <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">
+              {errors.root.serverError.message}
+            </div>
+          )}
+
+          {/* Name Field */}
+          <div className="space-y-1">
+            <Controller
+              name="name"
+              control={control}
+              rules={validationRules.name}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  type="text"
+                  placeholder="Your Name"
+                  className={inputClassName}
+                  aria-describedby="nameError"
+                />
               )}
-              {touchedFields.name &&
-                bookingDetails.name.length > 0 &&
-                !bookingDetails.name.match(/^[a-zA-Z\s]*$/) && (
-                  <span className="text-red-500 text-sm mt-1" id="nameError">
-                    Please enter a valid name (letters only)
-                  </span>
-                )}
-            </div>
+            />
+            {errors.name && (
+              <span className="text-red-500 text-sm" id="nameError">
+                {errors.name.message}
+              </span>
+            )}
+          </div>
 
-            {/* Contact field */}
-            <div className="relative">
-              <label htmlFor="contact" className="sr-only">
-                Contact Number
-              </label>
-              <input
-                type="tel"
-                id="contact"
-                name="contact"
-                placeholder="Contact Number (e.g., 123-456-7890)"
-                value={bookingDetails.contact}
-                onChange={onInputChange}
-                onBlur={() => handleBlur("contact")}
-                required
-                className={inputClassName}
-                aria-describedby="contactError"
-              />
-              {touchedFields.contact && bookingDetails.contact.length === 0 && (
-                <span className="text-red-500 text-sm mt-1" id="contactError">
-                  Phone number is required
-                </span>
+          {/* Contact Field */}
+          <div className="space-y-1">
+            <Controller
+              name="contact"
+              control={control}
+              rules={validationRules.contact}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  type="tel"
+                  placeholder="Contact Number (e.g., 123-456-7890)"
+                  className={inputClassName}
+                  aria-describedby="contactError"
+                />
               )}
-              {touchedFields.contact &&
-                bookingDetails.contact.length > 0 &&
-                !isValidPhoneNumber(bookingDetails.contact) && (
-                  <span className="text-red-500 text-sm mt-1" id="contactError">
-                    Please enter a valid US phone number (e.g., 123-456-7890)
-                  </span>
-                )}
-            </div>
+            />
+            {errors.contact && (
+              <span className="text-red-500 text-sm" id="contactError">
+                {errors.contact.message}
+              </span>
+            )}
+          </div>
 
-            {/* Email field */}
-            <div className="relative">
-              <label htmlFor="email" className="sr-only">
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                placeholder="Email Address (Optional)"
-                value={bookingDetails.email || ""}
-                onChange={onInputChange}
-                onBlur={() => handleBlur("email")}
-                className={inputClassName}
-                aria-describedby="emailError"
-              />
-              {touchedFields.email &&
-                bookingDetails.email &&
-                !isValidEmail(bookingDetails.email) && (
-                  <span className="text-red-500 text-sm mt-1" id="emailError">
-                    Please enter a valid email address
-                  </span>
-                )}
-            </div>
+          {/* Email Field */}
+          <div className="space-y-1">
+            <Controller
+              name="email"
+              control={control}
+              rules={validationRules.email}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  type="email"
+                  placeholder="Email Address (Optional)"
+                  className={inputClassName}
+                  aria-describedby="emailError"
+                />
+              )}
+            />
+            {errors.email && (
+              <span className="text-red-500 text-sm" id="emailError">
+                {errors.email.message}
+              </span>
+            )}
+          </div>
 
-            {/* Car Make and Model field */}
-            <div className="relative">
-              <label htmlFor="makeModel" className="sr-only">
-                Car Make and Model
-              </label>
-              <input
-                type="text"
-                id="makeModel"
-                name="makeModel"
-                placeholder="Car Make and Model"
-                value={bookingDetails.makeModel}
-                onChange={onInputChange}
-                onBlur={() => handleBlur("makeModel")}
-                required
-                minLength={2}
-                className={inputClassName}
-                aria-describedby="makeModelError"
-              />
-              {touchedFields.makeModel &&
-                bookingDetails.makeModel.length === 0 && (
-                  <span
-                    className="text-red-500 text-sm mt-1"
-                    id="makeModelError"
+          {/* Vehicle Make/Model Field */}
+          <div className="space-y-1">
+            <Controller
+              name="makeModel"
+              control={control}
+              rules={validationRules.makeModel}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  type="text"
+                  placeholder="Car Make and Model"
+                  className={inputClassName}
+                  aria-describedby="makeModelError"
+                />
+              )}
+            />
+            {errors.makeModel && (
+              <span className="text-red-500 text-sm" id="makeModelError">
+                {errors.makeModel.message}
+              </span>
+            )}
+          </div>
+
+          {/* Date and Time Selection */}
+          <div className="flex gap-2">
+            <div className="relative flex-1 space-y-1">
+              <Controller
+                name="date"
+                control={control}
+                rules={validationRules.date}
+                render={({ field }) => (
+                  <select 
+                    {...field} 
+                    className={inputClassName}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      if (e.target.value) {
+                        checkDateAvailability(e.target.value);
+                      }
+                    }}
                   >
-                    Car make and model is required
-                  </span>
+                    <option value="">Select Date</option>
+                    {generateDates().map((date) => (
+                      <option key={date.value} value={date.value}>
+                        {date.display}
+                      </option>
+                    ))}
+                  </select>
                 )}
-            </div>
-
-            {/* Date and Time Selection */}
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <label htmlFor="date" className="sr-only">
-                  Select Date
-                </label>
-                <select
-                  id="date"
-                  value={selectedDate || ""}
-                  onChange={handleDateChange}
-                  onBlur={() => handleBlur("date")}
-                  required
-                  className={selectClassName}
-                  aria-describedby="dateError"
-                >
-                  <option value="" disabled>
-                    Select Date
-                  </option>
-                  {generateDates().map((date, index) => (
-                    <option key={index} value={date.value}>
-                      {date.display}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-content-light dark:text-stone-400 pointer-events-none" />
-                </div>
-                {touchedFields.date && !selectedDate && (
-                  <span className="text-red-500 text-sm mt-1" id="dateError">
-                    Please select a date
-                  </span>
-                )}
-              </div>
-
-              <div className="relative flex-1">
-                <label htmlFor="time" className="sr-only">
-                  Select Time
-                </label>
-                <select
-                  id="time"
-                  value={selectedTime || ""}
-                  onChange={handleTimeChange}
-                  onBlur={() => handleBlur("time")}
-                  required
-                  className={selectClassName}
-                  aria-describedby="timeError"
-                >
-                  <option value="" disabled>
-                    Select Time
-                  </option>
-                  {renderTimeOptions()}
-                </select>
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <ChevronDown className="h-4 w-4 text-content-light" />
-                </div>
-                {touchedFields.time && !selectedTime && (
-                  <span className="text-red-500 text-sm mt-1" id="timeError">
-                    Please select a time
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* CAPTCHA */}
-            <div className="p-4 rounded-lg border-2 border-border-DEFAULT dark:border-stone-700 bg-background-DEFAULT dark:bg-stone-800">
-              <label
-                htmlFor="captcha"
-                className="block mb-2 font-medium text-content-dark dark:text-white"
-              >
-                {captcha.question}
-              </label>
-              <input
-                type="text"
-                id="captcha"
-                value={userCaptchaAnswer}
-                onChange={(e) => setUserCaptchaAnswer(e.target.value)}
-                onBlur={() => handleBlur("captcha")}
-                required
-                className={inputClassName}
-                placeholder="Enter CAPTCHA answer"
-                aria-describedby="captchaError"
               />
-              {touchedFields.captcha && !userCaptchaAnswer && (
-                <span className="text-red-500 text-sm mt-1" id="captchaError">
-                  Please answer the CAPTCHA
+              {errors.date && (
+                <span className="text-red-500 text-sm" id="dateError">
+                  {errors.date.message}
+                </span>
+              )}
+            </div>
+
+            <div className="relative flex-1 space-y-1">
+              <Controller
+                name="time"
+                control={control}
+                rules={validationRules.time}
+                render={({ field }) => (
+                  <div>
+                    <select 
+                      {...field} 
+                      className={`${inputClassName} ${!watchedDate ? 'cursor-not-allowed opacity-50' : ''}`}
+                      disabled={!watchedDate || isCheckingAvailability}
+                    >
+                      <option value="">
+                        {isCheckingAvailability 
+                          ? "Checking availability..." 
+                          : !watchedDate 
+                            ? "Select date first" 
+                            : "Select Time"
+                        }
+                      </option>
+                      {businessHours.map((time) => {
+                        const slot = timeSlots[time];
+                        const isAvailable = slot?.available;
+                        const bookingInfo = slot 
+                          // ? `(${slot.currentBookings}/${slot.maxBookingsPerSlot} 
+                          ? "slots taken"
+                          : '';
+                        
+                        return (
+                          <option 
+                            key={time} 
+                            value={time}
+                            disabled={!isAvailable}
+                          >
+                            {time} {!isAvailable ? bookingInfo : ""}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    {isCheckingAvailability && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-light border-t-transparent"></div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              />
+              {errors.time && (
+                <span className="text-red-500 text-sm" id="timeError">
+                  {errors.time.message}
                 </span>
               )}
             </div>
           </div>
+
+          {/* CAPTCHA */}
+          <div className="p-4 rounded-lg border-2 border-border-DEFAULT dark:border-stone-700 bg-background-DEFAULT dark:bg-stone-800">
+            <label className="block mb-2 font-medium text-content-dark dark:text-white">
+              {captcha.question}
+            </label>
+            <Controller
+              name="captchaAnswer"
+              control={control}
+              rules={validationRules.captchaAnswer}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  type="text"
+                  placeholder="Enter CAPTCHA answer"
+                  className={inputClassName}
+                  aria-describedby="captchaError"
+                />
+              )}
+            />
+            {errors.captchaAnswer && (
+              <span className="text-red-500 text-sm" id="captchaError">
+                {errors.captchaAnswer.message}
+              </span>
+            )}
+          </div>
+
+          {/* Form Actions */}
+          <div className="sticky bottom-0 left-0 right-0 p-4 bg-background-light/95 dark:bg-stone-900/95 backdrop-blur-sm border-t border-border-light dark:border-stone-700">
+            <div className="max-w-[1000px] mx-auto space-y-3">
+              <motion.button
+                type="submit"
+                disabled={!isValid}
+                className={`w-full p-3 rounded-lg transition-colors duration-200 ${
+                  isValid
+                    ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
+                    : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
+                }`}
+                whileHover={isValid ? { scale: 1.02 } : {}}
+                whileTap={isValid ? { scale: 0.98 } : {}}
+              >
+                Complete Booking
+              </motion.button>
+
+              <motion.button
+                type="button"
+                onClick={onBack}
+                className="w-full p-3 rounded-lg bg-background-DEFAULT dark:bg-stone-800 text-content-DEFAULT dark:text-white border border-border-DEFAULT dark:border-stone-700 hover:bg-background-dark dark:hover:bg-stone-700 transition-colors duration-200"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Back to Addons
+              </motion.button>
+            </div>
+          </div>
         </form>
       </motion.div>
-      {/* Navigation Buttons - Change from fixed to sticky */}
-      <div className="sticky bottom-0 left-0 right-0 p-4 bg-background-light/95 dark:bg-stone-900/95 backdrop-blur-sm border-t border-border-light dark:border-stone-700">
-      <div className="max-w-[1000px] mx-auto space-y-3">
-        <motion.button
-          type="button"
-          onClick={handleSubmitForm}
-          disabled={!isFormValid}
-          className={`w-full p-3 rounded-lg transition-colors duration-200 ${
-            isFormValid
-              ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
-              : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
-          }`}
-          whileHover={isFormValid ? { scale: 1.02 } : {}}
-          whileTap={isFormValid ? { scale: 0.98 } : {}}
-        >
-          {hasAllRequiredFields
-            ? "Complete Booking"
-            : "Please Fill All Required Fields"}
-        </motion.button>
-          <motion.button
-            type="button"
-            onClick={handleBack}
-            className="w-full p-3 rounded-lg bg-background-DEFAULT dark:bg-stone-800 text-content-DEFAULT dark:text-white border border-border-DEFAULT dark:border-stone-700 hover:bg-background-dark dark:hover:bg-stone-700 transition-colors duration-200"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            Back to Addons
-          </motion.button>
-        </div>
-      </div>
     </div>
   );
-};
-
+              }
 export default BookingForm;

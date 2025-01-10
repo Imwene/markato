@@ -100,19 +100,24 @@ export const useBookingState = () => {
   };
 
   // Booking submission handler
-  const handleBookingSubmit = async (userCaptchaAnswer) => {
-    if (userCaptchaAnswer === captcha.answer) {
+  const handleBookingSubmit = async (formData) => {
+    if (formData.captchaAnswer === captcha.answer) {
       setLoading(true);
       setError(null);
 
       try {
-        // Check slot availability one final time before submission
+        // Validate form data
+        const validationErrors = validateBookingData(formData);
+        if (Object.keys(validationErrors).length > 0) {
+          throw new Error('Validation failed: ' + Object.values(validationErrors).join(', '));
+        }
+
+        // Check slot availability
         const availabilityResponse = await fetch(
           `${CONFIG.API_URL}/bookings/check-slot?dateTime=${encodeURIComponent(
-            bookingDetails.dateTime
+            formData.dateTime
           )}`
         );
-        console.log(availabilityResponse);
         const availabilityData = await availabilityResponse.json();
 
         if (!availabilityData.available) {
@@ -148,6 +153,7 @@ export const useBookingState = () => {
 
         const totalPrice = servicePrice + optionalServicesTotal;
 
+        // Generate confirmation number
         const date = new Date();
         const dateStr =
           (date.getMonth() + 1).toString().padStart(2, "0") +
@@ -159,15 +165,15 @@ export const useBookingState = () => {
         const confirmationNumber = `BK-${dateStr}-${random}`;
 
         const bookingPayload = {
-          name: bookingDetails.name,
-          contact: bookingDetails.contact,
-          email: bookingDetails.email || null,
+          name: formData.name.trim(),
+          contact: formData.contact.trim(),
+          email: formData.email?.trim() || null,
           vehicleType: selectedVehicleType,
-          makeModel: bookingDetails.makeModel,
-          dateTime: bookingDetails.dateTime,
+          makeModel: formData.makeModel.trim(),
+          dateTime: formData.dateTime,
           serviceId: selectedService,
           serviceName: selectedServiceDetails?.name,
-          selectedScent: selectedScentName || "None",
+          selectedScent: selectedScentName,
           servicePrice: servicePrice,
           features: selectedServiceDetails.features,
           optionalServices: formattedOptionalServices,
@@ -208,6 +214,36 @@ export const useBookingState = () => {
       setError("CAPTCHA verification failed. Please try again.");
       return { success: false, error: "CAPTCHA verification failed" };
     }
+  };
+
+  const validateBookingData = (formData) => {
+    const errors = {};
+    const phoneRegex = /^(\+?1)?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!formData.name?.trim()) {
+      errors.name = "Name is required";
+    }
+
+    if (!formData.contact?.trim()) {
+      errors.contact = "Contact number is required";
+    } else if (!phoneRegex.test(formData.contact)) {
+      errors.contact = "Invalid phone number format";
+    }
+
+    if (formData.email && !emailRegex.test(formData.email)) {
+      errors.email = "Invalid email format";
+    }
+
+    if (!formData.makeModel?.trim()) {
+      errors.makeModel = "Make and model is required";
+    }
+
+    if (!formData.date || !formData.time) {
+      errors.dateTime = "Date and time are required";
+    }
+
+    return errors;
   };
 
   // Reset booking state
@@ -265,6 +301,7 @@ export const useBookingState = () => {
     handleInputChange,
     handleBookingSubmit,
     resetBookingState,
+    validateBookingData,
 
     // Validation
     canProceedToDetails,

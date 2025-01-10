@@ -8,7 +8,8 @@ import {
   resendBookingEmail,
   checkSlotAvailability,
   checkCancellation,
-  cancelBooking
+  cancelBooking,
+  checkDateAvailability
 } from "../controllers/bookingController.js";
 
 import { protect, adminOnly } from "../middlewares/authMiddleware.js";
@@ -25,6 +26,7 @@ router.get('/check-cancellation/:confirmationNumber/:email', checkCancellation);
 router.post('/cancel/:confirmationNumber/:email', cancelBooking);
 
 router.post("/", createBooking); // Allow anyone to create a booking
+router.get('/check-date-slots', checkDateAvailability)
 router.get("/check-slot", checkSlotAvailability); // Allow checking slot availability
 
 router.get("/", protect, adminOnly, getAllBookings); // List all bookings

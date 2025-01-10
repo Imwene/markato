@@ -2,12 +2,14 @@
 import Booking from '../models/bookingModel.js';
 
 // Dashboard Stats
-
 export const getDashboardStats = async (req, res) => {
   try {
     // Get today's date and last 7 days
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const last7Days = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Get counts
     const totalBookings = await Booking.countDocuments();
@@ -50,7 +52,6 @@ export const getDashboardStats = async (req, res) => {
 
     // Format recent bookings
     const formattedRecentBookings = recentBookings.map(booking => {
-      // Parse the date string "Tue, Dec 24, 2024, 9:00 AM"
       try {
         const dateTime = new Date(booking.dateTime.replace(/, (\d)/g, ' $1'));
         
@@ -88,6 +89,118 @@ export const getDashboardStats = async (req, res) => {
       }
     });
 
+    // Get today's bookings
+    const todayBookings = await Booking.find({
+      dateTime: {
+        $gte: today,
+        $lt: tomorrow
+      }
+    }).select('name serviceName totalPrice status dateTime');
+
+    // Get today's revenue
+    const todayRevenue = todayBookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+
+    // Get weekly revenue (last 7 days)
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const weeklyBookings = await Booking.find({
+      dateTime: {
+        $gte: weekAgo,
+        $lt: tomorrow
+      }
+    });
+
+    const weeklyRevenue = weeklyBookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+
+    // Get monthly revenue (current month)
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    const monthlyBookings = await Booking.find({
+      dateTime: {
+        $gte: monthStart,
+        $lte: monthEnd
+      }
+    });
+
+    const monthlyRevenue = monthlyBookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+
+    // Get popular services
+    const popularServices = await Booking.aggregate([
+      {
+        $group: {
+          _id: '$serviceName',
+          bookings: { $sum: 1 },
+          revenue: { $sum: '$totalPrice' }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          name: '$_id',
+          bookings: 1,
+          revenue: { $round: ['$revenue', 2] }
+        }
+      },
+      { $sort: { revenue: -1 } },
+      { $limit: 5 }
+    ]);
+
+    // Get average booking value
+    const averageBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
+
+    // Get completion rate
+    const completionRate = totalBookings > 0 ? (completedBookings / totalBookings) * 100 : 0;
+
+    // Get popular optional services
+    const popularOptionalServices = await Booking.aggregate([
+      { $unwind: '$optionalServices' },
+      {
+        $group: {
+          _id: '$optionalServices.name',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          name: '$_id',
+          popularity: '$count'
+        }
+      },
+      { $sort: { popularity: -1 } },
+      { $limit: 7 }
+    ]);
+
+    // Get popular scents
+    const popularScents = await Booking.aggregate([
+      {
+        $group: {
+          _id: '$selectedScent',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: 'scents',
+          localField: '_id',
+          foreignField: 'name',
+          as: 'scent'
+        }
+      },
+      { $unwind: '$scent' },
+      {
+        $project: {
+          _id: 0,
+          name: '$_id',
+          popularity: '$count'
+        }
+      },
+      { $sort: { popularity: -1 } },
+      { $limit: 5 }
+    ]);
+
     res.json({
       success: true,
       stats: {
@@ -96,7 +209,16 @@ export const getDashboardStats = async (req, res) => {
         completedBookings,
         totalRevenue,
         dailyBookings,
-        recentBookings: formattedRecentBookings
+        recentBookings: formattedRecentBookings,
+        todayRevenue,
+        weeklyRevenue,
+        monthlyRevenue,
+        popularServices,
+        averageBookingValue,
+        completionRate,
+        todayBookings,
+        popularOptionalServices,
+        popularScents
       }
     });
   } catch (error) {
@@ -107,6 +229,8 @@ export const getDashboardStats = async (req, res) => {
     });
   }
 };
+
+
 export const deleteAllBookings = async (req, res) => {
   try {
     await Booking.deleteMany({});

@@ -1,19 +1,31 @@
 // src/middlewares/security.js
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
+import MongoStore from 'rate-limit-mongo';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Rate limiting configuration
 export const rateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000,
+  store: new MongoStore({
+    uri: process.env.MONGODB_URI,
+    collectionName: 'rate-limits',
+    expireTimeMs: 15 * 60 * 1000, // Match windowMs
+    errorHandler: console.error
+  }),
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 200 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     success: false,
     error: 'Too many requests from this IP, please try again later.'
+  },
+  handler: (req, res, next) => {
+    res.status(429).json({
+      success: false,
+      error: 'Too many requests from this IP, please try again later.'
+    });
   },
   skip: (req) => {
     const trustedIPs = process.env.TRUSTED_IPS?.split(',') || [];

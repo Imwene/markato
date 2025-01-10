@@ -197,30 +197,34 @@ const Confirmation = ({ booking }) => {
       </div>
 
       <div className="flex gap-4 mt-8">
-        <button
-          onClick={handleDownload}
-          className="flex items-center gap-2 px-4 py-2 
-          bg-primary-light dark:bg-orange-500 text-white rounded-lg 
-          hover:bg-primary-DEFAULT dark:hover:bg-orange-600 
-          transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          Download Confirmation
-        </button>
+        
         {booking.email && (
           <button
             onClick={handleResendEmail}
             className="flex items-center gap-2 px-4 py-2 
-            bg-background-DEFAULT dark:bg-stone-800 
-            text-content-DEFAULT dark:text-white 
-            border border-border-DEFAULT dark:border-stone-700 rounded-lg 
-            hover:bg-background-dark dark:hover:bg-stone-700 
+            bg-primary-light dark:bg-orange-500 text-white rounded-lg 
+            hover:bg-primary-DEFAULT dark:hover:bg-orange-600 
             transition-colors"
           >
             <Mail className="w-4 h-4" />
             Send Email
           </button>
+          
         )}
+
+<button
+          onClick={handleDownload}
+          className="flex items-center gap-2 px-4 py-2 
+          bg-background-DEFAULT dark:bg-stone-800 
+            text-content-DEFAULT dark:text-white 
+            border border-border-DEFAULT dark:border-stone-700 rounded-lg 
+            hover:bg-background-dark dark:hover:bg-stone-700 
+            transition-colors
+          "
+        >
+          <Download className="w-4 h-4" />
+          Download Confirmation
+        </button>
       </div>
 
       <div className="space-y-4 text-content-light text-base mt-10">

@@ -33,6 +33,7 @@
     "nodemailer": "^6.9.16",
     "nodemailer-mailgun-transport": "^2.1.5",
     "pdfkit": "^0.15.2",
+    "rate-limit-mongo": "^2.3.2",
     "resend": "^4.0.1",
     "sanitize-html": "^2.14.0",
     "sharp": "^0.33.5",

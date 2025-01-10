@@ -256,6 +256,48 @@ export const resendBookingEmail = async (req, res) => {
   }
 };
 
+export const checkDateAvailability = async (req, res) => {
+  try {
+    const { date } = req.query;
+    
+    const businessHours = [
+      "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
+      "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM","6:00 PM","7:00 PM","8:00 PM"
+    ];
+
+    const maxBookingsPerSlot = 2;
+    const slots = {};
+
+    await Promise.all(
+      businessHours.map(async (time) => {
+        const dateTimePattern = `^${date}, ${time}$`;
+        
+        const bookingsCount = await Booking.countDocuments({
+          dateTime: { $regex: new RegExp(dateTimePattern) },
+          status: { $nin: ['cancelled'] }
+        });
+
+        // Only return availability status, not counts
+        slots[time] = {
+          available: bookingsCount < maxBookingsPerSlot
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      slots
+    });
+
+  } catch (error) {
+    console.error('Date slots availability check error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error checking availability'
+    });
+  }
+};
+
 export const checkSlotAvailability = async (req, res) => {
   try {
     const { dateTime } = req.query;
