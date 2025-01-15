@@ -121,15 +121,18 @@ const BookingForm = ({
     if (!date) return;
     
     setIsCheckingAvailability(true);
-
+  
     try {
-      const formattedDate = new Date(date).toLocaleDateString("en-US", {
+      // Format the selected date properly
+            const selectedDate = new Date(date);
+      selectedDate.setDate(selectedDate.getDate() + 1);
+      const formattedDate = selectedDate.toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",
-        year: "numeric",
+        year: "numeric"
       });
-
+  
       const response = await fetch(
         `${CONFIG.API_URL}/bookings/check-date-slots?date=${encodeURIComponent(formattedDate)}`,
         {
@@ -139,11 +142,11 @@ const BookingForm = ({
           },
         }
       );
-
+  
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
+  
       const data = await response.json();
       setTimeSlots(data.slots);
     } catch (error) {
@@ -164,19 +167,19 @@ const BookingForm = ({
   // Check single slot availability
   const checkSlotAvailability = async (date, time) => {
     if (!date || !time) return false;
-
-    const formattedDate = new Date(date);
-    const combinedDateTime = `${formattedDate.toLocaleDateString("en-US", {
+  
+    const selectedDate = new Date(date);
+    const formattedDateTime = `${selectedDate.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
-      year: "numeric",
+      year: "numeric"
     })}, ${time}`;
-
+  
     try {
       const response = await fetch(
         `${CONFIG.API_URL}/bookings/check-slot?dateTime=${encodeURIComponent(
-          combinedDateTime
+          formattedDateTime
         )}`,
         {
           method: "GET",
@@ -185,25 +188,25 @@ const BookingForm = ({
           },
         }
       );
-
+  
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
+  
       const data = await response.json();
-
+  
       if (!data.success || !data.available) {
         setValue("time", "");
         return false;
       }
-
+  
       onInputChange({
         target: {
           name: "dateTime",
-          value: combinedDateTime,
+          value: formattedDateTime
         },
       });
-
+  
       return true;
     } catch (error) {
       console.error("Error checking slot availability:", error);
@@ -218,17 +221,19 @@ const BookingForm = ({
       // Validate all fields before submission
       const isFormValid = await trigger();
       if (!isFormValid) return;
-
-      // Format date and time
-      const formattedDate = new Date(data.date);
-      const dateTime = `${formattedDate.toLocaleDateString("en-US", {
+  
+      // Create a new Date object from the selected date
+      const selectedDate = new Date(data.date);
+      
+      // Format the date properly
+      const formattedDateTime = `${selectedDate.toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",
-        year: "numeric",
+        year: "numeric"
       })}, ${data.time}`;
-
-      // Check final availability
+  
+      // Check final availability with proper date
       const isSlotAvailable = await checkSlotAvailability(data.date, data.time);
       if (!isSlotAvailable) {
         setError("time", {
@@ -237,20 +242,20 @@ const BookingForm = ({
         });
         return;
       }
-
-      // Create complete booking data
+  
+      // Create complete booking data with proper datetime
       const bookingData = {
         ...data,
-        dateTime,
+        dateTime: formattedDateTime
       };
-
+  
       // Submit booking
       const result = await onSubmit(bookingData);
       
       if (!result?.success) {
         throw new Error(result?.error || 'Failed to create booking');
       }
-
+  
     } catch (error) {
       setError("root.serverError", {
         type: "manual",
