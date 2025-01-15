@@ -169,6 +169,7 @@ const BookingForm = ({
     if (!date || !time) return false;
   
     const selectedDate = new Date(date);
+    selectedDate.setDate(selectedDate.getDate() + 1);
     const formattedDateTime = `${selectedDate.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
@@ -224,6 +225,7 @@ const BookingForm = ({
   
       // Create a new Date object from the selected date
       const selectedDate = new Date(data.date);
+      selectedDate.setDate(selectedDate.getDate() + 1);
       
       // Format the date properly
       const formattedDateTime = `${selectedDate.toLocaleDateString("en-US", {
