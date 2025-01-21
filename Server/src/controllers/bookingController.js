@@ -1,7 +1,12 @@
 // src/controllers/bookingController.js
-import PDFDocument from "pdfkit";
 import Booking from "../models/bookingModel.js";
-import { sendBookingConfirmation, sendAdminNotification, sendCancellationConfirmation } from "../services/emailService.js";
+import {
+  sendBookingConfirmation,
+  sendAdminNotification,
+  sendCancellationConfirmation,
+  sendStatusUpdateEmail,
+} from "../services/emailService.js";
+import { generatePDF } from "../services/pdfService.js";
 
 
 export async function createBooking(req, res) {
@@ -106,11 +111,7 @@ export async function updateBookingStatus(req, res) {
       });
     }
 
-    const booking = await Booking.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true } // Return the updated document
-    );
+    const booking = await Booking.findById(id);
 
     if (!booking) {
       return res.status(404).json({
@@ -132,6 +133,15 @@ export async function updateBookingStatus(req, res) {
     // Save the updated booking
     await booking.save();
 
+    // Send email notification to customer
+    if (booking.email) {
+      try {
+        await sendStatusUpdateEmail(booking, status, note);
+      } catch (emailError) {
+        console.error("Failed to send status update email:", emailError);
+      }
+    }
+
     res.json({
       success: true,
       data: booking,
@@ -147,20 +157,11 @@ export async function updateBookingStatus(req, res) {
 export const generateBookingPDF = async (req, res) => {
   try {
     const { confirmationNumber } = req.params;
-    //console.log('Generating PDF for booking:', confirmationNumber); // Debug log
-
     const booking = await Booking.findOne({ confirmationNumber });
 
     if (!booking) {
-      //console.log('Booking not found:', confirmationNumber); // Debug log
       return res.status(404).json({ error: "Booking not found" });
     }
-
-    // Create a new PDF document
-    const doc = new PDFDocument({
-      size: "A4",
-      margin: 50,
-    });
 
     // Set response headers
     res.setHeader("Content-Type", "application/pdf");
@@ -169,74 +170,16 @@ export const generateBookingPDF = async (req, res) => {
       `attachment; filename=booking-${confirmationNumber}.pdf`
     );
 
-    // Pipe the PDF directly to the response
+    // Generate and pipe the PDF
+    const doc = generatePDF(booking);
     doc.pipe(res);
-
-    // Add content to the PDF
-    doc
-      .fontSize(20)
-      .fillColor("#0cc0df")
-      .text("Markato Auto Detailing", { align: "center" });
-
-    doc.moveDown();
-    doc
-      .fontSize(16)
-      .fillColor("#000")
-      .text("Booking Confirmation", { align: "center" });
-
-    // Add booking details
-    doc.moveDown();
-    doc.fontSize(12).text(`Confirmation Number: ${booking.confirmationNumber}`);
-
-    doc.moveDown();
-    doc.text(`Date & Time: ${booking.dateTime}`);
-    doc.text(`Customer Name: ${booking.name}`);
-    doc.text(`Contact: ${booking.contact}`);
-    if (booking.email) doc.text(`Email: ${booking.email}`);
-
-    doc.moveDown();
-    doc.text("Vehicle Details:");
-    doc.text(`Make/Model: ${booking.makeModel}`);
-    doc.text(`Vehicle Type: ${booking.vehicleType}`);
-
-    doc.moveDown();
-    doc.text("Service Details:");
-    doc.text(`Service: ${booking.serviceName}`);
-    doc.text(`Service Price: $${booking.servicePrice}`);
-    doc.text(`Selected Scent: ${booking.selectedScent}`);
-
-    // Add optional services if any
-    if (booking.optionalServices && booking.optionalServices.length > 0) {
-      doc.moveDown();
-      doc.text("Optional Services:");
-      booking.optionalServices.forEach((service) => {
-        doc.text(`- ${service.name}: $${service.price}`);
-      });
-    }
-
-    // Add total
-    doc.moveDown();
-    doc.text(`Total Amount: $${booking.totalPrice}`, { bold: true });
-
-    // Add footer
-    doc.moveDown(2);
-    doc
-      .fontSize(10)
-      .fillColor("#666")
-      .text("Thank you for choosing Markato Auto Detailing!", {
-        align: "center",
-      });
-    doc.text("Please present this confirmation at the time of service.", {
-      align: "center",
-    });
-
-    // Finalize PDF file
     doc.end();
   } catch (error) {
     console.error("PDF generation error:", error);
     res.status(500).json({ error: "Failed to generate PDF" });
   }
 };
+
 export const resendBookingEmail = async (req, res) => {
   const { confirmationNumber } = req.params;
   const booking = await Booking.findOne({ confirmationNumber });
@@ -259,10 +202,20 @@ export const resendBookingEmail = async (req, res) => {
 export const checkDateAvailability = async (req, res) => {
   try {
     const { date } = req.query;
-    
+
     const businessHours = [
-      "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
-      "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM","6:00 PM","7:00 PM","8:00 PM"
+      "9:00 AM",
+      "10:00 AM",
+      "11:00 AM",
+      "12:00 PM",
+      "1:00 PM",
+      "2:00 PM",
+      "3:00 PM",
+      "4:00 PM",
+      "5:00 PM",
+      "6:00 PM",
+      "7:00 PM",
+      "8:00 PM",
     ];
 
     const maxBookingsPerSlot = 2;
@@ -271,29 +224,28 @@ export const checkDateAvailability = async (req, res) => {
     await Promise.all(
       businessHours.map(async (time) => {
         const dateTimePattern = `^${date}, ${time}$`;
-        
+
         const bookingsCount = await Booking.countDocuments({
           dateTime: { $regex: new RegExp(dateTimePattern) },
-          status: { $nin: ['cancelled'] }
+          status: { $nin: ["cancelled"] },
         });
 
         // Only return availability status, not counts
         slots[time] = {
-          available: bookingsCount < maxBookingsPerSlot
+          available: bookingsCount < maxBookingsPerSlot,
         };
       })
     );
 
     res.json({
       success: true,
-      slots
+      slots,
     });
-
   } catch (error) {
-    console.error('Date slots availability check error:', error);
+    console.error("Date slots availability check error:", error);
     res.status(500).json({
       success: false,
-      error: 'Error checking availability'
+      error: "Error checking availability",
     });
   }
 };
@@ -301,24 +253,27 @@ export const checkDateAvailability = async (req, res) => {
 export const checkSlotAvailability = async (req, res) => {
   try {
     const { dateTime } = req.query;
-    
+
     // The dateTime comes in format: "Wed, Jan 8, 2025, 11:00 AM"
     // First, let's split the date and time
-    const [datePart, timePart] = dateTime.split(', ').slice(-2);
-    
+    const [datePart, timePart] = dateTime.split(", ").slice(-2);
+
     // Create a regex pattern to match this exact date and time
-    const dateTimePattern = `^${dateTime.split(', ').slice(0, -1).join(', ')}, ${timePart}$`;
-    
+    const dateTimePattern = `^${dateTime
+      .split(", ")
+      .slice(0, -1)
+      .join(", ")}, ${timePart}$`;
+
     // Count bookings for this exact date and time slot
     const bookingsCount = await Booking.countDocuments({
       dateTime: { $regex: new RegExp(dateTimePattern) },
-      status: { $nin: ['cancelled'] }
+      status: { $nin: ["cancelled"] },
     });
 
     // For debugging
-    console.log('Checking availability for:', dateTime);
-    console.log('Pattern used:', dateTimePattern);
-    console.log('Bookings found:', bookingsCount);
+    // console.log("Checking availability for:", dateTime);
+    // console.log("Pattern used:", dateTimePattern);
+    // console.log("Bookings found:", bookingsCount);
 
     const maxBookingsPerSlot = 2; // You can adjust this number
     const isAvailable = bookingsCount < maxBookingsPerSlot;
@@ -329,14 +284,14 @@ export const checkSlotAvailability = async (req, res) => {
       currentBookings: bookingsCount,
       maxBookingsPerSlot,
       requestedDateTime: dateTime,
-      pattern: dateTimePattern // Including this for debugging
+      pattern: dateTimePattern, // Including this for debugging
     });
   } catch (error) {
-    console.error('Slot availability check error:', error);
+    console.error("Slot availability check error:", error);
     res.status(500).json({
       success: false,
-      error: 'Error checking slot availability',
-      details: error.message
+      error: "Error checking slot availability",
+      details: error.message,
     });
   }
 };
@@ -344,40 +299,42 @@ export const checkSlotAvailability = async (req, res) => {
 export const checkCancellation = async (req, res) => {
   try {
     const { confirmationNumber, email } = req.params;
-    const decodedEmail = Buffer.from(email, 'base64').toString();
+    const decodedEmail = Buffer.from(email, "base64").toString();
 
-    const booking = await Booking.findOne({ 
+    const booking = await Booking.findOne({
       confirmationNumber,
       email: decodedEmail,
-      status: { $nin: ['cancelled', 'completed'] }
+      status: { $nin: ["cancelled", "completed"] },
     });
 
     if (!booking) {
       return res.status(404).json({
         success: false,
-        error: 'Booking not found or already cancelled/completed'
+        error: "Booking not found or already cancelled/completed",
       });
     }
 
     const appointmentTime = new Date(booking.dateTime);
     const now = new Date();
-    const hoursUntilAppointment = (appointmentTime - now) / (1000 * 60 * 60);
+    const pacificNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+    const hoursUntilAppointment = (appointmentTime - pacificNow) / (1000 * 60 * 60);
 
     if (hoursUntilAppointment < 24) {
       return res.status(400).json({
         success: false,
-        error: 'Cancellations must be made at least 24 hours before the appointment'
+        error:
+          "Cancellations must be made at least 24 hours before the appointment",
       });
     }
 
     res.json({
       success: true,
-      booking
+      booking,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };
@@ -385,37 +342,39 @@ export const checkCancellation = async (req, res) => {
 export const cancelBooking = async (req, res) => {
   try {
     const { confirmationNumber, email } = req.params;
-    const decodedEmail = Buffer.from(email, 'base64').toString();
+    const decodedEmail = Buffer.from(email, "base64").toString();
 
-    const booking = await Booking.findOne({ 
+    const booking = await Booking.findOne({
       confirmationNumber,
       email: decodedEmail,
-      status: { $nin: ['cancelled', 'completed'] }
+      status: { $nin: ["cancelled", "completed"] },
     });
 
     if (!booking) {
       return res.status(404).json({
         success: false,
-        error: 'Booking not found or already cancelled/completed'
+        error: "Booking not found or already cancelled/completed",
       });
     }
 
     const appointmentTime = new Date(booking.dateTime);
     const now = new Date();
-    const hoursUntilAppointment = (appointmentTime - now) / (1000 * 60 * 60);
+    const pacificNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+    const hoursUntilAppointment = (appointmentTime - pacificNow) / (1000 * 60 * 60);
 
     if (hoursUntilAppointment < 24) {
       return res.status(400).json({
         success: false,
-        error: 'Cancellations must be made at least 24 hours before the appointment'
+        error:
+          "Cancellations must be made at least 24 hours before the appointment",
       });
     }
 
-    booking.status = 'cancelled';
+    booking.status = "cancelled";
     booking.statusHistory.push({
-      status: 'cancelled',
+      status: "cancelled",
       timestamp: new Date(),
-      note: 'Cancelled by customer through cancellation page'
+      note: "Cancelled by customer through cancellation page",
     });
 
     await booking.save();
@@ -424,17 +383,17 @@ export const cancelBooking = async (req, res) => {
     try {
       await sendCancellationConfirmation(booking);
     } catch (emailError) {
-      console.error('Failed to send cancellation email:', emailError);
+      console.error("Failed to send cancellation email:", emailError);
     }
 
     res.json({
       success: true,
-      message: 'Booking cancelled successfully'
+      message: "Booking cancelled successfully",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: "Server error",
     });
   }
 };

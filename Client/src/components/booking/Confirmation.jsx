@@ -54,15 +54,15 @@ const Confirmation = ({ booking }) => {
       const response = await fetch(
         `${CONFIG.API_URL}/bookings/${booking.confirmationNumber}/resend-email`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json'
-          }
+            "Content-Type": "application/json",
+          },
         }
       );
-  
+
       const data = await response.json();
-  
+
       if (response.ok && data.success) {
         alert("Email sent successfully!");
       } else {
@@ -197,46 +197,47 @@ const Confirmation = ({ booking }) => {
       </div>
 
       <div className="flex gap-4 mt-8">
-        
         {booking.email && (
           <button
             onClick={handleResendEmail}
             className="flex items-center gap-2 px-4 py-2 
-            bg-primary-light dark:bg-orange-500 text-white rounded-lg 
-            hover:bg-primary-DEFAULT dark:hover:bg-orange-600 
-            transition-colors"
+        bg-primary-light dark:bg-orange-500 text-white rounded-lg 
+        hover:bg-primary-DEFAULT dark:hover:bg-orange-600 
+        transition-colors"
           >
             <Mail className="w-4 h-4" />
             Send Email
           </button>
-          
         )}
 
-<button
+        <button
           onClick={handleDownload}
-          className="flex items-center gap-2 px-4 py-2 
-          bg-background-DEFAULT dark:bg-stone-800 
-            text-content-DEFAULT dark:text-white 
-            border border-border-DEFAULT dark:border-stone-700 rounded-lg 
-            hover:bg-background-dark dark:hover:bg-stone-700 
-            transition-colors
-          "
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors
+      ${
+        booking.email
+          ? "bg-background-DEFAULT dark:bg-stone-800 text-content-DEFAULT dark:text-white border border-border-DEFAULT dark:border-stone-700 hover:bg-background-dark dark:hover:bg-stone-700"
+          : "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
+      }`}
         >
           <Download className="w-4 h-4" />
           Download Confirmation
         </button>
       </div>
 
-      <div className="space-y-4 text-content-light text-base mt-10">
-        <p>
-          Please save your confirmation number:{" "}
-          <span className="font-mono font-bold text-primary-DEFAULT">
-            {booking.confirmationNumber}
-          </span>
-        </p>
-        <p>We look forward to servicing your vehicle at the scheduled time.</p>
-        <p>Please arrive 5-10 minutes before your appointment time.</p>
-      </div>
+      <div className="space-y-4 text-base mt-10">
+  <p className="text-content-DEFAULT dark:text-stone-300">
+    Please save your confirmation number:{" "}
+    <span className="font-mono font-bold text-primary-DEFAULT dark:text-orange-500">
+      {booking.confirmationNumber}
+    </span>
+  </p>
+  <p className="text-content-DEFAULT dark:text-stone-300">
+    We look forward to servicing your vehicle at the scheduled time.
+  </p>
+  <p className="text-content-DEFAULT dark:text-stone-300">
+    Please arrive 5-10 minutes before your appointment time.
+  </p>
+</div>
 
       <motion.button
         onClick={() => window.location.reload()}

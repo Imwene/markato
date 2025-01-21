@@ -18,15 +18,12 @@ export const ConfigProvider = ({ children }) => {
       // Fetch all config data in parallel with Promise.allSettled
       const [vehicleTypesResult, scentsResult, optionalServicesResult] =
         await Promise.allSettled([
-          fetch(
-            `${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.VEHICLE_TYPES}`
-          ).then((res) => res.json()),
-          fetch(`${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.SCENTS}`).then(
-            (res) => res.json()
-          ),
-          fetch(
-            `${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.OPTIONAL_SERVICES}`
-          ).then((res) => res.json()),
+          fetch(`${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.VEHICLE_TYPES}`)
+            .then((res) => res.json()),
+          fetch(`${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.SCENTS}`)
+            .then((res) => res.json()),
+          fetch(`${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.OPTIONAL_SERVICES}`)
+            .then((res) => res.json()),
         ]);
 
       // Handle results individually
@@ -108,7 +105,7 @@ export const ConfigProvider = ({ children }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light dark:border-orange-500"></div>
       </div>
     );
   }
@@ -116,10 +113,10 @@ export const ConfigProvider = ({ children }) => {
   if (error) {
     return (
       <div className="text-red-500 p-4 text-center">
-        Error loading configuration: {error}
+        <p className="mb-2">Error loading configuration: {error}</p>
         <button
           onClick={fetchConfig}
-          className="mt-2 px-4 py-2 bg-primary-light text-white rounded hover:bg-primary-DEFAULT"
+          className="mt-2 px-4 py-2 bg-primary-light dark:bg-orange-500 text-white rounded-lg hover:bg-primary-DEFAULT dark:hover:bg-orange-600 transition-colors"
         >
           Retry
         </button>

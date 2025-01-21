@@ -42,10 +42,10 @@ const CancellationPage = () => {
       const response = await fetch(
         `${CONFIG.API_URL}/bookings/cancel/${confirmationNumber}/${email}`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json'
-          }
+            "Content-Type": "application/json",
+          },
         }
       );
 
@@ -60,6 +60,16 @@ const CancellationPage = () => {
       setError("Failed to cancel booking");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoBack = () => {
+    // Try window.history.back() first
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      // Fallback to navigating home
+      navigate("/");
     }
   };
 
@@ -164,11 +174,11 @@ const CancellationPage = () => {
             Cancel Booking
           </button>
           <button
-            onClick={() => window.history.back()}
+            onClick={handleGoBack}
             className="flex-1 px-6 py-3 bg-background-DEFAULT dark:bg-stone-700 
-                     text-content-DEFAULT dark:text-white rounded-lg 
-                     hover:bg-background-dark dark:hover:bg-stone-600 
-                     transition-colors"
+             text-content-DEFAULT dark:text-white rounded-lg 
+             hover:bg-background-dark dark:hover:bg-stone-600 
+             transition-colors"
           >
             Go Back
           </button>

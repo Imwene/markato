@@ -25,7 +25,7 @@ const HeroSection = () => {
       </h1>
 
       <p className="mt-6 text-lg text-center text-content-light dark:text-stone-400 max-w-4xl">
-        Your car deserves nothing but the best detailing services in town. Book
+        Your car deserves nothing but the best detailing services in Oakland. Book
         a seamless car service experience with us.
       </p>
 

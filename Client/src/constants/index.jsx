@@ -13,7 +13,7 @@ import { GlobeLock } from "lucide-react";
 // import user6 from "../assets/profile-pictures/user6.jpg";
 
 export const navItems = [
-  { label: "How it works", href: "#how-it-works" },
+  { label: "How We Work", href: "#workflow-section" },
   { label: "Why Choose Us", href: "#why-choose-us" },
   { label: "Find Us", href: "#find-us" },
   // { label: "Pricing", href: "#" },

@@ -3,7 +3,11 @@ import { useForm, Controller } from "react-hook-form";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { CONFIG } from "../../config/config";
-
+import {
+  formatToPacificDate,
+  getCurrentPacificDate,
+  formatToPacificDateTime,
+} from "../../utils/dateUtils";
 const BookingForm = ({
   bookingDetails,
   onInputChange,
@@ -43,8 +47,15 @@ const BookingForm = ({
 
   // Business hours
   const businessHours = [
-    "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
-    "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM",
+    "9:00 AM",
+    "10:00 AM",
+    "11:00 AM",
+    "12:00 PM",
+    "1:00 PM",
+    "2:00 PM",
+    "3:00 PM",
+    "4:00 PM",
+    "5:00 PM",
   ];
 
   // Form validation rules
@@ -68,6 +79,7 @@ const BookingForm = ({
       },
     },
     email: {
+      required: "Email address is required",
       pattern: {
         value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
         message: "Please enter a valid email address",
@@ -76,7 +88,7 @@ const BookingForm = ({
     makeModel: {
       required: "Car make and model is required",
       minLength: {
-        value: 2,
+        value: 3,
         message: "Car make and model must be at least 2 characters long",
       },
     },
@@ -88,25 +100,22 @@ const BookingForm = ({
     },
     captchaAnswer: {
       required: "Please answer the CAPTCHA",
-      validate: value => value.trim() === captcha.answer || "Incorrect CAPTCHA answer",
+      validate: (value) =>
+        value.trim() === captcha.answer || "Incorrect CAPTCHA answer",
     },
   };
 
   // Generate available dates
   const generateDates = () => {
     const dates = [];
-    const current = new Date();
+    const current = getCurrentPacificDate();
 
     for (let i = 1; i < 8; i++) {
       const date = new Date(current);
       date.setDate(current.getDate() + i);
 
-      const formattedDate = date.toISOString().split("T")[0];
-      const displayDate = date.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      });
+      const formattedDate = formatToPacificDate(date);
+      const displayDate = formattedDate;
 
       dates.push({
         value: formattedDate,
@@ -119,22 +128,18 @@ const BookingForm = ({
   // Check availability for a specific date
   const checkDateAvailability = async (date) => {
     if (!date) return;
-    
+
     setIsCheckingAvailability(true);
-  
+
     try {
-      // Format the selected date properly
-            const selectedDate = new Date(date);
-      selectedDate.setDate(selectedDate.getDate() + 1);
-      const formattedDate = selectedDate.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric"
-      });
-  
+      // Convert the selected date to Pacific Time
+      const selectedDate = new Date(date);
+      const formattedDate = formatToPacificDate(selectedDate);
+
       const response = await fetch(
-        `${CONFIG.API_URL}/bookings/check-date-slots?date=${encodeURIComponent(formattedDate)}`,
+        `${CONFIG.API_URL}/bookings/check-date-slots?date=${encodeURIComponent(
+          formattedDate
+        )}`,
         {
           method: "GET",
           headers: {
@@ -142,11 +147,11 @@ const BookingForm = ({
           },
         }
       );
-  
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-  
+
       const data = await response.json();
       setTimeSlots(data.slots);
     } catch (error) {
@@ -167,16 +172,11 @@ const BookingForm = ({
   // Check single slot availability
   const checkSlotAvailability = async (date, time) => {
     if (!date || !time) return false;
-  
+
     const selectedDate = new Date(date);
-    selectedDate.setDate(selectedDate.getDate() + 1);
-    const formattedDateTime = `${selectedDate.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric"
-    })}, ${time}`;
-  
+    //selectedDate.setDate(selectedDate.getDate() + 1);
+    const formattedDateTime = formatToPacificDateTime(selectedDate, time);
+
     try {
       const response = await fetch(
         `${CONFIG.API_URL}/bookings/check-slot?dateTime=${encodeURIComponent(
@@ -189,25 +189,25 @@ const BookingForm = ({
           },
         }
       );
-  
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-  
+
       const data = await response.json();
-  
+
       if (!data.success || !data.available) {
         setValue("time", "");
         return false;
       }
-  
+
       onInputChange({
         target: {
           name: "dateTime",
-          value: formattedDateTime
+          value: formattedDateTime,
         },
       });
-  
+
       return true;
     } catch (error) {
       console.error("Error checking slot availability:", error);
@@ -222,46 +222,43 @@ const BookingForm = ({
       // Validate all fields before submission
       const isFormValid = await trigger();
       if (!isFormValid) return;
-  
+
       // Create a new Date object from the selected date
       const selectedDate = new Date(data.date);
-      selectedDate.setDate(selectedDate.getDate() + 1);
-      
+      //selectedDate.setDate(selectedDate.getDate() + 1);
+
       // Format the date properly
-      const formattedDateTime = `${selectedDate.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric"
-      })}, ${data.time}`;
-  
+      const formattedDateTime = formatToPacificDateTime(
+        selectedDate,
+        data.time
+      );
+
       // Check final availability with proper date
       const isSlotAvailable = await checkSlotAvailability(data.date, data.time);
       if (!isSlotAvailable) {
         setError("time", {
           type: "manual",
-          message: "This time slot is no longer available"
+          message: "This time slot is no longer available",
         });
         return;
       }
-  
+
       // Create complete booking data with proper datetime
       const bookingData = {
         ...data,
-        dateTime: formattedDateTime
+        dateTime: formattedDateTime,
       };
-  
+
       // Submit booking
       const result = await onSubmit(bookingData);
-      
+
       if (!result?.success) {
-        throw new Error(result?.error || 'Failed to create booking');
+        throw new Error(result?.error || "Failed to create booking");
       }
-  
     } catch (error) {
       setError("root.serverError", {
         type: "manual",
-        message: error.message || "Failed to create booking"
+        message: error.message || "Failed to create booking",
       });
     }
   };
@@ -277,7 +274,6 @@ const BookingForm = ({
     ${errors ? "border-red-500" : "border-border-DEFAULT dark:border-stone-700"}
   `;
 
-
   return (
     <div className="relative">
       <motion.div
@@ -290,10 +286,17 @@ const BookingForm = ({
           Booking Details
         </h2>
 
-        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4" noValidate>
+        <form
+          onSubmit={handleSubmit(onFormSubmit)}
+          className="space-y-4"
+          noValidate
+        >
           {/* Form Level Error */}
           {errors.root?.serverError && (
-            <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">
+            <div
+              className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800"
+              role="alert"
+            >
               {errors.root.serverError.message}
             </div>
           )}
@@ -354,7 +357,7 @@ const BookingForm = ({
                 <input
                   {...field}
                   type="email"
-                  placeholder="Email Address (Optional)"
+                  placeholder="Email Address"
                   className={inputClassName}
                   aria-describedby="emailError"
                 />
@@ -398,8 +401,8 @@ const BookingForm = ({
                 control={control}
                 rules={validationRules.date}
                 render={({ field }) => (
-                  <select 
-                    {...field} 
+                  <select
+                    {...field}
                     className={inputClassName}
                     onChange={(e) => {
                       field.onChange(e);
@@ -431,30 +434,31 @@ const BookingForm = ({
                 rules={validationRules.time}
                 render={({ field }) => (
                   <div>
-                    <select 
-                      {...field} 
-                      className={`${inputClassName} ${!watchedDate ? 'cursor-not-allowed opacity-50' : ''}`}
+                    <select
+                      {...field}
+                      className={`${inputClassName} ${
+                        !watchedDate ? "cursor-not-allowed opacity-50" : ""
+                      }`}
                       disabled={!watchedDate || isCheckingAvailability}
                     >
                       <option value="">
-                        {isCheckingAvailability 
-                          ? "Checking availability..." 
-                          : !watchedDate 
-                            ? "Select date first" 
-                            : "Select Time"
-                        }
+                        {isCheckingAvailability
+                          ? "Checking availability..."
+                          : !watchedDate
+                          ? "Select date first"
+                          : "Select Time"}
                       </option>
                       {businessHours.map((time) => {
                         const slot = timeSlots[time];
                         const isAvailable = slot?.available;
-                        const bookingInfo = slot 
-                          // ? `(${slot.currentBookings}/${slot.maxBookingsPerSlot} 
-                          ? "slots taken"
-                          : '';
-                        
+                        const bookingInfo = slot
+                          ? // ? `(${slot.currentBookings}/${slot.maxBookingsPerSlot}
+                            "slots taken"
+                          : "";
+
                         return (
-                          <option 
-                            key={time} 
+                          <option
+                            key={time}
                             value={time}
                             disabled={!isAvailable}
                           >
@@ -537,5 +541,5 @@ const BookingForm = ({
       </motion.div>
     </div>
   );
-              }
+};
 export default BookingForm;

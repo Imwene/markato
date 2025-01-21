@@ -349,8 +349,8 @@ export const getWeeklyBookings = async (req, res) => {
       }
     }).sort({ dateTime: 1 });
 
-    console.log('Date patterns:', dates);
-    console.log('Found bookings:', bookings.length);
+    //console.log('Date patterns:', dates);
+    //console.log('Found bookings:', bookings.length);
     
     res.json({
       success: true,

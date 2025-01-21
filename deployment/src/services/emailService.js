@@ -1,9 +1,9 @@
 // src/services/emailService.js
-import { Resend } from 'resend';
-import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { Resend } from "resend";
+import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
 
@@ -12,20 +12,20 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Pre-load the image at startup
-const logoPath = path.join(__dirname, 'email-logo.jpg');
-const JPG_MARKATO = fs.readFileSync(logoPath).toString('base64');
-console.log('Logo loaded:', JPG_MARKATO.length);
+const logoPath = path.join(__dirname, "email-logo.jpg");
+const JPG_MARKATO = fs.readFileSync(logoPath).toString("base64");
+//console.log("Logo loaded:", JPG_MARKATO.length);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-
 const formatPrice = (price) => {
   return ` $${price}`;
-}; 
+};
 
 const createAdminEmailTemplate = (booking) => {
-  const optionalServicesSection = booking.optionalServices?.length > 0 
-    ? `
+  const optionalServicesSection =
+    booking.optionalServices?.length > 0
+      ? `
       <div style="padding-top: 20px; margin-top: 20px; border-top: 1px solid #e2e8f0;">
         <h3 style="font-size: 18px; font-weight: 600; color: #1a202c; margin-bottom: 16px;">
           Optional Services Selected
@@ -35,16 +35,20 @@ const createAdminEmailTemplate = (booking) => {
             <th style="text-align: left; padding: 8px; border: 1px solid #e2e8f0;">Service</th>
             <th style="text-align: right; padding: 8px; border: 1px solid #e2e8f0;">Price</th>
           </tr>
-          ${booking.optionalServices.map(service => `
+          ${booking.optionalServices
+            .map(
+              (service) => `
             <tr>
               <td style="padding: 8px; border: 1px solid #e2e8f0;">${service.name}</td>
               <td style="text-align: right; padding: 8px; border: 1px solid #e2e8f0;">$${service.price}</td>
             </tr>
-          `).join('')}
+          `
+            )
+            .join("")}
         </table>
       </div>
-    ` 
-    : '<p style="color: #64748b;">No optional services selected</p>';
+    `
+      : '<p style="color: #64748b;">No optional services selected</p>';
 
   return `
     <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px;">
@@ -68,18 +72,26 @@ const createAdminEmailTemplate = (booking) => {
         <table style="width: 100%;">
           <tr>
             <td style="padding: 8px 0; color: #4a5568;">Name:</td>
-            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${booking.name}</td>
+            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${
+              booking.name
+            }</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #4a5568;">Contact:</td>
-            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${booking.contact}</td>
+            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${
+              booking.contact
+            }</td>
           </tr>
-          ${booking.email ? `
+          ${
+            booking.email
+              ? `
           <tr>
             <td style="padding: 8px 0; color: #4a5568;">Email:</td>
             <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${booking.email}</td>
           </tr>
-          ` : ''}
+          `
+              : ""
+          }
         </table>
       </div>
 
@@ -128,7 +140,9 @@ const createAdminEmailTemplate = (booking) => {
       <div style="background: #f8fafc; border-radius: 8px; padding: 24px; margin-top: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="font-size: 18px; font-weight: 600; color: #1a202c;">Total Amount:</span>
-          <span style="color: #0cc0df; font-size: 24px; font-weight: 600;">$${booking.totalPrice}</span>
+          <span style="color: #0cc0df; font-size: 24px; font-weight: 600;">$${
+            booking.totalPrice
+          }</span>
         </div>
       </div>
 
@@ -148,12 +162,12 @@ const createAdminEmailTemplate = (booking) => {
 };
 
 const createEmailTemplate = (booking) => {
-
-  const encodedEmail = Buffer.from(booking.email).toString('base64');
+  const encodedEmail = Buffer.from(booking.email).toString("base64");
   const cancelUrl = `${process.env.FRONTEND_URL}/cancel-booking/${booking.confirmationNumber}/${encodedEmail}`;
 
-  const optionalServicesSection = booking.optionalServices?.length > 0 
-    ? `
+  const optionalServicesSection =
+    booking.optionalServices?.length > 0
+      ? `
       <div style="padding-top: 20px; margin-top: 20px; border-top: 1px solid #e2e8f0;">
         <h3 style="font-size: 18px; font-weight: 600; color: #1a202c; margin-bottom: 16px;">
           Optional Services Selected
@@ -163,16 +177,20 @@ const createEmailTemplate = (booking) => {
             <th style="text-align: left; padding: 8px; border: 1px solid #e2e8f0;">Service</th>
             <th style="text-align: right; padding: 8px; border: 1px solid #e2e8f0;">Price</th>
           </tr>
-          ${booking.optionalServices.map(service => `
+          ${booking.optionalServices
+            .map(
+              (service) => `
             <tr>
               <td style="padding: 8px; border: 1px solid #e2e8f0;">${service.name}</td>
               <td style="text-align: right; padding: 8px; border: 1px solid #e2e8f0;">$${service.price}</td>
             </tr>
-          `).join('')}
+          `
+            )
+            .join("")}
         </table>
       </div>
-    ` 
-    : '<p style="color: #64748b;">No optional services selected</p>';
+    `
+      : '<p style="color: #64748b;">No optional services selected</p>';
 
   return `
     <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px;">
@@ -213,18 +231,26 @@ const createEmailTemplate = (booking) => {
         <table style="width: 100%;">
           <tr>
             <td style="padding: 8px 0; color: #4a5568;">Name:</td>
-            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${booking.name}</td>
+            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${
+              booking.name
+            }</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #4a5568;">Contact:</td>
-            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${booking.contact}</td>
+            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${
+              booking.contact
+            }</td>
           </tr>
-          ${booking.email ? `
+          ${
+            booking.email
+              ? `
           <tr>
             <td style="padding: 8px 0; color: #4a5568;">Email:</td>
             <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${booking.email}</td>
           </tr>
-          ` : ''}
+          `
+              : ""
+          }
         </table>
       </div>
 
@@ -273,7 +299,9 @@ const createEmailTemplate = (booking) => {
       <div style="background: #f8fafc; border-radius: 8px; padding: 24px; margin-top: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="font-size: 18px; font-weight: 600; color: #1a202c;">Total Amount:</span>
-          <span style="color: #0cc0df; font-size: 24px; font-weight: 600;">$${booking.totalPrice}</span>
+          <span style="color: #0cc0df; font-size: 24px; font-weight: 600;">$${
+            booking.totalPrice
+          }</span>
         </div>
       </div>
 
@@ -300,51 +328,27 @@ const createEmailTemplate = (booking) => {
 
       <!-- Cancellation Info -->
       <div style="text-align: center; margin-top: 32px;">
-        <p style="margin-bottom: 16px; color: #4a5568;">
-          Need to cancel your appointment?
-        </p>
-        <table role="presentation" align="center" style="margin:0 auto;">
-          <tr>
-            <td>
-              <!-- Cancel Button -->
-             <a href="${cancelUrl}"
-   style="background: #dc2626;
-          border: 1px solid #dc2626;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-          font-size: 15px;
-          font-weight: 500;
-          line-height: 15px;
-          text-decoration: none;
-          padding: 13px 17px;
-          color: #ffffff;
-          display: inline-block;
-          border-radius: 4px;">
-  Cancel Booking
-</a>
-            </td>
-            <td style="padding-left: 16px;">
-              <!-- Reschedule Button (still using phone) -->
-              <a href="tel:+14158899108"
-                 style="background: #0cc0df;
-                        border: 1px solid #0cc0df;
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-                        font-size: 15px;
-                        font-weight: 500;
-                        line-height: 15px;
-                        text-decoration: none;
-                        padding: 13px 17px;
-                        color: #ffffff;
-                        display: inline-block;
-                        border-radius: 4px;">
-                Call to Reschedule
-              </a>
-            </td>
-          </tr>
-        </table>
-        <p style="margin-top: 16px; color: #4a5568; font-size: 14px;">
-          Cancellations must be made at least 24 hours before your appointment time.
-        </p>
-      </div>
+  <p style="margin-bottom: 16px; color: #4a5568;">
+    Need to cancel your appointment?
+  </p>
+  <a href="${cancelUrl}"
+     style="background: #dc2626;
+            border: 1px solid #dc2626;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 15px;
+            text-decoration: none;
+            padding: 13px 17px;
+            color: #ffffff;
+            display: inline-block;
+            border-radius: 4px;">
+    Cancel Booking
+  </a>
+  <p style="margin-top: 16px; color: #4a5568; font-size: 14px;">
+    Cancellations must be made at least 24 hours before your appointment time.
+  </p>
+</div>
 
       <!-- Footer -->
       <div style="text-align: center; margin-top: 32px; color: #4a5568; font-size: 14px;">
@@ -445,18 +449,26 @@ const createAdminCancellationEmailTemplate = (booking) => {
         <table style="width: 100%;">
           <tr>
             <td style="padding: 8px 0; color: #4a5568;">Customer:</td>
-            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${booking.name}</td>
+            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${
+              booking.name
+            }</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #4a5568;">Contact:</td>
-            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${booking.contact}</td>
+            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${
+              booking.contact
+            }</td>
           </tr>
-          ${booking.email ? `
+          ${
+            booking.email
+              ? `
           <tr>
             <td style="padding: 8px 0; color: #4a5568;">Email:</td>
             <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">${booking.email}</td>
           </tr>
-          ` : ''}
+          `
+              : ""
+          }
           <tr>
             <td style="padding: 8px 0; color: #4a5568;">Service:</td>
             <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">
@@ -479,27 +491,37 @@ const createAdminCancellationEmailTemplate = (booking) => {
       </div>
 
       <!-- Optional Services Section -->
-      ${booking.optionalServices?.length > 0 ? `
+      ${
+        booking.optionalServices?.length > 0
+          ? `
         <div style="background: #f8fafc; border-radius: 8px; padding: 24px; margin-top: 24px;">
           <h3 style="font-size: 16px; font-weight: 600; color: #1a202c; margin: 0 0 16px 0;">
             Optional Services Cancelled
           </h3>
           <table style="width: 100%; border-collapse: collapse;">
-            ${booking.optionalServices.map(service => `
+            ${booking.optionalServices
+              .map(
+                (service) => `
               <tr>
                 <td style="padding: 8px; border: 1px solid #e2e8f0;">${service.name}</td>
                 <td style="text-align: right; padding: 8px; border: 1px solid #e2e8f0;">$${service.price}</td>
               </tr>
-            `).join('')}
+            `
+              )
+              .join("")}
           </table>
         </div>
-      ` : ''}
+      `
+          : ""
+      }
 
       <!-- Total Amount Section -->
       <div style="background: #f8fafc; border-radius: 8px; padding: 24px; margin-top: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="font-size: 18px; font-weight: 600; color: #1a202c;">Cancelled Amount:</span>
-          <span style="color: #dc2626; font-size: 24px; font-weight: 600;">$${booking.totalPrice}</span>
+          <span style="color: #dc2626; font-size: 24px; font-weight: 600;">$${
+            booking.totalPrice
+          }</span>
         </div>
       </div>
 
@@ -521,6 +543,77 @@ const createAdminCancellationEmailTemplate = (booking) => {
   `;
 };
 
+const createStatusUpdateEmailTemplate = (booking, newStatus, note) => {
+  const statusMessages = {
+    pending: "Your booking is pending confirmation",
+    confirmed: "Your booking has been confirmed",
+    in_progress: "Your service is now in progress",
+    completed: "Your service has been completed",
+    cancelled: "Your booking has been cancelled",
+  };
+
+  return `
+    <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 32px 24px;">
+      <!-- Company Logo -->
+      <div style="text-align: center; margin-bottom: 24px;">
+        <img src="data:image/png;base64,${JPG_MARKATO}"  
+             alt="Markato Auto Detail" 
+             style="height: 60px; width: auto;"
+        />
+      </div>
+
+      <!-- Header -->
+      <div style="text-align: center; margin-bottom: 32px;">
+        <h1 style="font-size: 24px; font-weight: 700; color: #1a202c; margin: 0 0 16px 0;">
+          Booking Status Update
+        </h1>
+        <div style="color: #4a5568; font-size: 16px;">
+          Booking #: <span style="color: #0cc0df; font-family: monospace; font-weight: 600;">
+            ${booking.confirmationNumber}
+          </span>
+        </div>
+      </div>
+
+      <div style="background: #f8fafc; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+        <h2 style="font-size: 18px; font-weight: 600; color: #1a202c; margin: 0 0 16px 0;">
+          Status Update
+        </h2>
+        <p style="color: #1a202c; font-size: 16px; margin-bottom: 16px;">
+          ${statusMessages[newStatus]}
+        </p>
+        ${
+          note
+            ? `
+          <div style="margin-top: 16px; padding: 16px; background: #fff; border-radius: 4px;">
+            <p style="color: #4a5568; margin: 0;">${note}</p>
+          </div>
+        `
+            : ""
+        }
+      </div>
+
+      <div style="background: #f8fafc; border-radius: 8px; padding: 24px;">
+        <h3 style="font-size: 16px; font-weight: 600; color: #1a202c; margin: 0 0 16px 0;">
+          Booking Details
+        </h3>
+        <table style="width: 100%;">
+          <tr>
+            <td style="padding: 8px 0; color: #4a5568;">Service:</td>
+            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">
+              ${booking.serviceName}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #4a5568;">Date & Time:</td>
+            <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">
+              ${booking.dateTime}
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  `;
+};
 
 export const sendAdminNotification = async (booking) => {
   try {
@@ -529,11 +622,11 @@ export const sendAdminNotification = async (booking) => {
       to: [process.env.ADMIN_EMAIL],
       subject: `New Booking: ${booking.confirmationNumber} - ${booking.serviceName}`,
       html: createAdminEmailTemplate(booking),
-      reply_to: booking.email 
+      reply_to: booking.email,
     });
     return true;
   } catch (error) {
-    console.error('Admin notification email failed:', error);
+    console.error("Admin notification email failed:", error);
     return false;
   }
 };
@@ -547,12 +640,13 @@ export const sendBookingConfirmation = async (booking) => {
       to: [booking.email],
       subject: `Booking Confirmed - ${booking.confirmationNumber}`,
       html: createEmailTemplate(booking),
-      reply_to: `bookings@${process.env.RESEND_DOMAIN}` || process.env.ADMIN_EMAIL 
+      reply_to:
+        `bookings@${process.env.RESEND_DOMAIN}` || process.env.ADMIN_EMAIL,
     });
 
     return true;
   } catch (error) {
-    console.error('Email sending failed:', error);
+    console.error("Email sending failed:", error);
     return false;
   }
 };
@@ -567,7 +661,8 @@ export const sendCancellationConfirmation = async (booking) => {
       to: [booking.email],
       subject: `Booking Cancellation Confirmed - ${booking.confirmationNumber}`,
       html: createCancellationEmailTemplate(booking),
-      reply_to: `bookings@${process.env.RESEND_DOMAIN}` || process.env.ADMIN_EMAIL
+      reply_to:
+        `bookings@${process.env.RESEND_DOMAIN}` || process.env.ADMIN_EMAIL,
     });
 
     // Send notification to admin
@@ -576,12 +671,31 @@ export const sendCancellationConfirmation = async (booking) => {
       to: [process.env.ADMIN_EMAIL],
       subject: `Booking Cancelled - ${booking.confirmationNumber}`,
       html: createAdminCancellationEmailTemplate(booking),
-      reply_to: booking.email 
+      reply_to: booking.email,
     });
 
     return true;
   } catch (error) {
-    console.error('Cancellation email failed:', error);
+    console.error("Cancellation email failed:", error);
+    return false;
+  }
+};
+
+export const sendStatusUpdateEmail = async (booking, newStatus, note) => {
+  if (!booking.email) return;
+
+  try {
+    await resend.emails.send({
+      from: `bookings@${process.env.RESEND_DOMAIN}`,
+      to: [booking.email],
+      subject: `Booking Status Update - ${booking.confirmationNumber}`,
+      html: createStatusUpdateEmailTemplate(booking, newStatus, note),
+      reply_to:
+        `bookings@${process.env.RESEND_DOMAIN}` || process.env.ADMIN_EMAIL,
+    });
+    return true;
+  } catch (error) {
+    console.error("Status update email failed:", error);
     return false;
   }
 };

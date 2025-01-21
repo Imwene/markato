@@ -1,1 +1,0 @@
-import{r}from"../vendor/react-vendor-C2p5b_me.js";import{b as o}from"../index-CsNTKv9N.js";const e=()=>{const e=r.useContext(o);if(void 0===e)throw new Error("useConfig must be used within a ConfigProvider");return e};export{e as u};
