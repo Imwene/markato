@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Users, Clock, Star, Wind } from "lucide-react";
+import { Calendar, Users, Clock, Star, Wind, Plus } from "lucide-react";
 import api from "../../../utils/api.js";
 import { useNavigate } from "react-router-dom";
 import { CONFIG } from "../../../config/config.js";
 import WeeklyAppointments from "./WeeklyAppointments";
+import WalkInBookingForm from "./WalkinBookingForm";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -16,6 +17,7 @@ const Dashboard = () => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showWalkInForm, setShowWalkInForm] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,6 +67,11 @@ const Dashboard = () => {
     }
   };
 
+  const handleWalkInSuccess = () => {
+    fetchDashboardStats();
+    setShowWalkInForm(false);
+  };
+
   const StatCard = ({ title, value, icon: Icon }) => (
     <div className="bg-background-light dark:bg-stone-800 p-6 rounded-lg border border-border-light dark:border-stone-700">
       <div className="flex items-start justify-between">
@@ -108,6 +115,19 @@ const Dashboard = () => {
         </h1>
         <div className="flex w-full sm:w-auto gap-2">
           <button
+            onClick={() => setShowWalkInForm(true)}
+            className="flex-1 sm:flex-none px-4 py-2 text-sm 
+                     bg-primary-light text-white rounded-lg 
+                     hover:bg-primary-DEFAULT transition-colors
+                     dark:bg-orange-500 dark:hover:bg-orange-600"
+          >
+            <span className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Walk-in</span>
+              <span className="sm:hidden">Walk-in</span>
+            </span>
+          </button>
+          <button
             onClick={fetchDashboardStats}
             className="flex-1 sm:flex-none px-4 py-2 text-sm bg-primary-light text-white rounded-lg hover:bg-primary-DEFAULT transition-colors"
           >
@@ -125,7 +145,7 @@ const Dashboard = () => {
       </div>
 
       {/* Booking Stats */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Bookings"
           value={stats.totalBookings}
@@ -141,6 +161,24 @@ const Dashboard = () => {
           value={stats.completedBookings}
           icon={Users}
         />
+        {/* {<div className="bg-background-light dark:bg-stone-800 p-6 rounded-lg border border-border-light dark:border-stone-700">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-content-light dark:text-stone-400 text-sm">
+                Today's Busiest Slot
+              </p>
+              <p className="text-2xl font-bold text-content-dark dark:text-white mt-2">
+                {stats.busiestSlot?.time || 'N/A'}
+              </p>
+              <p className="text-sm text-content-light dark:text-stone-400">
+                {stats.busiestSlot?.count || 0} bookings
+              </p>
+            </div>
+            <div className="p-3 bg-amber-500/10 rounded-lg">
+              <Clock className="w-5 h-5 text-amber-500" />
+            </div>
+          </div>
+        </div>} */}
       </div>
       
       {/* Optional Services Popularity */}
@@ -196,6 +234,13 @@ const Dashboard = () => {
         <WeeklyAppointments />
       </div>
 
+      {/* Walk-in Booking Modal */}
+      {showWalkInForm && (
+        <WalkInBookingForm
+          onClose={() => setShowWalkInForm(false)}
+          onSuccess={handleWalkInSuccess}
+        />
+      )}
     </div>
   );
 };
