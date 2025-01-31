@@ -69,7 +69,7 @@ const BookingManager = () => {
   }, [searchTerm, filter]);
 
   // useEffect(() => {
-  //   console.log("Config loaded:", { vehicleTypes, optionalServices });
+  //   //console.log("Config loaded:", { vehicleTypes, optionalServices });
   // }, [vehicleTypes, optionalServices]);
 
   useEffect(() => {
@@ -138,7 +138,7 @@ const BookingManager = () => {
       // Map the booking's optional services to match the format
       const mappedOptionalServices = booking.optionalServices.map(
         (bookingService) => {
-          console.log("Mapping service:", bookingService);
+          //console.log("Mapping service:", bookingService);
 
           return {
             serviceId: bookingService.serviceId?.toString(), // This should match what's in the config
@@ -149,7 +149,7 @@ const BookingManager = () => {
         }
       );
 
-      console.log("Mapped optional services:", mappedOptionalServices);
+      //console.log("Mapped optional services:", mappedOptionalServices);
 
       setEditData({
         ...booking,
@@ -831,8 +831,8 @@ const BookingManager = () => {
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {optionalServices?.map((service) => {
-                    // console.log('Rendering service:', service);
-                    // console.log('Current editData.optionalServices:', editData.optionalServices);
+                    // //console.log('Rendering service:', service);
+                    // //console.log('Current editData.optionalServices:', editData.optionalServices);
 
                     const isChecked = editData.optionalServices.some(
                       (bookedService) =>
