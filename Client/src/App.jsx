@@ -5,6 +5,7 @@ import { ConfigProvider } from "./context/ConfigContext";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ThemeToggle from "./components/ui/ThemeToggle";
+import CommunicationTerms from "./components/CommunticationTerms";
 
 // Eagerly load critical components
 import Navbar from "./components/Navbar";
@@ -116,6 +117,16 @@ const App = () => {
                   }
                 />
 
+                {/* Communication Terms */}
+                <Route
+                  path="/communication-terms"
+                  element={
+                    <MainLayout>
+                      <CommunicationTerms />
+                    </MainLayout>
+                  }
+                />
+                
                 {/* 404 Route */}
                 <Route
                   path="*"

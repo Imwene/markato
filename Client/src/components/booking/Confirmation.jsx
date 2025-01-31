@@ -237,6 +237,17 @@ const Confirmation = ({ booking }) => {
   <p className="text-content-DEFAULT dark:text-stone-300">
     Please arrive 5-10 minutes before your appointment time.
   </p>
+  <p className="text-sm text-content-light dark:text-stone-400">
+    By booking with us, you agree to our{" "}
+    <a
+      href="/communication-terms"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-primary-DEFAULT dark:text-orange-500 hover:underline"
+    >
+      Communication Terms
+    </a>
+  </p>
 </div>
 
       <motion.button

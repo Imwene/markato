@@ -11,3 +11,6 @@ node_modules/
 deployment/dist/workbox-1ea6f077 2.js
 deployment 2.tar.gz
 deployment.tar.gz
+.vscode
+.code-workspace
+package-lock.json

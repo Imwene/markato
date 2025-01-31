@@ -12,20 +12,22 @@ export const LoadingFallback = () => (
 );
 
 // HOC for performance monitoring
-export const withPerformanceTracking = (WrappedComponent, componentName) => {
-  return class extends React.Component {
-    componentDidMount() {
-      this.startTime = performance.now();
-    }
+export const withPerformanceTracking = (WrappedComponent) => {
+  const PerformanceWrapper = (props) => {
+    React.useEffect(() => {
+      const startTime = performance.now();
+      return () => {
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+        //console.log(`Component render time:`, duration);
+      };
+    }, []);
 
-    componentWillUnmount() {
-      const endTime = performance.now();
-      const duration = endTime - this.startTime;
-      //console.log(`${componentName} render time:`, duration);
-    }
-
-    render() {
-      return <WrappedComponent {...this.props} />;
-    }
+    return <WrappedComponent {...props} />;
   };
+
+  PerformanceWrapper.displayName = `WithPerformance(${
+    WrappedComponent.displayName || WrappedComponent.name || "Component"
+  })`;
+  return PerformanceWrapper;
 };

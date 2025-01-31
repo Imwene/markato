@@ -1,6 +1,6 @@
 // src/utils/performance.js
 import React from "react";
-
+import process from "process";
 // Image optimization utility
 export const optimizeImage = async (file, options = {}) => {
   const { maxWidth = 1200, quality = 0.8, format = "webp" } = options;

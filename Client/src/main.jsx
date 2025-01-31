@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
-
+import process from 'process'
 import { registerServiceWorker } from './utils/performance';
 
 if (process.env.NODE_ENV === 'production') {

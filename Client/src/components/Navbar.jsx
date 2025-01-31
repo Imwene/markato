@@ -9,9 +9,11 @@ import { navItems } from "../constants";
 const Navbar = () => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const location = useLocation();
-  
+
   // Check if we're on the cancellation page
-  const isCancellationPage = location.pathname.includes('/cancel-booking');
+  const isCancellationPage = location.pathname.includes("/cancel-booking");
+  const isCommunicationTermsPage = location.pathname.includes("/communication-terms");
+  const is404Page = location.pathname.includes("*");
 
   useEffect(() => {
     setMobileDrawerOpen(false);
@@ -21,7 +23,8 @@ const Navbar = () => {
     const element = document.getElementById(sectionId.replace("#", ""));
     if (element) {
       const yOffset = -72;
-      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      const y =
+        element.getBoundingClientRect().top + window.pageYOffset + yOffset;
       window.scrollTo({ top: y, behavior: "smooth" });
       setMobileDrawerOpen(false);
     }
@@ -37,18 +40,18 @@ const Navbar = () => {
               className="flex items-center"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             >
-              <img 
+              <img
                 className="h-10 sm:h-14 w-auto object-contain
                          dark:[filter:brightness(0)_invert(1)_brightness(100%)_contrast(100%)]
                          transition-[filter] duration-300"
-                src={markatoLogo} 
-                alt="Markato Auto Detail" 
+                src={markatoLogo}
+                alt="Markato Auto Detail"
               />
             </Link>
           </div>
 
           {/* Only show menu items and hamburger if not on cancellation page */}
-          {!isCancellationPage && (
+          {!isCancellationPage && !isCommunicationTermsPage && !is404Page && (
             <>
               <ul className="hidden lg:flex space-x-8 text-sm">
                 {navItems.map((item, index) => (
@@ -56,9 +59,9 @@ const Navbar = () => {
                     <Link
                       to={item.href}
                       onClick={() => scrollToSection(item.href)}
-                      className="text-content-DEFAULT hover:text-red-600
-                        dark:text-stone-400 dark:hover:text-red-500
-                        transition-colors cursor-pointer"
+                      className="text-content-DEFAULT hover:text-primary-dark
+        dark:text-stone-400 dark:hover:text-orange-500
+        transition-colors cursor-pointer"
                     >
                       {item.label}
                     </Link>
@@ -80,7 +83,7 @@ const Navbar = () => {
         </div>
 
         {/* Mobile menu drawer */}
-        {!isCancellationPage && mobileDrawerOpen && (
+        {!isCancellationPage && !isCommunicationTermsPage && !is404Page && mobileDrawerOpen && (
           <div className="absolute inset-x-0 top-full bg-background-light dark:bg-stone-900 border-b border-border-light dark:border-stone-800 shadow-lg lg:hidden animate-in slide-in-from-top duration-200">
             <ul className="py-2">
               {navItems.map((item, index) => (
@@ -89,9 +92,9 @@ const Navbar = () => {
                     to={item.href}
                     onClick={() => scrollToSection(item.href)}
                     className="block px-4 py-2 text-content-DEFAULT dark:text-stone-400
-                      hover:bg-background-dark dark:hover:bg-stone-800
-                      hover:text-red-600 dark:hover:text-red-500
-                      transition-colors"
+              hover:bg-background-dark dark:hover:bg-stone-800
+              hover:text-primary-dark dark:hover:text-orange-500
+              transition-colors"
                   >
                     {item.label}
                   </Link>

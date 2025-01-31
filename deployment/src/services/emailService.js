@@ -351,10 +351,21 @@ const createEmailTemplate = (booking) => {
 </div>
 
       <!-- Footer -->
-      <div style="text-align: center; margin-top: 32px; color: #4a5568; font-size: 14px;">
-        <p>Thank you for choosing Markato Auto Detail!</p>
-        <p>We look forward to serving you.</p>
-      </div>
+<div style="text-align: center; margin-top: 32px; color: #4a5568; font-size: 14px;">
+  <p>Thank you for choosing Markato Auto Detail!</p>
+  <p>We look forward to serving you.</p>
+  <p style="margin-top: 16px;">
+    By booking with us, you agree to our 
+    <a 
+      href="${process.env.FRONTEND_URL}/communication-terms"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="color: #0cc0df; text-decoration: none; border-bottom: 1px solid #0cc0df;"
+    >
+      Communication Terms
+    </a>
+  </p>
+</div>
     </div>
   `;
 };
@@ -424,6 +435,22 @@ const createCancellationEmailTemplate = (booking) => {
         <p>Thank you for letting us know about your cancellation.</p>
         <p>We hope to serve you another time!</p>
       </div>
+      <!-- Footer -->
+<div style="text-align: center; margin-top: 32px; color: #4a5568; font-size: 14px;">
+  <p>Thank you for choosing Markato Auto Detail!</p>
+  <p>We look forward to serving you.</p>
+  <p style="margin-top: 16px;">
+    By booking with us, you agree to our 
+    <a 
+      href="${process.env.FRONTEND_URL}/communication-terms"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="color: #0cc0df; text-decoration: none; border-bottom: 1px solid #0cc0df;"
+    >
+      Communication Terms
+    </a>
+  </p>
+</div>
     </div>
   `;
 };
@@ -611,6 +638,22 @@ const createStatusUpdateEmailTemplate = (booking, newStatus, note) => {
           </tr>
         </table>
       </div>
+      <!-- Footer -->
+<div style="text-align: center; margin-top: 32px; color: #4a5568; font-size: 14px;">
+  <p>Thank you for choosing Markato Auto Detail!</p>
+  <p>We look forward to serving you.</p>
+  <p style="margin-top: 16px;">
+    By booking with us, you agree to our 
+    <a 
+      href="${process.env.FRONTEND_URL}/communication-terms"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="color: #0cc0df; text-decoration: none; border-bottom: 1px solid #0cc0df;"
+    >
+      Communication Terms
+    </a>
+  </p>
+</div>
     </div>
   `;
 };

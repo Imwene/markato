@@ -9,7 +9,8 @@ import {
   checkSlotAvailability,
   checkCancellation,
   cancelBooking,
-  checkDateAvailability
+  checkDateAvailability,
+  updateBooking
 } from "../controllers/bookingController.js";
 
 import { protect, adminOnly } from "../middlewares/authMiddleware.js";
@@ -36,6 +37,7 @@ router.post("/:confirmationNumber/resend-email", resendBookingEmail); // Allow e
 
 router.get("/:id", protect, adminOnly, getBookingById); // Get booking details
 router.put("/:id/status", protect, adminOnly, updateBookingStatus); 
+router.put("/:id", protect, adminOnly, updateBooking);
 
 
 

@@ -123,7 +123,7 @@ export async function updateBookingStatus(req, res) {
     // Add to status history
     booking.statusHistory.push({
       status,
-      timestamp: new Date(),
+      timestamp: new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }),
       note,
     });
 
@@ -397,3 +397,102 @@ export const cancelBooking = async (req, res) => {
     });
   }
 };
+
+export async function updateBooking(req, res) {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Remove immutable fields
+    const immutableFields = ['confirmationNumber', '_id', 'createdAt'];
+    immutableFields.forEach(field => delete updateData[field]);
+
+    const originalBooking = await Booking.findById(id);
+    if (!originalBooking) {
+      return res.status(404).json({ success: false, error: "Booking not found" });
+    }
+
+    // Preserve original values if not being updated
+    const updatedData = {
+      ...originalBooking.toObject(),
+      ...updateData,
+      totalPrice: updateData.totalPrice || originalBooking.totalPrice,
+      optionalServices: updateData.optionalServices || originalBooking.optionalServices,
+    };
+
+    let statusNote = '';
+
+    // Special handling for date/time changes
+    if (updateData.dateTime && updateData.dateTime !== originalBooking.dateTime) {
+      const slotAvailable = await checkSlotAvailabilityInternal(updateData.dateTime, id);
+      if (!slotAvailable) {
+        return res.status(400).json({ success: false, error: "New time slot is not available" });
+      }
+
+      statusNote = `Rescheduled from ${originalBooking.dateTime} to ${updateData.dateTime}`;
+      updatedData.statusHistory = [
+        ...originalBooking.statusHistory,
+        {
+          status: 'pending',
+          timestamp: new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }),
+          note: statusNote
+        }
+      ];
+    }
+
+    // Update the booking
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      id,
+      updatedData,
+      { new: true, runValidators: true }
+    ).select("-__v");
+
+    // Send email notification about the update
+    if (updatedBooking.email) {
+      try {
+        await sendStatusUpdateEmail(
+          updatedBooking, 
+          updatedBooking.status,
+          statusNote || 'Booking details have been updated'
+        );
+      } catch (emailError) {
+        console.error("Failed to send update notification email:", emailError);
+        // Don't fail the update if email fails
+      }
+    }
+
+    res.json({
+      success: true,
+      data: updatedBooking,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+}
+
+// Helper function using existing availability logic
+async function checkSlotAvailabilityInternal(dateTime, bookingId) { // Add bookingId parameter
+  try {
+    const [datePart, timePart] = dateTime.split(", ").slice(-2);
+    const dateTimePattern = `^${dateTime.split(", ").slice(0, -1).join(", ")}, ${timePart}$`;
+
+    const query = {
+      dateTime: { $regex: new RegExp(dateTimePattern) },
+      status: { $nin: ["cancelled"] }
+    };
+    
+    // Only exclude current booking if ID is provided
+    if (bookingId) {
+      query._id = { $ne: bookingId };
+    }
+
+    const bookingsCount = await Booking.countDocuments(query);
+    const maxBookingsPerSlot = 2;
+    return bookingsCount < maxBookingsPerSlot;
+  } catch (error) {
+    return false;
+  }
+}
