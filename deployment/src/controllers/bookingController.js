@@ -6,8 +6,8 @@ import {
   sendCancellationConfirmation,
   sendStatusUpdateEmail,
 } from "../services/emailService.js";
+import { sendStatusUpdateSMS } from "../services/smsService.js";
 import { generatePDF } from "../services/pdfService.js";
-
 
 export async function createBooking(req, res) {
   try {
@@ -96,7 +96,7 @@ export async function updateBookingStatus(req, res) {
     const { id } = req.params;
     const { status, note = "" } = req.body;
 
-    // Validate status
+    // Validate the new status
     const validStatuses = [
       "pending",
       "confirmed",
@@ -112,7 +112,6 @@ export async function updateBookingStatus(req, res) {
     }
 
     const booking = await Booking.findById(id);
-
     if (!booking) {
       return res.status(404).json({
         success: false,
@@ -120,14 +119,16 @@ export async function updateBookingStatus(req, res) {
       });
     }
 
-    // Add to status history
+    // Append a new status record to the status history with Pacific Time
     booking.statusHistory.push({
       status,
-      timestamp: new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }),
+      timestamp: new Date(
+        new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })
+      ),
       note,
     });
 
-    // Update current status
+    // Update the current status
     booking.status = status;
 
     // Save the updated booking
@@ -139,6 +140,15 @@ export async function updateBookingStatus(req, res) {
         await sendStatusUpdateEmail(booking, status, note);
       } catch (emailError) {
         console.error("Failed to send status update email:", emailError);
+      }
+    }
+
+    // Send SMS status update
+    if (booking.contact) {
+      try {
+        await sendStatusUpdateSMS(booking, status, note);
+      } catch (smsError) {
+        console.error("Failed to send SMS status update:", smsError);
       }
     }
 
@@ -316,8 +326,11 @@ export const checkCancellation = async (req, res) => {
 
     const appointmentTime = new Date(booking.dateTime);
     const now = new Date();
-    const pacificNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
-    const hoursUntilAppointment = (appointmentTime - pacificNow) / (1000 * 60 * 60);
+    const pacificNow = new Date(
+      now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" })
+    );
+    const hoursUntilAppointment =
+      (appointmentTime - pacificNow) / (1000 * 60 * 60);
 
     if (hoursUntilAppointment < 24) {
       return res.status(400).json({
@@ -359,8 +372,11 @@ export const cancelBooking = async (req, res) => {
 
     const appointmentTime = new Date(booking.dateTime);
     const now = new Date();
-    const pacificNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
-    const hoursUntilAppointment = (appointmentTime - pacificNow) / (1000 * 60 * 60);
+    const pacificNow = new Date(
+      now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" })
+    );
+    const hoursUntilAppointment =
+      (appointmentTime - pacificNow) / (1000 * 60 * 60);
 
     if (hoursUntilAppointment < 24) {
       return res.status(400).json({
@@ -386,6 +402,17 @@ export const cancelBooking = async (req, res) => {
       console.error("Failed to send cancellation email:", emailError);
     }
 
+    // Send cancellation confirmation SMS
+    try {
+      await sendStatusUpdateSMS(
+        booking,
+        booking.status,
+        "Cancelled by customer through cancellation page"
+      );
+    } catch (smsError) {
+      console.error("Failed to send SMS status update:", smsError);
+    }
+
     res.json({
       success: true,
       message: "Booking cancelled successfully",
@@ -404,12 +431,14 @@ export async function updateBooking(req, res) {
     const updateData = req.body;
 
     // Remove immutable fields
-    const immutableFields = ['confirmationNumber', '_id', 'createdAt'];
-    immutableFields.forEach(field => delete updateData[field]);
+    const immutableFields = ["confirmationNumber", "_id", "createdAt"];
+    immutableFields.forEach((field) => delete updateData[field]);
 
     const originalBooking = await Booking.findById(id);
     if (!originalBooking) {
-      return res.status(404).json({ success: false, error: "Booking not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Booking not found" });
     }
 
     // Preserve original values if not being updated
@@ -417,47 +446,71 @@ export async function updateBooking(req, res) {
       ...originalBooking.toObject(),
       ...updateData,
       totalPrice: updateData.totalPrice || originalBooking.totalPrice,
-      optionalServices: updateData.optionalServices || originalBooking.optionalServices,
+      optionalServices:
+        updateData.optionalServices || originalBooking.optionalServices,
     };
 
-    let statusNote = '';
+    let statusNote = "";
 
     // Special handling for date/time changes
-    if (updateData.dateTime && updateData.dateTime !== originalBooking.dateTime) {
-      const slotAvailable = await checkSlotAvailabilityInternal(updateData.dateTime, id);
+    if (
+      updateData.dateTime &&
+      updateData.dateTime !== originalBooking.dateTime
+    ) {
+      const slotAvailable = await checkSlotAvailabilityInternal(
+        updateData.dateTime,
+        id
+      );
       if (!slotAvailable) {
-        return res.status(400).json({ success: false, error: "New time slot is not available" });
+        return res
+          .status(400)
+          .json({ success: false, error: "New time slot is not available" });
       }
 
       statusNote = `Rescheduled from ${originalBooking.dateTime} to ${updateData.dateTime}`;
       updatedData.statusHistory = [
         ...originalBooking.statusHistory,
         {
-          status: 'pending',
-          timestamp: new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }),
-          note: statusNote
-        }
+          status: "pending",
+          timestamp: new Date().toLocaleString("en-US", {
+            timeZone: "America/Los_Angeles",
+          }),
+          note: statusNote,
+        },
       ];
     }
 
     // Update the booking
-    const updatedBooking = await Booking.findByIdAndUpdate(
-      id,
-      updatedData,
-      { new: true, runValidators: true }
-    ).select("-__v");
+    const updatedBooking = await Booking.findByIdAndUpdate(id, updatedData, {
+      new: true,
+      runValidators: true,
+    }).select("-__v");
 
     // Send email notification about the update
     if (updatedBooking.email) {
       try {
         await sendStatusUpdateEmail(
-          updatedBooking, 
+          updatedBooking,
           updatedBooking.status,
-          statusNote || 'Booking details have been updated'
+          statusNote || "Booking details have been updated"
         );
       } catch (emailError) {
         console.error("Failed to send update notification email:", emailError);
         // Don't fail the update if email fails
+      }
+    }
+
+    // Send SMS status update
+    if (updatedBooking.contact) {
+      try {
+        await sendStatusUpdateSMS(
+          updatedBooking,
+          updatedBooking.status,
+          statusNote || "Booking details have been updated"
+        );
+      } catch (smsError) {
+        console.error("Failed to send update notification SMS:", smsError);
+        // Don't fail the update if SMS fails
       }
     }
 
@@ -474,16 +527,20 @@ export async function updateBooking(req, res) {
 }
 
 // Helper function using existing availability logic
-async function checkSlotAvailabilityInternal(dateTime, bookingId) { // Add bookingId parameter
+async function checkSlotAvailabilityInternal(dateTime, bookingId) {
+  // Add bookingId parameter
   try {
     const [datePart, timePart] = dateTime.split(", ").slice(-2);
-    const dateTimePattern = `^${dateTime.split(", ").slice(0, -1).join(", ")}, ${timePart}$`;
+    const dateTimePattern = `^${dateTime
+      .split(", ")
+      .slice(0, -1)
+      .join(", ")}, ${timePart}$`;
 
     const query = {
       dateTime: { $regex: new RegExp(dateTimePattern) },
-      status: { $nin: ["cancelled"] }
+      status: { $nin: ["cancelled"] },
     };
-    
+
     // Only exclude current booking if ID is provided
     if (bookingId) {
       query._id = { $ne: bookingId };
@@ -496,3 +553,35 @@ async function checkSlotAvailabilityInternal(dateTime, bookingId) { // Add booki
     return false;
   }
 }
+
+export const handleSMSWebhook = async (req, res) => {
+  try {
+    const { Body, From, MessageSid } = req.body;
+
+    // Log incoming message
+    // console.log({
+    //   event: 'sms_received',
+    //   from: From,
+    //   body: Body,
+    //   messageId: MessageSid,
+    //   timestamp: new Date().toISOString()
+    // });
+
+    // Send a basic response
+    const twiml = new twilio.twiml.MessagingResponse();
+
+    if (Body.toUpperCase() === "HELP") {
+      twiml.message("For assistance, please call 4158899108.");
+    } else {
+      twiml.message(
+        "Thank you for your message. We will get back to you shortly."
+      );
+    }
+
+    res.writeHead(200, { "Content-Type": "text/xml" });
+    res.end(twiml.toString());
+  } catch (error) {
+    console.error("SMS webhook error:", error);
+    res.status(500).send("Error processing webhook");
+  }
+};

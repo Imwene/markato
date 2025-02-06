@@ -27,6 +27,7 @@
     "helmet": "^8.0.0",
     "imagemin": "^9.0.0",
     "jsonwebtoken": "^9.0.2",
+    "libphonenumber-js": "^1.11.19",
     "mailgun.js": "^10.3.0",
     "mongodb": "^6.10.0",
     "mongoose": "^8.9.0",
@@ -38,6 +39,7 @@
     "resend": "^4.0.1",
     "sanitize-html": "^2.14.0",
     "sharp": "^0.33.5",
+    "twilio": "^5.4.3",
     "web-vitals": "^4.2.4",
     "workbox-webpack-plugin": "^7.3.0"
   },
