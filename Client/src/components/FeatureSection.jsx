@@ -4,7 +4,7 @@ const FeatureSection = () => {
   return (
     <div
       id="why-choose-us"
-      className="relative mt-10 border-b border-border-light dark:border-stone-800 min-h-[800px]"
+      className="relative mt-10 border-b border-border-light dark:border-stone-800"
     >
       <div className="text-center">
         <h2 className="text-3xl sm:text-5xl lg:text-6xl mt-6 lg:mt-10 tracking-wide font-bold text-content-dark dark:text-white">
@@ -31,10 +31,10 @@ const FeatureSection = () => {
                 {feature.icon}
               </div>
               <div>
-                <h5 className="mt-1 mb-4 text-xl font-semibold text-content-dark dark:text-white">
+                <h3 className="mt-1 mb-4 text-xl font-semibold text-content-dark dark:text-white">
                   {feature.text}
-                </h5>
-                <p className="text-md p-2 mb-20 text-content-light dark:text-stone-400">
+                </h3>
+                <p className="text-md p-2 mb-4 text-content-light dark:text-stone-400">
                   {feature.description}
                 </p>
               </div>
