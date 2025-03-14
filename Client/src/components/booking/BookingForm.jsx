@@ -56,6 +56,7 @@ const BookingForm = ({
     "3:00 PM",
     "4:00 PM",
     "5:00 PM",
+    "6:00 PM",
   ];
 
   // Form validation rules

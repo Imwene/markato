@@ -14,3 +14,7 @@ deployment.tar.gz
 .vscode
 .code-workspace
 package-lock.json
+.code-workspace/
+/dist/
+deployment/dist/
+
