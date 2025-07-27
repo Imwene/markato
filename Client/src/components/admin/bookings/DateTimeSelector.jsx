@@ -20,18 +20,18 @@ const DateTimeSelector = ({ initialDateTime, onDateTimeChange }) => {
 
   useEffect(() => {
     if (!initialDateTime) return;
-  
+
     // Example: "Mon, Jan 27, 2025, 9:00 AM"
     const parts = initialDateTime.split(", ");
     if (parts.length !== 4) return;
-  
+
     const [dayAndMonth, day, year, time] = parts;
     const dateDisplay = `${dayAndMonth}, ${day}`;
-  
+
     setSelectedDateDisplay(dateDisplay);
     setSelectedDate(dateDisplay);
     setSelectedYear(year);
-  
+
     if (businessHours.includes(time)) {
       setSelectedTime(time);
     } else {
@@ -43,31 +43,31 @@ const DateTimeSelector = ({ initialDateTime, onDateTimeChange }) => {
   const generateDates = () => {
     const dates = [];
     const today = new Date();
-    
+
     // If we have an initial date, parse it and add it if it's not in our range
     let initialDate = null;
     if (initialDateTime) {
       const [dayAndMonth, day, year] = initialDateTime.split(", ");
       initialDate = new Date(`${dayAndMonth}, ${day}, ${year}`);
     }
-  
+
     // Add next 7 days
     for (let i = 1; i < 8; i++) {
       const date = new Date();
       date.setDate(today.getDate() + i);
-  
+
       const display = date.toLocaleDateString("en-US", {
         weekday: "short",
         month: "short",
         day: "numeric",
       });
-  
+
       dates.push({
         value: display,
         display,
       });
     }
-  
+
     // Add initial date if it exists and isn't already in our list
     if (initialDate) {
       const initialDateStr = initialDate.toLocaleDateString("en-US", {
@@ -75,18 +75,18 @@ const DateTimeSelector = ({ initialDateTime, onDateTimeChange }) => {
         month: "short",
         day: "numeric",
       });
-  
-      if (!dates.some(d => d.value === initialDateStr)) {
+
+      if (!dates.some((d) => d.value === initialDateStr)) {
         dates.unshift({
           value: initialDateStr,
           display: initialDateStr,
         });
       }
     }
-  
+
     // Sort dates chronologically
     dates.sort((a, b) => new Date(a.value) - new Date(b.value));
-    
+
     return dates;
   };
 
@@ -94,7 +94,7 @@ const DateTimeSelector = ({ initialDateTime, onDateTimeChange }) => {
     if (type === "date") {
       setSelectedDate(value);
       setSelectedDateDisplay(value);
-  
+
       if (selectedTime) {
         const [dayAndMonth, day] = value.split(", ");
         onDateTimeChange(
@@ -104,12 +104,10 @@ const DateTimeSelector = ({ initialDateTime, onDateTimeChange }) => {
     } else {
       if (businessHours.includes(value)) {
         setSelectedTime(value);
-  
+
         if (selectedDate) {
           const [dayAndMonth, day] = selectedDate.split(", ");
-          onDateTimeChange(
-            `${dayAndMonth}, ${day}, ${selectedYear}, ${value}`
-          );
+          onDateTimeChange(`${dayAndMonth}, ${day}, ${selectedYear}, ${value}`);
         }
       }
     }

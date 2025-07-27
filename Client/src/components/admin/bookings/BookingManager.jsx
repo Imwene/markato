@@ -217,16 +217,21 @@ const BookingManager = () => {
   };
 
   const formatToLATime = (date) => {
-    return new Date(date).toLocaleString("en-US", {
+    const d = new Date(date);
+    const datePart = d.toLocaleString("en-US", {
       timeZone: "America/Los_Angeles",
       weekday: "short",
       month: "short",
       day: "numeric",
       year: "numeric",
+    });
+    const timePart = d.toLocaleString("en-US", {
+      timeZone: "America/Los_Angeles",
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
     });
+    return `${datePart}, ${timePart}`;
   };
 
   // Then use it in your payload formatter
@@ -240,7 +245,6 @@ const BookingManager = () => {
         price: Number(service.price),
       })),
       selectedScent: data.selectedScent || "None",
-      
     };
   };
 
@@ -859,7 +863,6 @@ const BookingManager = () => {
                 </div>
               </div>
 
-              
               <div className="col-span-2">
                 <div className="flex justify-between items-center p-3 bg-background-dark dark:bg-stone-700 rounded-lg">
                   <span className="font-medium">Total Price:</span>

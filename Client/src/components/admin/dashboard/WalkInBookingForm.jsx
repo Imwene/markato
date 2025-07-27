@@ -16,7 +16,7 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
   const unlistedServices = {
     interior: {
       id: "custom_interior",
-      name: "Custom Interior",
+      name: "Interior Only",
       pricing: {
         "sedan": [30, 50],
         "mini-suv": [40, 70],     
@@ -26,7 +26,7 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
     },
     exterior: {
       id: "custom_exterior",
-      name: "Custom Exterior",
+      name: "Exterior Only",
       pricing: {
         "sedan": [25, 40],
         "mini-suv": [35, 50],
@@ -335,8 +335,8 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
                   {service.name} - ${service.vehiclePricing[formData.vehicleType] || 'N/A'}
                 </option>
               ))}
-              <option value="custom_interior">Custom Interior</option>
-              <option value="custom_exterior">Custom Exterior</option>
+              <option value="custom_interior">Interior Only</option>
+              <option value="custom_exterior">Exterior Only</option>
             </select>
             {validationErrors.serviceId && (
               <p className="mt-1 text-sm text-red-500">{validationErrors.serviceId}</p>
