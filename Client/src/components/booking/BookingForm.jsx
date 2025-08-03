@@ -56,6 +56,7 @@ const BookingForm = ({
     "3:00 PM",
     "4:00 PM",
     "5:00 PM",
+    "6:00 PM",
   ];
 
   // Form validation rules
@@ -106,7 +107,7 @@ const BookingForm = ({
   };
 
   // Generate available dates
-  const generateDates = () => {
+  const generateDates = (unavailableDay = 2) => {
     const dates = [];
     const current = getCurrentPacificDate();
 
@@ -116,13 +117,33 @@ const BookingForm = ({
 
       const formattedDate = formatToPacificDate(date);
       const displayDate = formattedDate;
+      const isDisabled =
+        unavailableDay !== null && date.getDay() === unavailableDay;
 
       dates.push({
         value: formattedDate,
         display: displayDate,
+        disabled: isDisabled,
+        disabledReason: isDisabled
+          ? `Closed on ${getDayName(unavailableDay)}`
+          : "",
       });
     }
     return dates;
+  };
+
+  // Helper function to get day name
+  const getDayName = (dayIndex) => {
+    const days = [
+      "Sundays",
+      "Mondays",
+      "Tuesdays",
+      "Wednesdays",
+      "Thursdays",
+      "Fridays",
+      "Saturdays",
+    ];
+    return days[dayIndex] || "this day";
   };
 
   // Check availability for a specific date
@@ -413,8 +434,13 @@ const BookingForm = ({
                   >
                     <option value="">Select Date</option>
                     {generateDates().map((date) => (
-                      <option key={date.value} value={date.value}>
-                        {date.display}
+                      <option
+                        key={date.value}
+                        value={date.value}
+                        disabled={date.disabled}
+                      >
+                        {date.display}{" "}
+                        {date.disabled ? `(${date.disabledReason})` : ""}
                       </option>
                     ))}
                   </select>

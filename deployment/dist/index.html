@@ -5,36 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <script>
-      if (!localStorage.theme) localStorage.theme = 'dark';
-      if (localStorage.theme === 'dark') {
-        document.documentElement.classList.add('dark');
+      if (!localStorage.theme) localStorage.theme = "dark";
+      if (localStorage.theme === "dark") {
+        document.documentElement.classList.add("dark");
       }
     </script>
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+
     <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
     <!-- PWA manifest -->
-    <link rel="manifest" href="/site.webmanifest">
-    
+    <link rel="manifest" href="/site.webmanifest" />
+
     <!-- Theme color -->
-    <meta name="theme-color" content="#0cc0df">
-    
-    <title>Markato Auto Detailing</title>
-    
+    <meta name="theme-color" content="#0cc0df" />
+
+    <title>
+      Markato Auto Detailing | Professional Car Detailing & Car Wash in Oakland,
+      CA
+    </title>
+
     <!-- SEO meta tags -->
-    <meta name="description" content="Professional Auto Detailing Services">
-    <meta name="format-detection" content="telephone=no">
-    <script type="module" crossorigin src="/assets/index-xGZ2o0co.js"></script>
+    <meta
+      name="description"
+      content="Premium car detailing and car wash services in Oakland, CA. Professional auto detailing, interior detailing, and exterior car wash services. Located in East Oakland."
+    />
+    <meta
+      name="keywords"
+      content="car detailing oakland, car wash oakland, auto detailing bay area, car detailing services, professional car wash, interior detailing, exterior detailing, oakland car care, markato auto detailing"
+    />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Open Graph meta tags -->
+    <meta
+      property="og:title"
+      content="Markato Auto Detailing | Professional Car Detailing in Oakland"
+    />
+    <meta
+      property="og:description"
+      content="Premium car detailing and car wash services in Oakland, CA. Professional auto detailing services at competitive prices."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://markatodetailing.com" />
+    <meta property="og:image" content="/og-image.jpg" />
+
+    <!-- Local Business Schema Markup -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "AutoDetailing",
+        "name": "Markato Auto Detailing",
+        "image": "/og-image.jpg",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "1901 Park Blvd",
+          "addressLocality": "Oakland",
+          "addressRegion": "CA",
+          "postalCode": "94606",
+          "addressCountry": "US"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 37.80009327797226,
+          "longitude": -122.24995824533964
+        },
+        "url": "https://markatodetailing.com",
+        "telephone": "+14158899108",
+        "priceRange": "$$",
+        "openingHours": "Mo-Su 09:00-17:00"
+      }
+    </script>
+
+    <!-- Add these lines before other links -->
+    <!-- <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> -->
+
+    <!-- Your existing Google Fonts link should come after -->
+    <!-- <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet"> -->
+    <script type="module" crossorigin src="/assets/index-D3aJxBx1.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor/react-vendor-I5tRwIWp.js">
-    <link rel="modulepreload" crossorigin href="/assets/vendor/ui-vendor-CCLTYbSU.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor/ui-vendor-D-pcYet8.js">
     <link rel="modulepreload" crossorigin href="/assets/vendor/auth-vendor-sPk1YpsG.js">
-    <link rel="stylesheet" crossorigin href="/assets/css/index-5GQhu0Pl.css">
+    <link rel="stylesheet" crossorigin href="/assets/css/index-_OQqCIAK.css">
   <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
   <body>
     <div id="root"></div>

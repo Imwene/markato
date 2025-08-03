@@ -27,19 +27,21 @@ const Workflow = () => {
             {checklistItems.map((item, index) => (
               <div key={index} className="flex items-start gap-6 group">
                 <div className="flex-shrink-0">
-                  <div className="text-primary-DEFAULT dark:text-orange-500 
-                                bg-primary-light/10 dark:bg-orange-500/10 
-                                h-10 w-10 flex items-center justify-center rounded-full
-                                group-hover:bg-primary-light dark:group-hover:bg-orange-500 
-                                group-hover:text-white
-                                transition-colors duration-200">
+                  <div
+                    className="text-primary-DEFAULT dark:text-orange-500 
+                      bg-primary-light/10 dark:bg-orange-500/10 
+                      h-10 w-10 flex items-center justify-center rounded-full
+                      group-hover:bg-primary-light dark:group-hover:bg-orange-500 
+                      group-hover:text-white
+                      transition-colors duration-200"
+                  >
                     <CheckCircle2 className="h-6 w-6" />
                   </div>
                 </div>
                 <div>
-                  <h5 className="text-xl font-medium mb-2 text-content-dark dark:text-white">
+                  <h3 className="text-xl font-medium mb-2 text-content-dark dark:text-white">
                     {item.title}
-                  </h5>
+                  </h3>
                   <p className="text-content-light dark:text-stone-400">
                     {item.description}
                   </p>

@@ -8,6 +8,7 @@ import {
 } from "../services/emailService.js";
 import { sendStatusUpdateSMS } from "../services/smsService.js";
 import { generatePDF } from "../services/pdfService.js";
+import twilio from "twilio";
 
 export async function createBooking(req, res) {
   try {
@@ -556,13 +557,13 @@ export const handleSMSWebhook = async (req, res) => {
     const { Body, From, MessageSid } = req.body;
     
     // Log incoming message
-    console.log({
-      event: 'sms_received',
-      from: From,
-      body: Body,
-      messageId: MessageSid,
-      timestamp: new Date().toISOString()
-    });
+    // console.log({
+    //   event: 'sms_received',
+    //   from: From,
+    //   body: Body,
+    //   messageId: MessageSid,
+    //   timestamp: new Date().toISOString()
+    // });
 
     // Send a basic response
     const twiml = new twilio.twiml.MessagingResponse();

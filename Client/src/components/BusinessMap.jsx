@@ -4,12 +4,12 @@ import { Phone, Mail } from 'lucide-react';
 
 const BusinessMap = () => {
   const businessLocation = {
-    lat: 37.80028,
-    lng: -122.24903
+    lat: 37.80009327797226,
+    lng: -122.24995824533964
   };
 
   const mapStyles = {
-    height: '400px',
+    height: '300px', // Reduced from 400px
     width: '100%'
   };
   const defaultCenter = businessLocation;
@@ -17,7 +17,7 @@ const BusinessMap = () => {
   const address = "1901 Park Blvd, Oakland, CA 94606"; // Combine address for Google Maps link
   const mapsLink = `https://www.google.com/maps/place/${encodeURIComponent(address)}`;
   return (
-    <div id="find-us" className="w-full max-w-7xl mx-auto px-4 py-12">
+    <div id="find-us" className="w-full max-w-7xl mx-auto px-4 py-8">
       <div className="text-center mb-8">
         <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-content-dark dark:text-white">
           Visit{" "}
@@ -41,7 +41,7 @@ const BusinessMap = () => {
           </GoogleMap>
         </LoadScript>
         
-        <div className="p-6 bg-background-light dark:bg-stone-800">
+        <div className="p-4 bg-background-light dark:bg-stone-800">
           <div className="grid md:grid-cols-3 gap-8">
             <div>
               <h3 className="text-xl font-semibold text-content-dark dark:text-white mb-2">

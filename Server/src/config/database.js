@@ -5,6 +5,9 @@ dotenv.config();
 
 const connectDB = async () => {
   try {
+    // Set strictQuery option to avoid deprecation warning
+    mongoose.set("strictQuery", false);
+
     const conn = await mongoose.connect(process.env.MONGODB_URI);
 
     // Handle connection events

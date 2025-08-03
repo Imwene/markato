@@ -1,0 +1,18 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://markatodetailing.com/sitemap.xml
+
+# Disallow admin paths
+Disallow: /admin/
+Disallow: /admin/*
+
+# Disallow API paths
+Disallow: /api/
+Disallow: /api/*
+
+# Disallow authentication paths
+Disallow: /login
+Disallow: /signup 

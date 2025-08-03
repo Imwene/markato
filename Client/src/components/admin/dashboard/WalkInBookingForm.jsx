@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import { useConfig } from '../../../hooks/useConfig';
 import { useServices } from '../../../hooks/useServices';
@@ -13,7 +13,29 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Form state
+  const unlistedServices = {
+    interior: {
+      id: "custom_interior",
+      name: "Interior Only",
+      pricing: {
+        "sedan": [30, 50],
+        "mini-suv": [40, 70],     
+        "suv": [50, 80],
+        "van/truck": [50, 80],    // Combined category
+      },
+    },
+    exterior: {
+      id: "custom_exterior",
+      name: "Exterior Only",
+      pricing: {
+        "sedan": [25, 40],
+        "mini-suv": [35, 50],
+        "suv": [40, 45, 60],
+        "van/truck": [40, 45, 60],    
+      },
+    },
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     contact: '',
@@ -23,17 +45,15 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
     serviceId: '',
     selectedScent: '',
     time: '',
-    optionalServices: []
+    optionalServices: [],
+    selectedPrice: '',
   });
 
-  // Validation state
   const [validationErrors, setValidationErrors] = useState({});
-  
-  // Get current Pacific date
+
   const currentDate = new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' });
   const pacificDate = formatToPacificDate(new Date(currentDate));
 
-  // Business hours (same as in the public booking system)
   const businessHours = [
     "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
     "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"
@@ -53,19 +73,14 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
       const response = await api.get(
         `${CONFIG.ENDPOINTS.ADMIN.BOOKINGS.WEEKLY}?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
       );
-      
+
       if (response.success) {
-        // Process bookings to get slot counts
         const slotCounts = {};
         businessHours.forEach(time => {
           slotCounts[time] = {
             count: response.data.filter(booking => {
               const bookingTime = new Date(booking.dateTime)
-                .toLocaleTimeString('en-US', { 
-                  hour: 'numeric', 
-                  minute: '2-digit',
-                  hour12: true 
-                });
+                .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
               return bookingTime === time;
             }).length
           };
@@ -79,6 +94,23 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
       setLoading(false);
     }
   };
+
+  const isCustomService = formData.serviceId.startsWith('custom_');
+  const customServiceType = isCustomService ? formData.serviceId.split('_')[1] : null;
+  const priceOptions = useMemo(() => {
+    if (!isCustomService || !customServiceType) return [];
+    return unlistedServices[customServiceType]?.pricing[formData.vehicleType] || [];
+  }, [isCustomService, customServiceType, formData.vehicleType]);
+  
+  useEffect(() => {
+    if (isCustomService) {
+      if (priceOptions.length === 1) {
+        setFormData(prev => ({ ...prev, selectedPrice: priceOptions[0] }));
+      } else if (priceOptions.length > 1 && !priceOptions.includes(Number(formData.selectedPrice))) {
+        setFormData(prev => ({ ...prev, selectedPrice: '' }));
+      }
+    }
+  }, [isCustomService, priceOptions, formData.selectedPrice]);
 
   const validateForm = () => {
     const errors = {};
@@ -99,6 +131,7 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
     if (!formData.makeModel?.trim()) errors.makeModel = 'Vehicle make/model is required';
     if (!formData.vehicleType) errors.vehicleType = 'Vehicle type is required';
     if (!formData.serviceId) errors.serviceId = 'Service is required';
+    if (isCustomService && !formData.selectedPrice) errors.selectedPrice = 'Price level is required';
     if (!formData.selectedScent) errors.selectedScent = 'Scent selection is required';
     if (!formData.time) errors.time = 'Time slot is required';
 
@@ -108,20 +141,13 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      // Debug logs
-      // console.log('Form Data at submission:', formData);
-      // console.log('Available Scents:', scents);
-      // console.log('Selected Scent ID:', formData.selectedScent);
-      // console.log('Scent Type:', typeof formData.selectedScent);
-
-      // Check if there are any existing bookings in this slot
       const currentCount = timeSlots[formData.time]?.count || 0;
       if (currentCount > 0) {
         const confirmOverbook = window.confirm(
@@ -133,46 +159,41 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
         }
       }
 
-      // Find required booking details
-      const selectedService = services.find(s => s._id === formData.serviceId);
-      if (!selectedService) {
-        throw new Error('Service not found');
+      let servicePrice, serviceName, serviceId, features;
+      if (isCustomService) {
+        serviceId = formData.serviceId;
+        serviceName = unlistedServices[customServiceType].name;
+        servicePrice = Number(formData.selectedPrice);
+        features = [];
+      } else {
+        const selectedService = services.find(s => s._id === formData.serviceId);
+        if (!selectedService) throw new Error('Service not found');
+        serviceId = selectedService._id;
+        serviceName = selectedService.name;
+        servicePrice = selectedService.vehiclePricing[formData.vehicleType];
+        features = selectedService.features || [];
       }
 
-      // Find scent and convert ID types to match
       const selectedScentDetails = scents.find(s => s.id.toString() === formData.selectedScent.toString());
-      if (!selectedScentDetails) {
-        console.error('Failed to find scent. Available scents:', scents, 'Looking for ID:', formData.selectedScent);
-        throw new Error('Selected scent not found');
-      }
+      if (!selectedScentDetails) throw new Error('Selected scent not found');
 
-      // Debug logging
-      // console.log('Selected Service:', selectedService);
-      // console.log('Selected Scent:', selectedScentDetails);
-      // console.log('Form Data:', formData);
-      
-      // Calculate prices
-      const servicePrice = selectedService.vehiclePricing[formData.vehicleType];
       const selectedOptionalServices = formData.optionalServices.map(optionId => {
         const service = optionalServices.find(s => s.id.toString() === optionId.toString());
-        if (!service) {
-          throw new Error(`Optional service not found: ${optionId}`);
-        }
+        if (!service) throw new Error(`Optional service not found: ${optionId}`);
         return {
           serviceId: service.id,
           name: service.name,
-          price: parseFloat(service.price)
+          price: parseFloat(service.price),
         };
       });
-      
+
       const optionalServicesTotal = selectedOptionalServices.reduce(
-        (sum, service) => sum + service.price, 
+        (sum, service) => sum + service.price,
         0
       );
-      
+
       const totalPrice = servicePrice + optionalServicesTotal;
 
-      // Generate confirmation number
       const date = new Date();
       const dateStr = `${(date.getMonth() + 1).toString().padStart(2, '0')}${
         date.getDate().toString().padStart(2, '0')}${
@@ -180,7 +201,6 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
       const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
       const confirmationNumber = `BK-${dateStr}-${random}`;
 
-      // Format the date and time properly
       const selectedDate = new Date(pacificDate);
       const dateTime = formatToPacificDateTime(selectedDate, formData.time);
 
@@ -191,18 +211,16 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
         vehicleType: formData.vehicleType,
         makeModel: formData.makeModel.trim(),
         dateTime,
-        serviceId: selectedService._id,
-        serviceName: selectedService.name,
+        serviceId,
+        serviceName,
         selectedScent: selectedScentDetails.name,
         servicePrice,
-        features: selectedService.features || [],
+        features,
         optionalServices: selectedOptionalServices,
         totalPrice,
         confirmationNumber,
-        status: 'pending'
+        status: 'pending',
       };
-
-      //console.log('Final Booking Payload:', bookingPayload);
 
       const response = await api.post(CONFIG.ENDPOINTS.BOOKINGS.BASE, bookingPayload);
 
@@ -220,18 +238,10 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    //console.log(`Input Change - Name: ${name}, Value: ${value}, Type: ${typeof value}`);
-    
-    setFormData(prev => {
-      const newData = {
-        ...prev,
-        [name]: value
-      };
-      console.log('Updated Form Data:', newData);
-      return newData;
-    });
-    
-    // Clear validation error when field is modified
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
     if (validationErrors[name]) {
       setValidationErrors(prev => ({ ...prev, [name]: null }));
     }
@@ -242,7 +252,6 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
       const newOptionalServices = prev.optionalServices.includes(serviceId)
         ? prev.optionalServices.filter(id => id !== serviceId)
         : [...prev.optionalServices, serviceId];
-      
       return {
         ...prev,
         optionalServices: newOptionalServices
@@ -277,7 +286,6 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
             </div>
           )}
 
-          {/* Vehicle Selection */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Vehicle Type</label>
@@ -313,7 +321,6 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
             </div>
           </div>
 
-          {/* Service Selection */}
           <div>
             <label className="block text-sm font-medium mb-2">Service</label>
             <select
@@ -328,13 +335,40 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
                   {service.name} - ${service.vehiclePricing[formData.vehicleType] || 'N/A'}
                 </option>
               ))}
+              <option value="custom_interior">Interior Only</option>
+              <option value="custom_exterior">Exterior Only</option>
             </select>
             {validationErrors.serviceId && (
               <p className="mt-1 text-sm text-red-500">{validationErrors.serviceId}</p>
             )}
           </div>
 
-          {/* Time Slot Selection */}
+          {isCustomService && priceOptions.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Select Price Level</label>
+              {priceOptions.length > 1 ? (
+                <select
+                  name="selectedPrice"
+                  value={formData.selectedPrice}
+                  onChange={handleInputChange}
+                  className="w-full p-2 rounded-lg border border-border-DEFAULT bg-background-light dark:bg-stone-800"
+                >
+                  <option value="">Select Price Level</option>
+                  {priceOptions.map((price, index) => (
+                    <option key={index} value={price}>
+                      Level {index + 1} - ${price}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-content-dark dark:text-white">Price: ${priceOptions[0]}</p>
+              )}
+              {validationErrors.selectedPrice && (
+                <p className="mt-1 text-sm text-red-500">{validationErrors.selectedPrice}</p>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium mb-2">Time Slot</label>
             <select
@@ -359,8 +393,7 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
             )}
           </div>
 
-          {/* Scent Selection */}
-          {selectedService && (
+          {(selectedService || isCustomService) && (
             <div>
               <label className="block text-sm font-medium mb-2">Scent Selection</label>
               <select
@@ -382,8 +415,7 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
             </div>
           )}
 
-          {/* Optional Services */}
-          {selectedService && (
+          {(selectedService || isCustomService) && (
             <div>
               <label className="block text-sm font-medium mb-2">Optional Services</label>
               <div className="space-y-2">
@@ -402,7 +434,6 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
             </div>
           )}
 
-          {/* Customer Details */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Customer Name</label>
@@ -451,16 +482,15 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
             )}
           </div>
 
-          {/* Submit Buttons */}
           <div className="flex justify-end gap-4 pt-4 border-t border-border-light dark:border-stone-700">
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-content-DEFAULT dark:text-white 
-                       bg-background-DEFAULT dark:bg-stone-700
-                       hover:bg-background-dark dark:hover:bg-stone-600
-                       border border-border-DEFAULT dark:border-stone-600
-                       rounded-lg transition-colors"
+                         bg-background-DEFAULT dark:bg-stone-700
+                         hover:bg-background-dark dark:hover:bg-stone-600
+                         border border-border-DEFAULT dark:border-stone-600
+                         rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -468,9 +498,9 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
               type="submit"
               disabled={loading}
               className="px-4 py-2 bg-primary-light dark:bg-orange-500 
-                       text-white rounded-lg 
-                       hover:bg-primary-DEFAULT dark:hover:bg-orange-600 
-                       transition-colors disabled:opacity-50"
+                         text-white rounded-lg 
+                         hover:bg-primary-DEFAULT dark:hover:bg-orange-600 
+                         transition-colors disabled:opacity-50"
             >
               {loading ? 'Creating...' : 'Create Booking'}
             </button>

@@ -8,6 +8,7 @@ import {
 } from "../services/emailService.js";
 import { sendStatusUpdateSMS } from "../services/smsService.js";
 import { generatePDF } from "../services/pdfService.js";
+import twilio from "twilio";
 
 export async function createBooking(req, res) {
   try {
@@ -403,15 +404,12 @@ export const cancelBooking = async (req, res) => {
     }
 
     // Send cancellation confirmation SMS
-    try {
-      await sendStatusUpdateSMS(
-        booking,
-        booking.status,
-        "Cancelled by customer through cancellation page"
-      );
-    } catch (smsError) {
-      console.error("Failed to send SMS status update:", smsError);
-    }
+      try {
+        await sendStatusUpdateSMS(booking, booking.status, "Cancelled by customer through cancellation page");
+      } catch (smsError) {
+        console.error("Failed to send SMS status update:", smsError);
+      }
+    
 
     res.json({
       success: true,
@@ -557,7 +555,7 @@ async function checkSlotAvailabilityInternal(dateTime, bookingId) {
 export const handleSMSWebhook = async (req, res) => {
   try {
     const { Body, From, MessageSid } = req.body;
-
+    
     // Log incoming message
     // console.log({
     //   event: 'sms_received',
@@ -569,19 +567,18 @@ export const handleSMSWebhook = async (req, res) => {
 
     // Send a basic response
     const twiml = new twilio.twiml.MessagingResponse();
-
-    if (Body.toUpperCase() === "HELP") {
-      twiml.message("For assistance, please call 4158899108.");
+    
+    if (Body.toUpperCase() === 'HELP') {
+      twiml.message('For assistance, please call 4158899108.');
     } else {
-      twiml.message(
-        "Thank you for your message. We will get back to you shortly."
-      );
+      twiml.message('Thank you for your message. We will get back to you shortly.');
     }
 
-    res.writeHead(200, { "Content-Type": "text/xml" });
+    res.writeHead(200, { 'Content-Type': 'text/xml' });
     res.end(twiml.toString());
+
   } catch (error) {
-    console.error("SMS webhook error:", error);
-    res.status(500).send("Error processing webhook");
+    console.error('SMS webhook error:', error);
+    res.status(500).send('Error processing webhook');
   }
 };

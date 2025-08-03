@@ -25,17 +25,18 @@ const HeroSection = () => {
       </h1>
 
       <p className="mt-6 text-lg text-center text-content-light dark:text-stone-400 max-w-4xl">
-        Your car deserves nothing but the best detailing services in Oakland. Book
-        a seamless car service experience with us.
+        Your car deserves nothing but the best detailing services in Oakland.
+        Book a seamless car service experience with us.
       </p>
 
       <div className="flex justify-center my-6 gap-4">
         <button
           onClick={() => scrollToSection("booking-section")}
-          className="bg-gradient-to-r from-primary-light to-primary-DEFAULT 
-          dark:from-orange-500 dark:to-orange-600
-          text-white py-3 px-6 rounded-md hover:opacity-90 transition-opacity
-          shadow-lg shadow-primary-light/20 dark:shadow-orange-500/20"
+          className="bg-primary-light dark:bg-orange-500
+                   text-white py-3 px-6 rounded-md 
+                   hover:opacity-95 dark:hover:opacity-90 
+                   transition-opacity
+                   shadow-lg shadow-primary-light/20 dark:shadow-orange-500/20"
         >
           View Services
         </button>

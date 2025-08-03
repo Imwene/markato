@@ -12,7 +12,9 @@ const Navbar = () => {
 
   // Check if we're on the cancellation page
   const isCancellationPage = location.pathname.includes("/cancel-booking");
-  const isCommunicationTermsPage = location.pathname.includes("/communication-terms");
+  const isCommunicationTermsPage = location.pathname.includes(
+    "/communication-terms"
+  );
   const is404Page = location.pathname.includes("*");
 
   useEffect(() => {
@@ -83,26 +85,29 @@ const Navbar = () => {
         </div>
 
         {/* Mobile menu drawer */}
-        {!isCancellationPage && !isCommunicationTermsPage && !is404Page && mobileDrawerOpen && (
-          <div className="absolute inset-x-0 top-full bg-background-light dark:bg-stone-900 border-b border-border-light dark:border-stone-800 shadow-lg lg:hidden animate-in slide-in-from-top duration-200">
-            <ul className="py-2">
-              {navItems.map((item, index) => (
-                <li key={index}>
-                  <Link
-                    to={item.href}
-                    onClick={() => scrollToSection(item.href)}
-                    className="block px-4 py-2 text-content-DEFAULT dark:text-stone-400
+        {!isCancellationPage &&
+          !isCommunicationTermsPage &&
+          !is404Page &&
+          mobileDrawerOpen && (
+            <div className="absolute inset-x-0 top-full bg-background-light dark:bg-stone-900 border-b border-border-light dark:border-stone-800 shadow-lg lg:hidden animate-in slide-in-from-top duration-200">
+              <ul className="py-2">
+                {navItems.map((item, index) => (
+                  <li key={index}>
+                    <Link
+                      to={item.href}
+                      onClick={() => scrollToSection(item.href)}
+                      className="block px-4 py-2 text-content-DEFAULT dark:text-stone-400
               hover:bg-background-dark dark:hover:bg-stone-800
               hover:text-primary-dark dark:hover:text-orange-500
               transition-colors"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
       </div>
     </nav>
   );

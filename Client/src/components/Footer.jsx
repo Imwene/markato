@@ -1,8 +1,8 @@
 // src/components/Footer.jsx
 const Footer = () => {
   return (
-    <footer className="mt-10 border-t py-8 border-border-light dark:border-stone-800 bg-background-DEFAULT dark:bg-stone-900">
-      <div className="mt-10 pt-8 border-t border-border-light dark:border-stone-800">
+    <footer className="border-t py-6 border-border-light dark:border-stone-800 bg-background-DEFAULT dark:bg-stone-900">
+      <div className="pt-4 border-t border-border-light dark:border-stone-800">
         <div className="flex flex-col items-center space-y-4">
           <p className="text-center text-content-light dark:text-stone-400 text-sm">
             © 2025 Markato Auto Detailing. All rights reserved.
