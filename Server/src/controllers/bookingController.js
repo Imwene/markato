@@ -9,6 +9,7 @@ import {
 import { sendStatusUpdateSMS } from "../services/smsService.js";
 import { generatePDF } from "../services/pdfService.js";
 import twilio from "twilio";
+import { BusinessSettings } from "../models/businessSettingsModel.js";
 
 export async function createBooking(req, res) {
   try {
@@ -229,8 +230,23 @@ export const checkDateAvailability = async (req, res) => {
       "8:00 PM",
     ];
 
+    const settings = await BusinessSettings.findOne();
+    const dateObj = new Date(date);
+    const dayOfWeek = dateObj.getDay();
     const maxBookingsPerSlot = 2;
     const slots = {};
+
+    // If business is closed on this day, return all slots unavailable
+    if (
+      settings?.unavailableDay !== null &&
+      settings?.unavailableDay !== undefined &&
+      dayOfWeek === settings.unavailableDay
+    ) {
+      businessHours.forEach((time) => {
+        slots[time] = { available: false };
+      });
+      return res.json({ success: true, slots });
+    }
 
     await Promise.all(
       businessHours.map(async (time) => {
@@ -268,6 +284,29 @@ export const checkSlotAvailability = async (req, res) => {
     // The dateTime comes in format: "Wed, Jan 8, 2025, 11:00 AM"
     // First, let's split the date and time
     const [datePart, timePart] = dateTime.split(", ").slice(-2);
+
+    // Respect business unavailable day
+    try {
+      const settings = await BusinessSettings.findOne();
+      if (
+        settings?.unavailableDay !== null &&
+        settings?.unavailableDay !== undefined
+      ) {
+        const dateOnly = new Date(dateTime.split(", ").slice(0, -1).join(", "));
+        const dayOfWeek = dateOnly.getDay();
+        if (dayOfWeek === settings.unavailableDay) {
+          return res.json({
+            success: true,
+            available: false,
+            currentBookings: 0,
+            maxBookingsPerSlot: 2,
+            requestedDateTime: dateTime,
+          });
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
 
     // Create a regex pattern to match this exact date and time
     const dateTimePattern = `^${dateTime
@@ -404,12 +443,15 @@ export const cancelBooking = async (req, res) => {
     }
 
     // Send cancellation confirmation SMS
-      try {
-        await sendStatusUpdateSMS(booking, booking.status, "Cancelled by customer through cancellation page");
-      } catch (smsError) {
-        console.error("Failed to send SMS status update:", smsError);
-      }
-    
+    try {
+      await sendStatusUpdateSMS(
+        booking,
+        booking.status,
+        "Cancelled by customer through cancellation page"
+      );
+    } catch (smsError) {
+      console.error("Failed to send SMS status update:", smsError);
+    }
 
     res.json({
       success: true,
@@ -528,6 +570,22 @@ export async function updateBooking(req, res) {
 async function checkSlotAvailabilityInternal(dateTime, bookingId) {
   // Add bookingId parameter
   try {
+    // Respect business unavailable day
+    try {
+      const settings = await BusinessSettings.findOne();
+      if (
+        settings?.unavailableDay !== null &&
+        settings?.unavailableDay !== undefined
+      ) {
+        const dateOnly = new Date(dateTime.split(", ").slice(0, -1).join(", "));
+        const dayOfWeek = dateOnly.getDay();
+        if (dayOfWeek === settings.unavailableDay) {
+          return false;
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
     const [datePart, timePart] = dateTime.split(", ").slice(-2);
     const dateTimePattern = `^${dateTime
       .split(", ")
@@ -555,7 +613,7 @@ async function checkSlotAvailabilityInternal(dateTime, bookingId) {
 export const handleSMSWebhook = async (req, res) => {
   try {
     const { Body, From, MessageSid } = req.body;
-    
+
     // Log incoming message
     // console.log({
     //   event: 'sms_received',
@@ -567,18 +625,19 @@ export const handleSMSWebhook = async (req, res) => {
 
     // Send a basic response
     const twiml = new twilio.twiml.MessagingResponse();
-    
-    if (Body.toUpperCase() === 'HELP') {
-      twiml.message('For assistance, please call 4158899108.');
+
+    if (Body.toUpperCase() === "HELP") {
+      twiml.message("For assistance, please call 4158899108.");
     } else {
-      twiml.message('Thank you for your message. We will get back to you shortly.');
+      twiml.message(
+        "Thank you for your message. We will get back to you shortly."
+      );
     }
 
-    res.writeHead(200, { 'Content-Type': 'text/xml' });
+    res.writeHead(200, { "Content-Type": "text/xml" });
     res.end(twiml.toString());
-
   } catch (error) {
-    console.error('SMS webhook error:', error);
-    res.status(500).send('Error processing webhook');
+    console.error("SMS webhook error:", error);
+    res.status(500).send("Error processing webhook");
   }
 };

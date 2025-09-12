@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { motion } from "framer-motion";
-import { ChevronDown } from "lucide-react";
 import { CONFIG } from "../../config/config";
 import {
   formatToPacificDate,
@@ -44,6 +43,29 @@ const BookingForm = ({
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const watchedDate = watch("date");
   const watchedTime = watch("time");
+  const [unavailableDay, setUnavailableDay] = useState(null);
+
+  // Load business settings
+  useEffect(() => {
+    const fetchBusinessSettings = async () => {
+      try {
+        const res = await fetch(
+          `${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.BUSINESS_SETTINGS}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setUnavailableDay(data?.data?.unavailableDay ?? null);
+        }
+      } catch (e) {
+        // ignore and keep default null
+      }
+    };
+    fetchBusinessSettings();
+  }, []);
 
   // Business hours
   const businessHours = [
@@ -107,7 +129,7 @@ const BookingForm = ({
   };
 
   // Generate available dates
-  const generateDates = (unavailableDay = 2) => {
+  const generateDates = () => {
     const dates = [];
     const current = getCurrentPacificDate();
 
