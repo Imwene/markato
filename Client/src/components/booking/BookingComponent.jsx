@@ -14,6 +14,7 @@ const BookingComponent = () => {
     selectedService,
     selectedScent,
     selectedOptions,
+    optionQuantities,
     bookingDetails,
     booking,
     captcha,
@@ -26,6 +27,7 @@ const BookingComponent = () => {
     setSelectedService,
     setSelectedScent,
     handleOptionSelect,
+    handleOptionQuantityChange,
     handleInputChange,
     handleBookingSubmit,
     canProceedToDetails,
@@ -72,6 +74,8 @@ const BookingComponent = () => {
             <OptionalServices
               optionalServices={optionalServicesData}
               selectedOptions={selectedOptions}
+              optionQuantities={optionQuantities}
+              onQuantityChange={handleOptionQuantityChange}
               onOptionSelect={handleOptionSelect}
               onContinue={handleNext}
               onBack={handleBack}
@@ -159,7 +163,7 @@ const BookingComponent = () => {
       </AnimatePresence>
 
       {renderStepButtons()}
-      
+
       {error && (
         <div className="mt-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800">
           <p className="text-red-600 dark:text-red-400">{error}</p>

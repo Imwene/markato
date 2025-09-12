@@ -14,6 +14,7 @@ export const useBookingState = () => {
     vehicleTypes[0]?.id || "sedan"
   );
   const [selectedOptions, setSelectedOptions] = useState([]);
+  const [optionQuantities, setOptionQuantities] = useState({});
   const [bookingStep, setBookingStep] = useState("service");
   const [isCaptchaValid, setIsCaptchaValid] = useState(false);
 
@@ -46,6 +47,7 @@ export const useBookingState = () => {
   // Reset optional services when changing service or vehicle type
   useEffect(() => {
     setSelectedOptions([]);
+    setOptionQuantities({});
   }, [selectedService, selectedVehicleType]);
 
   // Vehicle type handler
@@ -93,10 +95,22 @@ export const useBookingState = () => {
     }
   };
 
-  // Optional services handler - updated to handle single option toggle
-  // Optional services handler
+  // Optional services handlers
   const handleOptionSelect = (options) => {
     setSelectedOptions(options);
+    // Keep quantities only for still-selected options
+    setOptionQuantities((prev) => {
+      const next = {};
+      options.forEach((id) => {
+        if (prev[id]) next[id] = prev[id];
+      });
+      return next;
+    });
+  };
+
+  const handleOptionQuantityChange = (optionId, quantity) => {
+    const q = Math.max(1, Math.min(4, Number(quantity) || 1));
+    setOptionQuantities((prev) => ({ ...prev, [optionId]: q }));
   };
 
   // Booking submission handler
@@ -109,7 +123,9 @@ export const useBookingState = () => {
         // Validate form data
         const validationErrors = validateBookingData(formData);
         if (Object.keys(validationErrors).length > 0) {
-          throw new Error('Validation failed: ' + Object.values(validationErrors).join(', '));
+          throw new Error(
+            "Validation failed: " + Object.values(validationErrors).join(", ")
+          );
         }
 
         // Check slot availability
@@ -137,10 +153,23 @@ export const useBookingState = () => {
           const optionDetails = optionalServices.find(
             (service) => service.id.toString() === optionId.toString()
           );
+          const basePrice = parseFloat(optionDetails.price);
+          let name = optionDetails.name;
+          let price = basePrice;
+
+          if (name?.toLowerCase() === "seat cloth shampoo") {
+            const q = Math.max(
+              1,
+              Math.min(4, optionQuantities?.[optionId] || 1)
+            );
+            price = basePrice * q;
+            name = `${name} (x${q} seat${q > 1 ? "s" : ""})`;
+          }
+
           return {
             serviceId: optionDetails.id,
-            name: optionDetails.name,
-            price: parseFloat(optionDetails.price),
+            name,
+            price,
           };
         });
 
@@ -218,7 +247,8 @@ export const useBookingState = () => {
 
   const validateBookingData = (formData) => {
     const errors = {};
-    const phoneRegex = /^(\+?1)?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/;
+    const phoneRegex =
+      /^(\+?1)?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!formData.name?.trim()) {
@@ -252,6 +282,7 @@ export const useBookingState = () => {
     setSelectedService(null);
     setSelectedScent(null);
     setSelectedOptions([]);
+    setOptionQuantities({});
     setBookingDetails({
       name: "",
       contact: "",
@@ -279,6 +310,7 @@ export const useBookingState = () => {
     selectedService,
     selectedScent,
     selectedOptions,
+    optionQuantities,
     bookingDetails,
     captcha,
     booking,
@@ -292,11 +324,13 @@ export const useBookingState = () => {
     setSelectedService,
     setSelectedScent,
     setSelectedOptions,
+    setOptionQuantities,
 
     // Handlers
     handleVehicleTypeChange,
     handleBack,
     handleOptionSelect,
+    handleOptionQuantityChange,
     handleNext,
     handleInputChange,
     handleBookingSubmit,
