@@ -18,3 +18,4 @@ package-lock.json
 /dist/
 deployment/dist/
 
+AGENTS.md.DS_Store
