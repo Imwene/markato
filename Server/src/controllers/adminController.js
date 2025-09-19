@@ -364,7 +364,7 @@ export const getWeeklyBookings = async (req, res) => {
     })
       .sort({ dateTime: 1 })
       .select(
-        "confirmationNumber dateTime name contact email serviceName vehicleType makeModel optionalServices totalPrice status"
+        "confirmationNumber dateTime name contact email serviceName servicePrice selectedScent vehicleType makeModel optionalServices totalPrice status"
       )
       .lean();
 

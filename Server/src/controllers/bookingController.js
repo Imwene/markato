@@ -55,6 +55,12 @@ export async function createBooking(req, res) {
 export async function getAllBookings(req, res) {
   try {
     const { page, limit, status, search, startDate, endDate, sort } = req.query;
+    if (process.env.NODE_ENV === "development") {
+      console.log("getAllBookings called with sort:", sort);
+      console.log(
+        "Testing todays bookings sort - checking current implementation"
+      );
+    }
 
     // Backward compatibility: if no page is provided, return full list as before
     if (!page) {
@@ -95,32 +101,57 @@ export async function getAllBookings(req, res) {
       }
     }
 
-    const allowedSorts = new Set([
-      "createdAt",
-      "-createdAt",
-      "dateTime",
-      "-dateTime",
-    ]);
-    const sortBy = allowedSorts.has(sort) ? sort : "-createdAt";
-    const sortObj = sortBy.startsWith("-")
-      ? { [sortBy.slice(1)]: -1 }
-      : { [sortBy]: 1 };
-
     const skip = (pageNum - 1) * pageSize;
 
-    const [data, total] = await Promise.all([
-      Booking.find(query)
-        .sort(sortObj)
-        .skip(skip)
-        .limit(pageSize)
-        .select("-__v -statusHistory")
-        .lean(),
+    // Map sort parameter (default to -createdAt; treat dateTime like createdAt for performance)
+    const normalizedSort =
+      sort === "createdAt" || sort === "dateTime"
+        ? "createdAt"
+        : sort === "-createdAt" || sort === "-dateTime"
+          ? "-createdAt"
+          : "-createdAt";
+    const sortObj = normalizedSort.startsWith("-")
+      ? { [normalizedSort.slice(1)]: -1 }
+      : { [normalizedSort]: 1 };
+
+    // Compute LA date-only string to identify appointments scheduled "today"
+    const laNow = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })
+    );
+    const laDatePart = laNow.toLocaleString("en-US", {
+      timeZone: "America/Los_Angeles",
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    const todayRegex = new RegExp(`^${laDatePart}`);
+
+    // Use aggregation to sort on server: today's bookings first, then by createdAt
+    const matchStage = { $match: query };
+    const addTodayFlagStage = {
+      $addFields: {
+        _isToday: { $regexMatch: { input: "$dateTime", regex: todayRegex } },
+      },
+    };
+    const sortStage = { $sort: Object.assign({ _isToday: -1 }, sortObj) };
+    const projectStage = { $project: { __v: 0, statusHistory: 0 } };
+
+    const [paged, total] = await Promise.all([
+      Booking.aggregate([
+        matchStage,
+        addTodayFlagStage,
+        sortStage,
+        { $skip: skip },
+        { $limit: pageSize },
+        projectStage,
+      ]),
       Booking.countDocuments(query),
     ]);
 
     res.json({
       success: true,
-      data,
+      data: paged,
       total,
       page: pageNum,
       pageSize,
