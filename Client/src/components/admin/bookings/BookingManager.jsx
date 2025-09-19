@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -51,6 +51,8 @@ const BookingManager = () => {
   });
   const [editErrors, setEditErrors] = useState({});
   const [isUpdating, setIsUpdating] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   // if (!services || !vehicleTypes || !optionalServices) {
   //   return (
@@ -60,13 +62,48 @@ const BookingManager = () => {
   //   );
   // }
 
+  const fetchBookings = useCallback(
+    async (page) => {
+      try {
+        setLoading(true);
+        const qs = new URLSearchParams();
+        qs.set("page", page);
+        qs.set("limit", ITEMS_PER_PAGE);
+        if (filter && filter !== "all") qs.set("status", filter);
+        if (debouncedSearch) qs.set("search", debouncedSearch);
+
+        const data = await api.get(
+          `${CONFIG.ENDPOINTS.BOOKINGS.BASE}?${qs.toString()}`
+        );
+        if (data.success) {
+          setBookings(data.data || []);
+          if (typeof data.total === "number") setTotal(data.total);
+          if (typeof data.page === "number") setCurrentPage(data.page);
+        }
+      } catch (error) {
+        if (error.message.includes("token")) {
+          window.location.href = "/login";
+        }
+        console.error("Failed to fetch bookings:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [filter, debouncedSearch]
+  );
+
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filter]);
+  }, [filter, debouncedSearch]);
+
+  useEffect(() => {
+    fetchBookings(currentPage);
+  }, [currentPage, fetchBookings]);
 
   // useEffect(() => {
   //   //console.log("Config loaded:", { vehicleTypes, optionalServices });
@@ -113,98 +150,6 @@ const BookingManager = () => {
     editData.optionalServices,
     services,
   ]);
-
-  const fetchBookings = async () => {
-    try {
-      setLoading(true);
-      const data = await api.get(CONFIG.ENDPOINTS.BOOKINGS.BASE);
-      if (data.success) {
-        setBookings(data.data);
-      }
-    } catch (error) {
-      if (error.message.includes("token")) {
-        window.location.href = "/login";
-      }
-      console.error("Failed to fetch bookings:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOpenEdit = (booking) => {
-    try {
-      setSelectedBooking(booking);
-
-      // Map the booking's optional services to match the format
-      const mappedOptionalServices = booking.optionalServices.map(
-        (bookingService) => {
-          //console.log("Mapping service:", bookingService);
-
-          return {
-            serviceId: bookingService.serviceId?.toString(), // This should match what's in the config
-            name: bookingService.name,
-            price: bookingService.price,
-            _id: bookingService._id,
-          };
-        }
-      );
-
-      //console.log("Mapped optional services:", mappedOptionalServices);
-
-      setEditData({
-        ...booking,
-        dateTime: booking.dateTime,
-        optionalServices: mappedOptionalServices,
-        totalPrice: booking.totalPrice,
-      });
-
-      setEditErrors({});
-      setShowEditModal(true);
-    } catch (error) {
-      console.error("Error opening edit modal:", error);
-    }
-  };
-
-  const handleUpdateBooking = async () => {
-    try {
-      setIsUpdating(true);
-      setEditErrors({});
-
-      // Validation
-      const validationErrors = validateBookingData(editData);
-      if (Object.keys(validationErrors).length > 0) {
-        setEditErrors(validationErrors);
-        return;
-      }
-
-      const response = await api.put(
-        `${CONFIG.ENDPOINTS.BOOKINGS.BASE}/${selectedBooking._id}`,
-        formatBookingPayload(editData)
-      );
-
-      if (response.success) {
-        await fetchBookings();
-        setShowEditModal(false);
-      }
-    } catch (error) {
-      const errorMessage = getErrorMessage(error);
-      setEditErrors({
-        general: errorMessage,
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  // Better loading state
-  if (configLoading || servicesLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light dark:border-orange-500" />
-        <span className="ml-2">Loading configuration...</span>
-      </div>
-    );
-  }
 
   // Helper functions
   const validateBookingData = (data) => {
@@ -256,6 +201,63 @@ const BookingManager = () => {
       return error.message;
     }
     return "An unexpected error occurred";
+  };
+
+  const handleOpenEdit = (booking) => {
+    try {
+      setSelectedBooking(booking);
+
+      const mappedOptionalServices = (booking.optionalServices || []).map(
+        (bookingService) => ({
+          serviceId: bookingService.serviceId?.toString(),
+          name: bookingService.name,
+          price: bookingService.price,
+          _id: bookingService._id,
+        })
+      );
+
+      setEditData({
+        ...booking,
+        dateTime: booking.dateTime,
+        optionalServices: mappedOptionalServices,
+        totalPrice: booking.totalPrice,
+      });
+
+      setEditErrors({});
+      setShowEditModal(true);
+    } catch (error) {
+      console.error("Error opening edit modal:", error);
+    }
+  };
+
+  const handleUpdateBooking = async () => {
+    try {
+      setIsUpdating(true);
+      setEditErrors({});
+
+      const validationErrors = validateBookingData(editData);
+      if (Object.keys(validationErrors).length > 0) {
+        setEditErrors(validationErrors);
+        return;
+      }
+
+      const response = await api.put(
+        `${CONFIG.ENDPOINTS.BOOKINGS.BASE}/${selectedBooking._id}`,
+        formatBookingPayload(editData)
+      );
+
+      if (response.success) {
+        await fetchBookings(currentPage);
+        setShowEditModal(false);
+      }
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      setEditErrors({
+        general: errorMessage,
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleOptionalServiceToggle = (service) => {
@@ -315,7 +317,7 @@ const BookingManager = () => {
       );
 
       if (response.success) {
-        await fetchBookings();
+        await fetchBookings(currentPage);
         closeStatusModal();
       }
     } catch (error) {
@@ -350,23 +352,24 @@ const BookingManager = () => {
     );
   };
 
-  const filteredBookings = bookings.filter((booking) => {
-    const matchesSearch =
-      (booking.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      (booking.contact || "").includes(searchTerm) ||
-      (booking.confirmationNumber || "").includes(searchTerm);
+  const totalPages = Math.max(1, Math.ceil(total / ITEMS_PER_PAGE));
+  const displayedBookings = bookings;
 
-    if (filter === "all") return matchesSearch;
-    return matchesSearch && booking.status === filter;
-  });
-
-  // Pagination calculation
-  const totalPages = Math.ceil(filteredBookings.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedBookings = filteredBookings.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE
-  );
+  const handleOpenHistory = async (booking) => {
+    try {
+      // Open modal first for responsiveness, then load full history
+      setSelectedBooking(booking);
+      setShowHistoryModal(true);
+      const result = await api.get(
+        `${CONFIG.ENDPOINTS.BOOKINGS.BASE}/${booking._id}`
+      );
+      if (result.success) {
+        setSelectedBooking(result.data);
+      }
+    } catch (error) {
+      console.error("Failed to load status history:", error);
+    }
+  };
 
   const renderMobileCard = (booking) => (
     <div
@@ -386,10 +389,7 @@ const BookingManager = () => {
             <Edit className="w-5 h-5 text-primary-DEFAULT dark:text-orange-500" />
           </button>
           <button
-            onClick={() => {
-              setSelectedBooking(booking);
-              setShowHistoryModal(true);
-            }}
+            onClick={() => handleOpenHistory(booking)}
             className="p-1 text-primary-DEFAULT dark:text-orange-500"
           >
             <History className="w-5 h-5" />
@@ -467,14 +467,6 @@ const BookingManager = () => {
     </div>
   );
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light dark:border-orange-500" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -510,10 +502,20 @@ const BookingManager = () => {
       </div>
 
       {/* Mobile View */}
-      <div className="lg:hidden">{paginatedBookings.map(renderMobileCard)}</div>
+      {loading && (
+        <div className="lg:hidden flex justify-center items-center h-12">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-light dark:border-orange-500" />
+        </div>
+      )}
+      <div className="lg:hidden">{displayedBookings.map(renderMobileCard)}</div>
 
       {/* Desktop View */}
-      <div className="hidden lg:block w-full overflow-x-auto bg-background-light dark:bg-stone-800 rounded-lg border border-border-light dark:border-stone-700">
+      <div className="hidden lg:block relative w-full overflow-x-auto bg-background-light dark:bg-stone-800 rounded-lg border border-border-light dark:border-stone-700">
+        {loading && (
+          <div className="absolute inset-0 bg-black/10 dark:bg-black/30 flex items-center justify-center z-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-light dark:border-orange-500" />
+          </div>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
@@ -529,7 +531,7 @@ const BookingManager = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedBookings.map((booking) => (
+            {displayedBookings.map((booking) => (
               <TableRow key={booking._id}>
                 {/* Booking # */}
                 <TableCell className="font-mono text-primary-DEFAULT dark:text-orange-500">
@@ -642,10 +644,7 @@ const BookingManager = () => {
                 {/* History */}
                 <TableCell>
                   <button
-                    onClick={() => {
-                      setSelectedBooking(booking);
-                      setShowHistoryModal(true);
-                    }}
+                    onClick={() => handleOpenHistory(booking)}
                     className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors"
                     title="View Status History"
                   >

@@ -54,13 +54,76 @@ export async function createBooking(req, res) {
 
 export async function getAllBookings(req, res) {
   try {
-    const bookings = await Booking.find()
-      .sort({ createdAt: -1 })
-      .select("-__v");
+    const { page, limit, status, search, startDate, endDate, sort } = req.query;
+
+    // Backward compatibility: if no page is provided, return full list as before
+    if (!page) {
+      const bookings = await Booking.find()
+        .sort({ createdAt: -1 })
+        .select("-__v")
+        .lean();
+
+      return res.json({
+        success: true,
+        data: bookings,
+      });
+    }
+
+    // Server-side pagination + filtering when page is provided
+    const pageNum = Math.max(parseInt(page) || 1, 1);
+    const pageSize = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
+
+    const query = {};
+    if (status && status !== "all") {
+      query.status = status;
+    }
+    if (search) {
+      const rx = new RegExp(search, "i");
+      query.$or = [
+        { name: rx },
+        { contact: rx },
+        { confirmationNumber: rx },
+        { email: rx },
+      ];
+    }
+    // Use createdAt for date range filters (dateTime is a string field)
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (!isNaN(start) && !isNaN(end)) {
+        query.createdAt = { $gte: start, $lte: end };
+      }
+    }
+
+    const allowedSorts = new Set([
+      "createdAt",
+      "-createdAt",
+      "dateTime",
+      "-dateTime",
+    ]);
+    const sortBy = allowedSorts.has(sort) ? sort : "-createdAt";
+    const sortObj = sortBy.startsWith("-")
+      ? { [sortBy.slice(1)]: -1 }
+      : { [sortBy]: 1 };
+
+    const skip = (pageNum - 1) * pageSize;
+
+    const [data, total] = await Promise.all([
+      Booking.find(query)
+        .sort(sortObj)
+        .skip(skip)
+        .limit(pageSize)
+        .select("-__v -statusHistory")
+        .lean(),
+      Booking.countDocuments(query),
+    ]);
 
     res.json({
       success: true,
-      data: bookings,
+      data,
+      total,
+      page: pageNum,
+      pageSize,
     });
   } catch (error) {
     res.status(500).json({
