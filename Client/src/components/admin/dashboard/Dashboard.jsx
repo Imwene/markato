@@ -4,7 +4,7 @@ import api from "../../../utils/api.js";
 import { useNavigate } from "react-router-dom";
 import { CONFIG } from "../../../config/config.js";
 import WeeklyAppointments from "./WeeklyAppointments";
-import WalkInBookingForm from "./WalkinBookingForm";
+import WalkInBookingForm from "./WalkInBookingForm";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({

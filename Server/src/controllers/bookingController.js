@@ -1,5 +1,6 @@
 // src/controllers/bookingController.js
 import Booking from "../models/bookingModel.js";
+import StoreConfig from "../models/storeConfigModel.js";
 import {
   sendBookingConfirmation,
   sendAdminNotification,
@@ -8,8 +9,49 @@ import {
 } from "../services/emailService.js";
 import { sendStatusUpdateSMS } from "../services/smsService.js";
 import { generatePDF } from "../services/pdfService.js";
+import { validateAddressAndServiceArea } from "../services/geocodingService.js";
+import { calculateDistance } from "../utils/distanceCalculator.js";
 import twilio from "twilio";
 import { BusinessSettings } from "../models/businessSettingsModel.js";
+
+// NEW: Address validation endpoint
+export async function validateAddress(req, res) {
+  try {
+    const { address } = req.body;
+
+    if (!address || typeof address !== 'string' || address.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Address is required'
+      });
+    }
+
+    const result = await validateAddressAndServiceArea(address);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.error || 'Address validation failed'
+      });
+    }
+
+    res.json({
+      success: true,
+      isValid: result.isValid,
+      distance: result.distance,
+      serviceRadius: result.serviceRadius,
+      coordinates: result.coordinates,
+      formattedAddress: result.formattedAddress,
+      addressComponents: result.addressComponents
+    });
+  } catch (error) {
+    console.error('Address validation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error during address validation'
+    });
+  }
+}
 
 export async function createBooking(req, res) {
   try {
@@ -20,12 +62,55 @@ export async function createBooking(req, res) {
       (total, service) => total + parseFloat(service.price),
       0
     );
-    const totalPrice = basePrice + optionalServicesTotal;
+
+    // Get store configuration for mobile service upcharge
+    const storeConfig = await StoreConfig.findOne({ isActive: true });
+    const mobileUpcharge =
+      storeConfig?.mobileServiceUpcharge ||
+      parseFloat(process.env.MOBILE_UPCHARGE) ||
+      50;
+
+    let totalPrice = basePrice + optionalServicesTotal;
+    let adjustedServicePrice = basePrice;
+    let depositRequired = false;
+    let depositAmount = 0;
+    let distanceFromStore = 0;
+
+    // Handle mobile service pricing and deposits
+    if (req.body.serviceType === "mobile") {
+      adjustedServicePrice = basePrice + mobileUpcharge;
+      totalPrice = adjustedServicePrice + optionalServicesTotal;
+      depositRequired = true;
+      depositAmount = Math.round(totalPrice * 0.5); // 50% deposit
+
+      // Calculate distance if coordinates provided
+      if (req.body.customerAddress?.coordinates) {
+        const storeLat =
+          storeConfig?.address?.coordinates?.lat ||
+          parseFloat(process.env.STORE_LAT) ||
+          37.8044;
+        const storeLng =
+          storeConfig?.address?.coordinates?.lng ||
+          parseFloat(process.env.STORE_LNG) ||
+          -122.2712;
+
+        distanceFromStore = calculateDistance(
+          storeLat,
+          storeLng,
+          req.body.customerAddress.coordinates.lat,
+          req.body.customerAddress.coordinates.lng
+        );
+      }
+    }
 
     const bookingData = {
       ...req.body,
+      servicePrice: adjustedServicePrice,
       totalPrice,
       optionalServices: req.body.optionalServices || [],
+      depositRequired,
+      depositAmount,
+      distanceFromStore,
     };
 
     const booking = new Booking(bookingData);
@@ -51,6 +136,7 @@ export async function createBooking(req, res) {
     });
   }
 }
+
 
 export async function getAllBookings(req, res) {
   try {
