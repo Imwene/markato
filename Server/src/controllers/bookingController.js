@@ -103,6 +103,17 @@ export async function createBooking(req, res) {
       }
     }
 
+    // Generate confirmation number
+    const now = new Date();
+    const dateStr = `${(now.getMonth() + 1).toString().padStart(2, '0')}${now
+      .getDate()
+      .toString()
+      .padStart(2, '0')}${now.getFullYear().toString()}`;
+    const random = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, '0');
+    const confirmationNumber = `BK-${dateStr}-${random}`;
+
     const bookingData = {
       ...req.body,
       servicePrice: adjustedServicePrice,
@@ -111,6 +122,7 @@ export async function createBooking(req, res) {
       depositRequired,
       depositAmount,
       distanceFromStore,
+      confirmationNumber,
     };
 
     const booking = new Booking(bookingData);
