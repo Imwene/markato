@@ -68,7 +68,6 @@ const OptionalServices = ({
 
     return servicePrice + optionalTotal;
   };
-  };
 
   if (loading) {
     return <div>Loading optional services...</div>;
