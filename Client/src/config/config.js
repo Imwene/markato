@@ -11,6 +11,12 @@ export const CONFIG = {
       lng: -122.2712,
     },
   },
+  
+  SQUARE: {
+    APP_ID: import.meta.env.VITE_SQUARE_APP_ID,
+    LOCATION_ID: import.meta.env.VITE_SQUARE_LOCATION_ID,
+  },
+  
   ENDPOINTS: {
     AUTH: {
       LOGIN: "/auth/login",
