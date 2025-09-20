@@ -13,6 +13,7 @@ const OptionalServices = ({
   onQuantityChange,
   serviceType = "drive-in", // NEW: Add service type prop
   selectedServicePrice = 0, // NEW: Base service price for total calculation
+  totalPrice = 0, // NEW: Total price from hook for accurate deposit calculation
 }) => {
   const { optionalServices, loading } = useConfig();
 
@@ -233,7 +234,7 @@ const OptionalServices = ({
                   Total:
                 </span>
                 <span className="text-xl font-bold text-primary-DEFAULT dark:text-orange-500">
-                  ${calculateGrandTotal().toFixed(2)}
+                  ${totalPrice.toFixed(2)}
                 </span>
               </div>
 
@@ -241,7 +242,7 @@ const OptionalServices = ({
                 <div className="mt-2 text-xs text-content-light dark:text-stone-400">
                   Deposit Required: $
                   {(
-                    calculateGrandTotal() *
+                    totalPrice *
                     CONFIG.MOBILE_SERVICE.DEPOSIT_PERCENTAGE
                   ).toFixed(2)}{" "}
                   (50%)

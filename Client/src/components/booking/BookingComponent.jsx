@@ -130,6 +130,7 @@ const BookingComponent = () => {
               onBack={handleBack}
               serviceType={serviceType} // NEW: Pass service type for pricing
               selectedServicePrice={baseServicePrice} // NEW: Pass base service price for breakdown
+              totalPrice={totalPrice} // NEW: Pass total price for accurate deposit calculation
             />
           </>
         );
