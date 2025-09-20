@@ -416,41 +416,9 @@ export const useBookingState = () => {
     }
   };
 
-<<<<<<< HEAD
-  const validateBookingData = (formData) => {
-    const errors = {};
-    const phoneRegex =
-      /^(\+?1)?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!formData.name?.trim()) {
-      errors.name = "Name is required";
-    }
-
-    if (!formData.contact?.trim()) {
-      errors.contact = "Contact number is required";
-    } else if (!phoneRegex.test(formData.contact)) {
-      errors.contact = "Invalid phone number format";
-    }
-
-    if (formData.email && !emailRegex.test(formData.email)) {
-      errors.email = "Invalid email format";
-    }
-
-    if (!formData.makeModel?.trim()) {
-      errors.makeModel = "Make and model is required";
-    }
-
-    if (!formData.date || !formData.time) {
-      errors.dateTime = "Date and time are required";
-    }
-
-    return errors;
-  };
-
   // Reset booking state
   const resetBookingState = () => {
-    setBookingStep("service");
+    setBookingStep("service-type");
     setSelectedService(null);
     setSelectedScent(null);
     setSelectedOptions([]);
@@ -458,6 +426,7 @@ export const useBookingState = () => {
     setBookingDetails({
       name: "",
       contact: "",
+      email: "",
       makeModel: "",
       dateTime: "",
     });
@@ -466,17 +435,12 @@ export const useBookingState = () => {
     setCaptcha(generateCaptcha());
   };
 
-  // Validation helpers
-=======
   // Progress calculation - updated for new step
   const getProgress = () => {
     const steps = ["service-type", "service", "options", "details"];
     const currentIndex = steps.indexOf(bookingStep);
     return ((currentIndex + 1) / steps.length) * 100;
   };
-
-  // Can proceed validation - updated
->>>>>>> feature/mobile-detailing
   const canProceedToDetails = selectedService && selectedScent;
   const canProceedFromServiceType =
     serviceType === "drive-in" ||
@@ -489,11 +453,8 @@ export const useBookingState = () => {
     bookingStep,
     selectedService,
     selectedScent,
-<<<<<<< HEAD
     selectedOptions,
     optionQuantities,
-=======
->>>>>>> feature/mobile-detailing
     bookingDetails,
     booking,
     loading,
@@ -515,21 +476,10 @@ export const useBookingState = () => {
     setSelectedVehicleType: handleVehicleTypeChange,
     setSelectedService,
     setSelectedScent,
-<<<<<<< HEAD
-    setSelectedOptions,
-    setOptionQuantities,
-
-    // Handlers
-    handleVehicleTypeChange,
-    handleBack,
     handleOptionSelect,
     handleOptionQuantityChange,
-    handleNext,
-=======
-    setSelectedOptions: handleOptionSelect,
     setBookingStep,
     setIsCaptchaValid,
->>>>>>> feature/mobile-detailing
     handleInputChange,
     handleNext,
     handleBack,
