@@ -59,14 +59,14 @@ const OptionalServices = ({
 
   const calculateGrandTotal = () => {
     const optionalTotal = calculateOptionalServicesTotal();
-    let servicePrice = selectedServicePrice;
+    let totalServicePrice = selectedServicePrice;
 
     // Add mobile service upcharge if applicable
     if (serviceType === "mobile") {
-      servicePrice += CONFIG.MOBILE_SERVICE.UPCHARGE;
+      totalServicePrice += CONFIG.MOBILE_SERVICE.UPCHARGE;
     }
 
-    return servicePrice + optionalTotal;
+    return totalServicePrice + optionalTotal;
   };
 
   if (loading) {
@@ -201,11 +201,7 @@ const OptionalServices = ({
                 Base Service:
               </span>
               <span className="text-content-DEFAULT dark:text-white">
-                ${
-                  serviceType === "mobile"
-                    ? (selectedServicePrice - CONFIG.MOBILE_SERVICE.UPCHARGE).toFixed(2)
-                    : selectedServicePrice.toFixed(2)
-                }
+                ${selectedServicePrice.toFixed(2)}
               </span>
             </div>
 

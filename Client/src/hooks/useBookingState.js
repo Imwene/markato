@@ -238,7 +238,7 @@ export const useBookingState = () => {
     return servicePrice + optionalServicesTotal;
   };
 
-  // NEW: Calculate base service price (without optional services)
+  // NEW: Calculate base service price (without mobile upcharge or optional services)
   const calculateBaseServicePrice = () => {
     if (!selectedService) return 0;
 
@@ -248,15 +248,8 @@ export const useBookingState = () => {
 
     if (!selectedServiceDetails) return 0;
 
-    let servicePrice =
-      selectedServiceDetails.vehiclePricing[selectedVehicleType];
-
-    // Add mobile service upcharge
-    if (serviceType === "mobile") {
-      servicePrice += CONFIG.MOBILE_SERVICE.UPCHARGE;
-    }
-
-    return servicePrice;
+    // Return just the base service price - mobile upcharge handled in display
+    return selectedServiceDetails.vehiclePricing[selectedVehicleType];
   };
 
   // NEW: Updated Form Validation
