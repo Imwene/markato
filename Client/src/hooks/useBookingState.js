@@ -246,7 +246,17 @@ export const useBookingState = () => {
       const optionDetails = optionalServices.find(
         (service) => service.id.toString() === optionId.toString()
       );
-      return sum + (optionDetails ? parseFloat(optionDetails.price) : 0);
+      if (!optionDetails) return sum;
+      
+      const basePrice = parseFloat(optionDetails.price);
+      if (optionDetails.name?.toLowerCase() === "seat cloth shampoo") {
+        const q = Math.max(
+          1,
+          Math.min(4, optionQuantities?.[optionId] || 1)
+        );
+        return sum + basePrice * q;
+      }
+      return sum + basePrice;
     }, 0);
 
     return servicePrice + optionalServicesTotal;
