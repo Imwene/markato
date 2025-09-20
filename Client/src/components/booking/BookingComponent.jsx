@@ -26,6 +26,7 @@ const BookingComponent = () => {
     optionalServicesData,
     canProceedToDetails,
     isFormValid,
+    baseServicePrice,
 
     // NEW: Mobile service state
     serviceType,
@@ -120,6 +121,7 @@ const BookingComponent = () => {
               onContinue={handleNext}
               onBack={handleBack}
               serviceType={serviceType} // NEW: Pass service type for pricing
+              selectedServicePrice={baseServicePrice} // NEW: Pass base service price for breakdown
             />
           </>
         );

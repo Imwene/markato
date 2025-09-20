@@ -201,7 +201,11 @@ const OptionalServices = ({
                 Base Service:
               </span>
               <span className="text-content-DEFAULT dark:text-white">
-                ${selectedServicePrice.toFixed(2)}
+                ${
+                  serviceType === "mobile"
+                    ? (selectedServicePrice - CONFIG.MOBILE_SERVICE.UPCHARGE).toFixed(2)
+                    : selectedServicePrice.toFixed(2)
+                }
               </span>
             </div>
 

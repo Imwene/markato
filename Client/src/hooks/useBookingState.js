@@ -238,6 +238,27 @@ export const useBookingState = () => {
     return servicePrice + optionalServicesTotal;
   };
 
+  // NEW: Calculate base service price (without optional services)
+  const calculateBaseServicePrice = () => {
+    if (!selectedService) return 0;
+
+    const selectedServiceDetails = services.find(
+      (s) => s._id === selectedService || s.id === selectedService
+    );
+
+    if (!selectedServiceDetails) return 0;
+
+    let servicePrice =
+      selectedServiceDetails.vehiclePricing[selectedVehicleType];
+
+    // Add mobile service upcharge
+    if (serviceType === "mobile") {
+      servicePrice += CONFIG.MOBILE_SERVICE.UPCHARGE;
+    }
+
+    return servicePrice;
+  };
+
   // NEW: Updated Form Validation
   const validateBookingData = (formData) => {
     const errors = {};
@@ -495,6 +516,7 @@ export const useBookingState = () => {
     canProceedToDetails,
     canProceedFromServiceType,
     totalPrice: calculateTotalPrice(),
+    baseServicePrice: calculateBaseServicePrice(),
     progress: getProgress(),
   };
 };
