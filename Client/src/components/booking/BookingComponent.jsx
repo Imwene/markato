@@ -7,6 +7,7 @@ import VehicleTypeSelector from "./VehicleTypeSelector";
 import OptionalServices from "./OptionalServices";
 import ServiceTypeToggle from "./ServiceTypeToggle"; // NEW: Import mobile service component
 import AddressInput from "./AddressInput"; // NEW: Import address input component
+import MobileDetails from "./MobileDetails"; // NEW: Import mobile payment component
 import { useBookingState } from "../../hooks/useBookingState";
 
 const BookingComponent = () => {
@@ -50,12 +51,19 @@ const BookingComponent = () => {
     handleServiceTypeChange,
     handleAddressChange,
     validateAddress,
+    
+    // NEW: Payment step state and handlers
+    finalizeMobileBooking,
+    mobileDetails,
+    setMobileDetails,
+    totalPrice,
   } = useBookingState();
 
   useEffect(() => {
     if (
       bookingStep === "details" ||
       bookingStep === "options" ||
+      bookingStep === "payment" || // NEW: Include payment step
       bookingStep === "confirmation" ||
       bookingStep === "service-type" // NEW: Include service-type step
     ) {
@@ -140,6 +148,17 @@ const BookingComponent = () => {
               addressValidation={addressValidation} // NEW: Pass validation status
             />
           </>
+        );
+      case "payment":
+        return (
+          <MobileDetails
+            bookingDetails={bookingDetails}
+            totalPrice={totalPrice}
+            mobileDetails={mobileDetails}
+            setMobileDetails={setMobileDetails}
+            finalizeMobileBooking={finalizeMobileBooking}
+            onBack={handleBack}
+          />
         );
       case "confirmation":
         return (
@@ -239,6 +258,11 @@ const BookingComponent = () => {
             serviceType === "mobile"
               ? "Fill in your details to schedule your mobile service"
               : "Fill in your details to schedule your appointment",
+        };
+      case "payment":
+        return {
+          title: "Mobile Service Deposit",
+          description: "Secure your booking with a 50% deposit payment",
         };
       case "confirmation":
         return {

@@ -41,6 +41,17 @@ export const useBookingState = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // NEW: Mobile payment step support
+  const [pendingBookingPayload, setPendingBookingPayload] = useState(null);
+  const [mobileDetails, setMobileDetails] = useState({
+    parkingType: "driveway",
+    hasWater: false,
+    hasPower: false,
+    accessNotes: "",
+    arriveContactMethod: "call",
+    depositToken: null,
+  });
+
   // Captcha state
   const [captcha, setCaptcha] = useState({ question: "", answer: "" });
 
@@ -186,6 +197,9 @@ export const useBookingState = () => {
         break;
       case "details":
         setBookingStep("options");
+        break;
+      case "payment":
+        setBookingStep("details");
         break;
       default:
         break;
@@ -398,10 +412,24 @@ export const useBookingState = () => {
                 zipCode: addressValidation.addressComponents?.zipCode || "",
                 coordinates: addressValidation.coordinates,
               },
+              mobileDetails: {
+                parkingType: mobileDetails.parkingType,
+                hasWater: mobileDetails.hasWater,
+                hasPower: mobileDetails.hasPower,
+                accessNotes: mobileDetails.accessNotes,
+                arriveContactMethod: mobileDetails.arriveContactMethod,
+              },
             }),
         };
 
-        // Submit booking
+        // If mobile service, go to payment step instead of submitting immediately
+        if (serviceType === "mobile") {
+          setPendingBookingPayload(bookingPayload);
+          setBookingStep("payment");
+          return; // Do not submit yet
+        }
+
+        // Submit booking for drive-in
         const response = await fetch(`${CONFIG.API_URL}/bookings`, {
           method: "POST",
           headers: {
@@ -451,7 +479,9 @@ export const useBookingState = () => {
 
   // Progress calculation - updated for new step
   const getProgress = () => {
-    const steps = ["service-type", "service", "options", "details"];
+    const steps = serviceType === "mobile" 
+      ? ["service-type", "service", "options", "details", "payment"] 
+      : ["service-type", "service", "options", "details"];
     const currentIndex = steps.indexOf(bookingStep);
     return ((currentIndex + 1) / steps.length) * 100;
   };
@@ -459,6 +489,39 @@ export const useBookingState = () => {
   const canProceedFromServiceType =
     serviceType === "drive-in" ||
     (serviceType === "mobile" && addressValidation?.status === "valid");
+
+  // NEW: Finalize mobile booking after payment tokenization
+  const finalizeMobileBooking = async ({ depositToken, fields }) => {
+    if (!pendingBookingPayload) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const payload = {
+        ...pendingBookingPayload,
+        depositToken,
+        ...(fields && { mobileDetails: { ...pendingBookingPayload.mobileDetails, ...fields } }),
+      };
+
+      const response = await fetch(`${CONFIG.API_URL}/bookings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create booking");
+      }
+      const result = await response.json();
+      setBooking(result.data);
+      setPendingBookingPayload(null);
+      setBookingStep("confirmation");
+    } catch (err) {
+      console.error("Mobile booking finalize error:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return {
     // Existing state
@@ -504,6 +567,11 @@ export const useBookingState = () => {
     handleServiceTypeChange,
     handleAddressChange,
     validateAddress,
+
+    // Payment step helpers
+    finalizeMobileBooking,
+    mobileDetails,
+    setMobileDetails,
 
     // Computed values
     canProceedToDetails,
