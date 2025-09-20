@@ -87,9 +87,10 @@ export const generatePDF = (booking) => {
   // Service Details Box (Left)
   addBox(65, serviceY, 230, 120);
   addText("Service Details", 80, serviceY + 15, { fontSize: 13, bold: true });
-  addText(`Service Type: ${booking.serviceName}`, 80, serviceY + 40);
-  addText(`Date & Time: ${booking.dateTime}`, 80, serviceY + 60);
-  addText(`Selected Scent: ${booking.selectedScent}`, 80, serviceY + 80);
+  addText(`Service: ${booking.serviceName}`, 80, serviceY + 40);
+  addText(`Type: ${booking.serviceType === 'mobile' ? 'Mobile Service' : 'Drive-in Service'}`, 80, serviceY + 55);
+  addText(`Date & Time: ${booking.dateTime}`, 80, serviceY + 70);
+  addText(`Selected Scent: ${booking.selectedScent}`, 80, serviceY + 85);
   addText(`Service Price: $${booking.servicePrice}`, 80, serviceY + 100);
 
   // Optional Services Box (Right)
@@ -108,17 +109,53 @@ export const generatePDF = (booking) => {
     addText("None", 330, serviceY + 40);
   }
 
+  // Mobile Service Address Section (if applicable)
+  let mobileY = 500;
+  if (booking.serviceType === 'mobile' && booking.customerAddress) {
+    addBox(65, mobileY, 480, 60, "#fff7ed");
+    addText("📍 Mobile Service Location", 65, mobileY + 12, {
+      fontSize: 13,
+      align: "center",
+      width: 480
+    });
+    const address = `${booking.customerAddress.street}, ${booking.customerAddress.city}, ${booking.customerAddress.state} ${booking.customerAddress.zipCode}`;
+    addText(address, 65, mobileY + 32, {
+      fontSize: 11,
+      align: "center",
+      width: 480
+    });
+    mobileY += 80;
+  }
+
   // Total Amount Section
-  const totalY = 500;
-  addBox(65, totalY, 480, 40, "#f6f6f6");
+  const totalY = mobileY;
+  addBox(65, totalY, 480, booking.serviceType === 'mobile' && booking.depositRequired ? 80 : 40, "#f6f6f6");
   addText(`Total Amount: $${booking.totalPrice}`, 65, totalY + 12, {
     fontSize: 13,
     align: "center",
     width: 480
   });
+  
+  // Add deposit information for mobile services
+  if (booking.serviceType === 'mobile' && booking.depositRequired) {
+    const depositAmount = booking.depositAmount || booking.totalPrice * 0.5;
+    const remainingBalance = booking.totalPrice - depositAmount;
+    addText(`Deposit Paid: $${depositAmount.toFixed(2)}`, 65, totalY + 35, {
+      fontSize: 11,
+      align: "center",
+      width: 480,
+      color: "#10b981"
+    });
+    addText(`Remaining Balance: $${remainingBalance.toFixed(2)}`, 65, totalY + 55, {
+      fontSize: 11,
+      align: "center",
+      width: 480,
+      color: "#f59e0b"
+    });
+  }
 
   // Cancellation Section
-  const cancelY = 560;
+  const cancelY = totalY + (booking.serviceType === 'mobile' && booking.depositRequired ? 100 : 60);
   if (booking.email) {
     addBox(65, cancelY, 480, 60, "#f8f8f8");
     const encodedEmail = Buffer.from(booking.email).toString("base64");
@@ -137,8 +174,8 @@ export const generatePDF = (booking) => {
     });
   }
 
-  // Footer Section (fixed position at bottom)
-  const footerY = 640;
+  // Footer Section (adjusted position for mobile services)
+  const footerY = cancelY + 80;
   addBox(50, footerY, 495, 130, "#f8f8f8");
   
   // Footer text
