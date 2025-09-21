@@ -73,6 +73,8 @@ const AddressInput = ({
         return <XCircle className="text-red-500" size={20} />;
       case "outside_service_area":
         return <AlertTriangle className="text-orange-500" size={20} />;
+      case "outside_east_bay":
+        return <XCircle className="text-red-500" size={20} />;
       default:
         return null;
     }
@@ -93,7 +95,7 @@ const AddressInput = ({
         return {
           text: `✓ Address validated (${validationStatus.distance?.toFixed(
             1
-          )} miles from our location)`,
+          )} miles from our Oakland location)`,
           color: "text-green-600 dark:text-green-400",
         };
       case "invalid":
@@ -108,8 +110,16 @@ const AddressInput = ({
         return {
           text: `⚠ Address is ${validationStatus.distance?.toFixed(
             1
-          )} miles away (outside our 40-mile service area)`,
+          )} miles away (outside our 15-mile East Bay service area)`,
           color: "text-orange-600 dark:text-orange-400",
+        };
+      case "outside_east_bay":
+        return {
+          text: `✗ ${
+            validationStatus.message ||
+            "Address is outside our East Bay service area (West Bay/Peninsula not serviced)"
+          }`,
+          color: "text-red-600 dark:text-red-400",
         };
       default:
         return null;
@@ -138,14 +148,15 @@ const AddressInput = ({
             type="text"
             value={localAddress}
             onChange={handleAddressChange}
-            placeholder="Enter your full address (e.g., 123 Main St, Oakland, CA 94601)"
+            placeholder="Enter your East Bay address (e.g., 123 Main St, Oakland, CA 94601)"
             className={`
               w-full pl-10 pr-12 py-3 rounded-lg border transition-all duration-200
               ${
                 validationStatus?.status === "valid"
                   ? "border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/20"
                   : validationStatus?.status === "invalid" ||
-                    validationStatus?.status === "outside_service_area"
+                    validationStatus?.status === "outside_service_area" ||
+                    validationStatus?.status === "outside_east_bay"
                   ? "border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/20"
                   : "border-border-DEFAULT dark:border-stone-700 bg-background-light dark:bg-stone-800"
               }
@@ -159,7 +170,8 @@ const AddressInput = ({
             }
             aria-invalid={
               validationStatus?.status === "invalid" ||
-              validationStatus?.status === "outside_service_area"
+              validationStatus?.status === "outside_service_area" ||
+              validationStatus?.status === "outside_east_bay"
             }
           />
 
@@ -191,11 +203,15 @@ const AddressInput = ({
         <div className="flex items-start space-x-2">
           <MapPin className="flex-shrink-0 w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
           <div className="text-sm text-blue-700 dark:text-blue-300">
-            <p className="font-medium">Service Area Information:</p>
+            <p className="font-medium">East Bay Service Area:</p>
             <p className="mt-1">
-              We provide mobile service within 40 miles of our Oakland location
-              (1901 Park Blvd). Please enter your complete address including
-              street, city, state, and zip code for accurate validation.
+              We provide mobile service to East Bay locations within 15 miles of our Oakland location
+              (1901 Park Blvd). We do not service the West Bay (San Francisco/Peninsula) area.
+              Please enter your complete East Bay address for validation.
+            </p>
+            <p className="mt-2 text-xs">
+              <strong>East Bay cities include:</strong> Oakland, Berkeley, Alameda, Emeryville, 
+              Richmond, Hayward, Fremont, Walnut Creek, Concord, and surrounding areas.
             </p>
           </div>
         </div>

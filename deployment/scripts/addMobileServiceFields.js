@@ -54,7 +54,7 @@ const migrateMobileServiceFields = async () => {
             lng: -122.2712,
           },
         },
-        serviceRadius: 40,
+        serviceRadius: 15, // Updated from 40 to 15 for East Bay only
         mobileServiceUpcharge: 50,
         isActive: true,
       });

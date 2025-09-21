@@ -51,14 +51,34 @@ export async function validateAddress(req, res) {
       });
     }
 
+    // Determine the validation status based on result
+    let status = 'valid';
+    let message = '';
+    
+    if (!result.isValid) {
+      if (result.validationStatus === 'outside_east_bay') {
+        status = 'outside_east_bay';
+        message = result.validationMessage || 'Address is outside our East Bay service area';
+      } else if (result.validationStatus === 'outside_service_area') {
+        status = 'outside_service_area';
+        message = result.validationMessage || `Address is outside our ${result.serviceRadius}-mile service area`;
+      } else {
+        status = 'invalid';
+        message = result.validationMessage || 'Invalid address';
+      }
+    }
+
     res.json({
       success: true,
+      status: status,
       isValid: result.isValid,
+      message: message,
       distance: result.distance,
       serviceRadius: result.serviceRadius,
       coordinates: result.coordinates,
       formattedAddress: result.formattedAddress,
-      addressComponents: result.addressComponents
+      addressComponents: result.addressComponents,
+      eastBayValidation: result.eastBayValidation
     });
   } catch (error) {
     console.error('Address validation error:', error);

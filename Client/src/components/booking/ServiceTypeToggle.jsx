@@ -133,7 +133,7 @@ const ServiceTypeToggle = ({ serviceType, onServiceTypeChange }) => {
               <div className="text-sm text-content-light dark:text-stone-400 space-y-2 mt-2">
                 <p>We come to you</p>
                 <p className="font-medium text-content-DEFAULT dark:text-stone-300">
-                  Within 40 miles of Oakland
+                  East Bay only - Within 15 miles
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <span className="px-2.5 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium">

@@ -45,7 +45,7 @@ const storeConfigSchema = new Schema(
     serviceRadius: {
       type: Number,
       required: true,
-      default: 40, // miles
+      default: 15, // miles - Updated from 40 to 15 for East Bay only service
     },
     mobileServiceUpcharge: {
       type: Number,

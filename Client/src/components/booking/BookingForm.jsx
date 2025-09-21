@@ -651,7 +651,7 @@ const BookingForm = ({
                     <li>50% deposit required at booking confirmation</li>
                     <li>Remaining balance due at service completion</li>
                     <li>Cancellations must be made 24+ hours in advance</li>
-                    <li>Service address must be within 40 miles of Oakland</li>
+                    <li>Service address must be within East Bay (15-mile radius of Oakland)</li>
                   </ul>
                 </div>
               </div>

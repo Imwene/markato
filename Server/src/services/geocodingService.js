@@ -3,6 +3,7 @@ import { Client } from "@googlemaps/google-maps-services-js";
 import {
   calculateDistance,
   validateCoordinates,
+  validateEastBayLocation,
 } from "../utils/distanceCalculator.js";
 import StoreConfig from "../models/storeConfigModel.js";
 
@@ -77,12 +78,13 @@ export const geocodeAddress = async (address) => {
 };
 
 /**
- * Validate if coordinates are within the service area
+ * Validate if coordinates are within the service area (East Bay + distance)
  * @param {number} lat - Latitude of the target location
  * @param {number} lng - Longitude of the target location
+ * @param {string} cityName - City name for region validation (optional)
  * @returns {Promise<object>} Object with validation result and distance
  */
-export const validateServiceArea = async (lat, lng) => {
+export const validateServiceArea = async (lat, lng, cityName = null) => {
   try {
     // Validate coordinates
     if (!validateCoordinates(lat, lng)) {
@@ -108,15 +110,37 @@ export const validateServiceArea = async (lat, lng) => {
     const serviceRadius =
       storeConfig?.serviceRadius ||
       parseFloat(process.env.SERVICE_RADIUS) ||
-      40;
+      15; // Updated default from 40 to 15 miles
 
     // Calculate distance from store
     const distance = calculateDistance(storeLat, storeLng, lat, lng);
 
+    // Check if location is in East Bay region
+    const eastBayValidation = validateEastBayLocation(lat, lng, cityName);
+
+    // Location must be both in East Bay AND within distance radius
+    const isValidDistance = distance <= serviceRadius;
+    const isValidRegion = eastBayValidation.isInEastBay;
+    const isValid = isValidDistance && isValidRegion;
+
+    let validationStatus = 'valid';
+    let validationMessage = '';
+
+    if (!isValidRegion) {
+      validationStatus = 'outside_east_bay';
+      validationMessage = eastBayValidation.reason;
+    } else if (!isValidDistance) {
+      validationStatus = 'outside_service_area';
+      validationMessage = `Address is ${distance.toFixed(1)} miles away (outside our ${serviceRadius}-mile service area)`;
+    }
+
     return {
-      isValid: distance <= serviceRadius,
+      isValid: isValid,
       distance: distance,
       serviceRadius: serviceRadius,
+      validationStatus: validationStatus,
+      validationMessage: validationMessage,
+      eastBayValidation: eastBayValidation,
       storeLocation: {
         lat: storeLat,
         lng: storeLng,
@@ -150,10 +174,11 @@ export const validateAddressAndServiceArea = async (address) => {
       };
     }
 
-    // Then validate service area
+    // Then validate service area (include city name for region validation)
     const serviceAreaResult = await validateServiceArea(
       geocodeResult.coordinates.lat,
-      geocodeResult.coordinates.lng
+      geocodeResult.coordinates.lng,
+      geocodeResult.addressComponents.city
     );
 
     return {

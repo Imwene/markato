@@ -115,15 +115,15 @@ export const useBookingState = () => {
 
       if (data.success) {
         setAddressValidation({
-          status: data.isValid ? "valid" : "outside_service_area",
+          status: data.status || (data.isValid ? "valid" : "outside_service_area"),
           address: address,
           distance: data.distance,
           coordinates: data.coordinates,
           formattedAddress: data.formattedAddress,
           addressComponents: data.addressComponents,
-          message: data.isValid
+          message: data.message || (data.isValid
             ? "Address validated successfully"
-            : `Address is outside our ${data.serviceRadius}-mile service area`,
+            : `Address is outside our ${data.serviceRadius}-mile East Bay service area`),
         });
       } else {
         setAddressValidation({
