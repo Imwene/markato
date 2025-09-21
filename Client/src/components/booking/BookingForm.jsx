@@ -404,6 +404,10 @@ const BookingForm = ({
                     placeholder="Full Name"
                     className={getInputClassName("name")}
                     aria-describedby="nameError"
+                    onChange={(e) => {
+                      field.onChange(e);
+                      onInputChange(e); // Sync with parent state
+                    }}
                   />
                 )}
               />
@@ -427,6 +431,10 @@ const BookingForm = ({
                     placeholder="Contact Number (e.g., 123-456-7890)"
                     className={getInputClassName("contact")}
                     aria-describedby="contactError"
+                    onChange={(e) => {
+                      field.onChange(e);
+                      onInputChange(e); // Sync with parent state
+                    }}
                   />
                 )}
               />
@@ -450,6 +458,10 @@ const BookingForm = ({
                     placeholder="Email Address"
                     className={getInputClassName("email")}
                     aria-describedby="emailError"
+                    onChange={(e) => {
+                      field.onChange(e);
+                      onInputChange(e); // Sync with parent state
+                    }}
                   />
                 )}
               />
@@ -473,6 +485,10 @@ const BookingForm = ({
                     placeholder="Vehicle Make & Model (e.g., 2023 Honda Civic)"
                     className={getInputClassName("makeModel")}
                     aria-describedby="makeModelError"
+                    onChange={(e) => {
+                      field.onChange(e);
+                      onInputChange(e); // Sync with parent state
+                    }}
                   />
                 )}
               />

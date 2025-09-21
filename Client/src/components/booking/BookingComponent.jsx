@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ServiceList from "./ServiceList";
 import BookingForm from "./BookingForm";
@@ -59,13 +59,23 @@ const BookingComponent = () => {
     totalPrice,
   } = useBookingState();
 
+  // Track if this is the initial mount to prevent auto-scroll on page load
+  const isInitialMount = useRef(true);
+
   useEffect(() => {
+    // Don't scroll on initial page load
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    // Only scroll during step navigation (after initial mount)
     if (
       bookingStep === "details" ||
       bookingStep === "options" ||
-      bookingStep === "payment" || // NEW: Include payment step
+      bookingStep === "payment" ||
       bookingStep === "confirmation" ||
-      bookingStep === "service-type" // NEW: Include service-type step
+      bookingStep === "service" // Include service step when navigating from service-type
     ) {
       const element = document.getElementById("booking-component");
       if (element) {

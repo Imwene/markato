@@ -501,7 +501,7 @@ export const useBookingState = () => {
     (serviceType === "mobile" && addressValidation?.status === "valid");
 
   // NEW: Finalize mobile booking after payment tokenization
-  const finalizeMobileBooking = async ({ depositToken, fields }) => {
+  const finalizeMobileBooking = async ({ depositToken, fields, customerDetails }) => {
     if (!pendingBookingPayload) return;
     setLoading(true);
     setError(null);
@@ -510,6 +510,11 @@ export const useBookingState = () => {
         ...pendingBookingPayload,
         depositToken,
         ...(fields && { mobileDetails: { ...pendingBookingPayload.mobileDetails, ...fields } }),
+        // Ensure customer details are included (override with latest values if provided)
+        ...(customerDetails && {
+          name: customerDetails.name || pendingBookingPayload.name,
+          email: customerDetails.email || pendingBookingPayload.email,
+        }),
       };
 
       const response = await fetch(`${CONFIG.API_URL}/bookings`, {

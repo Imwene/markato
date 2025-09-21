@@ -11,8 +11,24 @@ import { sendStatusUpdateSMS } from "../services/smsService.js";
 import { generatePDF } from "../services/pdfService.js";
 import { validateAddressAndServiceArea } from "../services/geocodingService.js";
 import { calculateDistance } from "../utils/distanceCalculator.js";
+import { chargeDeposit } from "../services/squarePaymentService.js";
 import twilio from "twilio";
 import { BusinessSettings } from "../models/businessSettingsModel.js";
+
+// Helper function to convert BigInt values to numbers for JSON serialization
+function sanitizeBookingData(booking) {
+  const bookingObj = booking.toObject ? booking.toObject() : booking;
+  
+  // Convert any BigInt values to numbers
+  const sanitized = JSON.parse(JSON.stringify(bookingObj, (key, value) => {
+    if (typeof value === 'bigint') {
+      return Number(value);
+    }
+    return value;
+  }));
+  
+  return sanitized;
+}
 
 // NEW: Address validation endpoint
 export async function validateAddress(req, res) {
@@ -125,8 +141,92 @@ export async function createBooking(req, res) {
       confirmationNumber,
     };
 
+    // Process payment if deposit token is provided (mobile service)
+    if (req.body.depositToken && depositRequired && depositAmount > 0) {
+      // Validate Square configuration before attempting payment
+      if (!process.env.SQUARE_ACCESS_TOKEN || !process.env.SQUARE_LOCATION_ID) {
+        console.error('Square payment configuration missing:', {
+          hasAccessToken: !!process.env.SQUARE_ACCESS_TOKEN,
+          hasLocationId: !!process.env.SQUARE_LOCATION_ID,
+          environment: process.env.NODE_ENV
+        });
+        return res.status(500).json({
+          success: false,
+          error: 'Payment system configuration error. Please contact support.',
+          bookingNotCreated: true
+        });
+      }
+      
+      try {
+        const depositAmountCents = Math.round(depositAmount * 100); // Convert dollars to cents
+        console.log(`Processing deposit payment: $${depositAmount} (${depositAmountCents} cents) for booking ${confirmationNumber}`);
+        console.log('Payment details:', {
+          sourceId: req.body.depositToken?.substring(0, 20) + '...',
+          amount: depositAmountCents,
+          customerName: req.body.name,
+          customerEmail: req.body.email
+        });
+        
+        const paymentResult = await chargeDeposit({
+          sourceId: req.body.depositToken,
+          amount: depositAmountCents, // Amount in cents
+          currency: 'USD',
+          note: `Mobile service deposit for booking ${confirmationNumber} - Customer: ${req.body.name}`,
+          referenceId: confirmationNumber,
+          autocomplete: true
+        });
+
+        console.log('✅ Payment processed successfully:', {
+          paymentId: paymentResult.id,
+          status: paymentResult.status,
+          amountCents: Number(paymentResult.amountMoney?.amount || 0),
+          currency: paymentResult.amountMoney?.currency,
+          confirmationNumber
+        });
+
+        // Add payment information to booking data (convert BigInt values to numbers)
+        bookingData.paymentDetails = {
+          paymentId: paymentResult.id,
+          status: paymentResult.status,
+          amountCharged: depositAmount,
+          processedAt: new Date(),
+          cardDetails: paymentResult.cardDetails || {},
+          squareAmountMoney: {
+            amount: Number(paymentResult.amountMoney?.amount || 0),
+            currency: paymentResult.amountMoney?.currency || 'USD'
+          }
+        };
+        bookingData.depositPaid = true;
+        
+      } catch (paymentError) {
+        console.error('Payment processing failed:', {
+          error: paymentError.message,
+          confirmationNumber,
+          depositToken: req.body.depositToken?.substring(0, 10) + '...',
+          amount: depositAmount
+        });
+        
+        return res.status(400).json({
+          success: false,
+          error: 'Payment processing failed: ' + paymentError.message,
+          bookingNotCreated: true
+        });
+      }
+    }
+
     const booking = new Booking(bookingData);
     const savedBooking = await booking.save();
+    
+    console.log('✅ Booking created successfully:', {
+      confirmationNumber: savedBooking.confirmationNumber,
+      serviceType: savedBooking.serviceType,
+      totalPrice: savedBooking.totalPrice,
+      depositRequired: savedBooking.depositRequired,
+      depositAmount: savedBooking.depositAmount,
+      depositPaid: savedBooking.depositPaid,
+      paymentProcessed: !!savedBooking.paymentDetails,
+      customerId: savedBooking._id
+    });
 
     //send admin notification
     try {
@@ -138,7 +238,7 @@ export async function createBooking(req, res) {
 
     res.status(201).json({
       success: true,
-      data: savedBooking,
+      data: sanitizeBookingData(savedBooking),
     });
   } catch (error) {
     console.error("Booking error:", error);

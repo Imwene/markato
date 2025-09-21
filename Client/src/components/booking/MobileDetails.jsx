@@ -46,6 +46,11 @@ const MobileDetails = ({
         accessNotes: local.accessNotes,
         arriveContactMethod: local.arriveContactMethod,
       },
+      // Include customer details to ensure they're in the final booking
+      customerDetails: {
+        name: bookingDetails.name,
+        email: bookingDetails.email,
+      },
     });
   };
 

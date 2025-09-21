@@ -15,8 +15,14 @@ export const generatePDF = (booking) => {
   const doc = new PDFDocument({
     size: "A4",
     margin: 50,
-    bufferPages: true
+    bufferPages: false, // Prevent automatic page breaks
+    autoFirstPage: true
   });
+  
+  // A4 dimensions: 595 x 842 points
+  // With 50pt margins: usable area is 495 x 742 points
+  const pageHeight = 742; // Usable height after margins
+  let currentY = 0; // Track current vertical position
 
   const boxes = [];
   const textOperations = [];
@@ -41,96 +47,101 @@ export const generatePDF = (booking) => {
   };
 
   // Logo
+  currentY = 20;
   doc.image(LOGO, {
-    fit: [200, 50],
+    fit: [200, 40],
     align: "center",
-    y: 40
+    y: currentY
   });
+  currentY += 60;
 
   // Title
-  addText("Booking Confirmation", 50, 120, {
+  addText("Booking Confirmation", 50, currentY, {
     fontSize: 18,
     align: "center",
     width: 495
   });
+  currentY += 35;
 
   // Confirmation Number Section
-  const confirmY = 160;
-  addBox(50, confirmY, 495, 40, "#f6f6f6");
-  addText(`Confirmation Number: ${booking.confirmationNumber}`, 50, confirmY + 12, {
+  addBox(50, currentY, 495, 35, "#f6f6f6");
+  addText(`Confirmation Number: ${booking.confirmationNumber}`, 50, currentY + 10, {
     fontSize: 12,
     align: "center",
     width: 495
   });
+  currentY += 50;
 
-  // Information Section
-  const infoY = 220;
+  // Information Section - Customer and Vehicle Info Side by Side
+  const boxHeight = 100; // Reduced height
   
-  // Customer Info Box
-  addBox(65, infoY, 230, 120);
-  addText("Customer Information", 80, infoY + 15, { fontSize: 13, bold: true });
-  addText(`Name: ${booking.name}`, 80, infoY + 40);
-  addText(`Contact: ${booking.contact}`, 80, infoY + 60);
+  // Customer Info Box (Left)
+  addBox(65, currentY, 230, boxHeight);
+  addText("Customer Information", 80, currentY + 10, { fontSize: 12, bold: true });
+  addText(`Name: ${booking.name}`, 80, currentY + 28);
+  addText(`Contact: ${booking.contact}`, 80, currentY + 44);
   if (booking.email) {
-    addText(`Email: ${booking.email}`, 80, infoY + 80);
+    addText(`Email: ${booking.email}`, 80, currentY + 60);
   }
 
-  // Vehicle Info Box
-  addBox(315, infoY, 230, 120);
-  addText("Vehicle Information", 330, infoY + 15, { fontSize: 13, bold: true });
-  addText(`Make/Model: ${booking.makeModel}`, 330, infoY + 40);
-  addText(`Vehicle Type: ${booking.vehicleType}`, 330, infoY + 60);
+  // Vehicle Info Box (Right)
+  addBox(315, currentY, 230, boxHeight);
+  addText("Vehicle Information", 330, currentY + 10, { fontSize: 12, bold: true });
+  addText(`Make/Model: ${booking.makeModel}`, 330, currentY + 28);
+  addText(`Vehicle Type: ${booking.vehicleType}`, 330, currentY + 44);
+  currentY += boxHeight + 15;
 
   // Service Details and Optional Services Side by Side
-  const serviceY = 360;
+  const serviceBoxHeight = 100; // Reduced height
   
   // Service Details Box (Left)
-  addBox(65, serviceY, 230, 120);
-  addText("Service Details", 80, serviceY + 15, { fontSize: 13, bold: true });
-  addText(`Service: ${booking.serviceName}`, 80, serviceY + 40);
-  addText(`Type: ${booking.serviceType === 'mobile' ? 'Mobile Service' : 'Drive-in Service'}`, 80, serviceY + 55);
-  addText(`Date & Time: ${booking.dateTime}`, 80, serviceY + 70);
-  addText(`Selected Scent: ${booking.selectedScent}`, 80, serviceY + 85);
-  addText(`Service Price: $${booking.servicePrice}`, 80, serviceY + 100);
+  addBox(65, currentY, 230, serviceBoxHeight);
+  addText("Service Details", 80, currentY + 10, { fontSize: 12, bold: true });
+  addText(`Service: ${booking.serviceName}`, 80, currentY + 28);
+  addText(`Type: ${booking.serviceType === 'mobile' ? 'Mobile Service' : 'Drive-in Service'}`, 80, currentY + 42);
+  addText(`Date & Time: ${booking.dateTime}`, 80, currentY + 56, { fontSize: 10 });
+  addText(`Scent: ${booking.selectedScent}`, 80, currentY + 70);
+  addText(`Service Price: $${booking.servicePrice}`, 80, currentY + 84);
 
   // Optional Services Box (Right)
-  addBox(315, serviceY, 230, 120);
-  addText("Optional Services", 330, serviceY + 15, { fontSize: 13, bold: true });
+  addBox(315, currentY, 230, serviceBoxHeight);
+  addText("Optional Services", 330, currentY + 10, { fontSize: 12, bold: true });
   
   if (booking.optionalServices?.length > 0) {
     booking.optionalServices.forEach((service, index) => {
       addText(
         `• ${service.name}: $${service.price}`,
         330,
-        serviceY + 40 + (index * 20)
+        currentY + 28 + (index * 16),
+        { fontSize: 10 }
       );
     });
   } else {
-    addText("None", 330, serviceY + 40);
+    addText("None", 330, currentY + 28);
   }
+  currentY += serviceBoxHeight + 15;
 
   // Mobile Service Address Section (if applicable)
-  let mobileY = 500;
   if (booking.serviceType === 'mobile' && booking.customerAddress) {
-    addBox(65, mobileY, 480, 60, "#fff7ed");
-    addText("📍 Mobile Service Location", 65, mobileY + 12, {
-      fontSize: 13,
+    addBox(65, currentY, 480, 45, "#fff7ed");
+    addText("Mobile Service Location", 65, currentY + 8, {
+      fontSize: 12,
       align: "center",
       width: 480
     });
     const address = `${booking.customerAddress.street}, ${booking.customerAddress.city}, ${booking.customerAddress.state} ${booking.customerAddress.zipCode}`;
-    addText(address, 65, mobileY + 32, {
-      fontSize: 11,
+    addText(address, 65, currentY + 26, {
+      fontSize: 10,
       align: "center",
       width: 480
     });
-    mobileY += 80;
+    currentY += 60;
   }
 
   // Total Amount Section
-  const totalY = mobileY;
-  addBox(65, totalY, 480, booking.serviceType === 'mobile' && booking.depositRequired ? 80 : 40, "#f6f6f6");
-  addText(`Total Amount: $${booking.totalPrice}`, 65, totalY + 12, {
+  const depositBoxHeight = booking.serviceType === 'mobile' && booking.depositRequired ? 65 : 35;
+  addBox(65, currentY, 480, depositBoxHeight, "#f6f6f6");
+  addText(`Total Amount: $${booking.totalPrice}`, 65, currentY + 10, {
     fontSize: 13,
     align: "center",
     width: 480
@@ -140,61 +151,75 @@ export const generatePDF = (booking) => {
   if (booking.serviceType === 'mobile' && booking.depositRequired) {
     const depositAmount = booking.depositAmount || booking.totalPrice * 0.5;
     const remainingBalance = booking.totalPrice - depositAmount;
-    addText(`Deposit Paid: $${depositAmount.toFixed(2)}`, 65, totalY + 35, {
-      fontSize: 11,
+    addText(`Deposit Paid: $${depositAmount.toFixed(2)}`, 65, currentY + 30, {
+      fontSize: 10,
       align: "center",
       width: 480,
       color: "#10b981"
     });
-    addText(`Remaining Balance: $${remainingBalance.toFixed(2)}`, 65, totalY + 55, {
-      fontSize: 11,
+    addText(`Remaining Balance: $${remainingBalance.toFixed(2)}`, 65, currentY + 45, {
+      fontSize: 10,
       align: "center",
       width: 480,
       color: "#f59e0b"
     });
   }
+  currentY += depositBoxHeight + 15;
 
   // Cancellation Section
-  const cancelY = totalY + (booking.serviceType === 'mobile' && booking.depositRequired ? 100 : 60);
   if (booking.email) {
-    addBox(65, cancelY, 480, 60, "#f8f8f8");
+    addBox(65, currentY, 480, 45, "#f8f8f8");
     const encodedEmail = Buffer.from(booking.email).toString("base64");
     const cancellationUrl = `${process.env.FRONTEND_URL}/cancel-booking/${booking.confirmationNumber}/${encodedEmail}`;
     
-    addText("Need to cancel or reschedule?", 65, cancelY + 15, {
+    addText("Need to cancel or reschedule?", 65, currentY + 8, {
       align: "center",
-      width: 480
+      width: 480,
+      fontSize: 10
     });
-    addText(cancellationUrl, 65, cancelY + 35, {
+    addText(cancellationUrl, 65, currentY + 25, {
       align: "center",
       width: 480,
       color: "#0066cc",
       underline: true,
-      link: cancellationUrl
+      link: cancellationUrl,
+      fontSize: 9
     });
+    currentY += 60;
   }
 
-  // Footer Section (adjusted position for mobile services)
-  const footerY = cancelY + 80;
-  addBox(50, footerY, 495, 130, "#f8f8f8");
+  // Footer Section - Compact design
+  const footerHeight = 90;
+  addBox(50, currentY, 495, footerHeight, "#f8f8f8");
   
-  // Footer text
+  // Footer text - more compact
   const footerContent = [
-    { text: "Contact Us:", y: 15 },
-    { text: "Phone: (415) 889-9108", y: 35 },
-    { text: "Email: markatoautodetail@gmail.com", y: 55 },
-    { text: "Location: 1901 Park Blvd, Oakland, CA 94606", y: 75 },
-    { text: "Thank you for choosing Markato Auto Detailing!", y: 95},
-    { text: "Please present this confirmation at the time of service.", y: 115 }
+    { text: "Contact Us:", y: 8 },
+    { text: "Phone: (415) 889-9108 • Email: markatoautodetail@gmail.com", y: 24 },
+    { text: "Location: 1901 Park Blvd, Oakland, CA 94606", y: 40 },
+    { text: "Thank you for choosing Markato Auto Detailing!", y: 56},
+    { text: "Please present this confirmation at the time of service.", y: 72 }
   ];
 
   footerContent.forEach(item => {
-    addText(item.text, 50, footerY + item.y, {
+    addText(item.text, 50, currentY + item.y, {
       align: "center",
       width: 495,
-      color: item.color || "#333"
+      color: "#333",
+      fontSize: 10
     });
   });
+
+  // Final position check
+  const finalY = currentY + 90; // Footer height
+  console.log(`PDF Layout Summary for ${booking.confirmationNumber}:`);
+  console.log(`- Final content height: ${finalY} points`);
+  console.log(`- Available page height: ${pageHeight} points`);
+  console.log(`- Within single page: ${finalY <= pageHeight ? '✅ Yes' : '❌ No, will span multiple pages'}`);
+  
+  if (finalY > pageHeight) {
+    console.warn(`⚠️  PDF content (${finalY}pts) exceeds single page height (${pageHeight}pts)`);
+  }
 
   // Execute all drawing operations in correct order
   boxes.forEach(drawBox => drawBox());
