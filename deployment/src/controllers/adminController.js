@@ -1,5 +1,5 @@
 // src/controllers/adminController.js
-import Booking from '../models/bookingModel.js';
+import Booking from "../models/bookingModel.js";
 
 // Dashboard Stats
 export const getDashboardStats = async (req, res) => {
@@ -7,84 +7,89 @@ export const getDashboardStats = async (req, res) => {
     // Get today's date and last 7 days
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const last7Days = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
+    const last7Days = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Get counts
     const totalBookings = await Booking.countDocuments();
-    const pendingBookings = await Booking.countDocuments({ status: 'pending' });
-    const completedBookings = await Booking.countDocuments({ status: 'completed' });
+    const pendingBookings = await Booking.countDocuments({ status: "pending" });
+    const completedBookings = await Booking.countDocuments({
+      status: "completed",
+    });
 
     // Calculate total revenue
     const bookings = await Booking.find();
-    const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+    const totalRevenue = bookings.reduce(
+      (sum, booking) => sum + (booking.totalPrice || 0),
+      0
+    );
 
     // Get daily bookings for the last 7 days
     const dailyBookings = await Booking.aggregate([
       {
         $match: {
-          createdAt: { $gte: last7Days }
-        }
+          createdAt: { $gte: last7Days },
+        },
       },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-          bookings: { $sum: 1 }
-        }
+          bookings: { $sum: 1 },
+        },
       },
       {
         $project: {
           _id: 0,
           date: "$_id",
-          bookings: 1
-        }
+          bookings: 1,
+        },
       },
-      { $sort: { date: 1 } }
+      { $sort: { date: 1 } },
     ]);
 
     // Get recent bookings
     const recentBookings = await Booking.find()
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('name serviceName totalPrice status dateTime')
+      .select("name serviceName totalPrice status dateTime")
       .lean();
 
     // Format recent bookings
-    const formattedRecentBookings = recentBookings.map(booking => {
+    const formattedRecentBookings = recentBookings.map((booking) => {
       try {
-        const dateTime = new Date(booking.dateTime.replace(/, (\d)/g, ' $1'));
-        
+        const dateTime = new Date(booking.dateTime.replace(/, (\d)/g, " $1"));
+
         return {
           id: booking._id,
           customerName: booking.name,
           service: booking.serviceName,
           totalPrice: booking.totalPrice,
           status: booking.status,
-          date: dateTime.toLocaleDateString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
+          date: dateTime.toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
           }),
-          time: dateTime.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
+          time: dateTime.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
           }),
-          confirmationNumber: booking.confirmationNumber
+          confirmationNumber: booking.confirmationNumber,
         };
       } catch (error) {
-        console.error('Date parsing error for booking:', booking._id, error);
+        console.error("Date parsing error for booking:", booking._id, error);
         return {
           id: booking._id,
           customerName: booking.name,
           service: booking.serviceName,
           totalPrice: booking.totalPrice,
           status: booking.status,
-          date: 'Invalid Date',
-          time: 'Invalid Time',
-          confirmationNumber: booking.confirmationNumber
+          date: "Invalid Date",
+          time: "Invalid Time",
+          confirmationNumber: booking.confirmationNumber,
         };
       }
     });
@@ -93,12 +98,15 @@ export const getDashboardStats = async (req, res) => {
     const todayBookings = await Booking.find({
       dateTime: {
         $gte: today,
-        $lt: tomorrow
-      }
-    }).select('name serviceName totalPrice status dateTime');
+        $lt: tomorrow,
+      },
+    }).select("name serviceName totalPrice status dateTime");
 
     // Get today's revenue
-    const todayRevenue = todayBookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+    const todayRevenue = todayBookings.reduce(
+      (sum, booking) => sum + (booking.totalPrice || 0),
+      0
+    );
 
     // Get weekly revenue (last 7 days)
     const weekAgo = new Date(today);
@@ -107,11 +115,14 @@ export const getDashboardStats = async (req, res) => {
     const weeklyBookings = await Booking.find({
       dateTime: {
         $gte: weekAgo,
-        $lt: tomorrow
-      }
+        $lt: tomorrow,
+      },
     });
 
-    const weeklyRevenue = weeklyBookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+    const weeklyRevenue = weeklyBookings.reduce(
+      (sum, booking) => sum + (booking.totalPrice || 0),
+      0
+    );
 
     // Get monthly revenue (current month)
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -120,85 +131,90 @@ export const getDashboardStats = async (req, res) => {
     const monthlyBookings = await Booking.find({
       dateTime: {
         $gte: monthStart,
-        $lte: monthEnd
-      }
+        $lte: monthEnd,
+      },
     });
 
-    const monthlyRevenue = monthlyBookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+    const monthlyRevenue = monthlyBookings.reduce(
+      (sum, booking) => sum + (booking.totalPrice || 0),
+      0
+    );
 
     // Get popular services
     const popularServices = await Booking.aggregate([
       {
         $group: {
-          _id: '$serviceName',
+          _id: "$serviceName",
           bookings: { $sum: 1 },
-          revenue: { $sum: '$totalPrice' }
-        }
+          revenue: { $sum: "$totalPrice" },
+        },
       },
       {
         $project: {
           _id: 0,
-          name: '$_id',
+          name: "$_id",
           bookings: 1,
-          revenue: { $round: ['$revenue', 2] }
-        }
+          revenue: { $round: ["$revenue", 2] },
+        },
       },
       { $sort: { revenue: -1 } },
-      { $limit: 5 }
+      { $limit: 5 },
     ]);
 
     // Get average booking value
-    const averageBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
+    const averageBookingValue =
+      totalBookings > 0 ? totalRevenue / totalBookings : 0;
 
     // Get completion rate
-    const completionRate = totalBookings > 0 ? (completedBookings / totalBookings) * 100 : 0;
+    const completionRate =
+      totalBookings > 0 ? (completedBookings / totalBookings) * 100 : 0;
 
     // Get popular optional services
     const popularOptionalServices = await Booking.aggregate([
-      { $unwind: '$optionalServices' },
+      { $unwind: "$optionalServices" },
       {
         $group: {
-          _id: '$optionalServices.name',
-          count: { $sum: 1 }
-        }
+          _id: "$optionalServices.name",
+          count: { $sum: 1 },
+        },
       },
       {
         $project: {
           _id: 0,
-          name: '$_id',
-          popularity: '$count'
-        }
+          name: "$_id",
+          popularity: "$count",
+        },
       },
       { $sort: { popularity: -1 } },
-      { $limit: 7 }
+      { $limit: 7 },
     ]);
 
     // Get popular scents
     const popularScents = await Booking.aggregate([
       {
         $group: {
-          _id: '$selectedScent',
-          count: { $sum: 1 }
-        }
+          _id: "$selectedScent",
+          count: { $sum: 1 },
+        },
       },
       {
         $lookup: {
-          from: 'scents',
-          localField: '_id',
-          foreignField: 'name',
-          as: 'scent'
-        }
+          from: "scents",
+          localField: "_id",
+          foreignField: "name",
+          as: "scent",
+        },
       },
-      { $unwind: '$scent' },
+      { $unwind: "$scent" },
       {
         $project: {
           _id: 0,
-          name: '$_id',
-          popularity: '$count'
-        }
+          name: "$_id",
+          popularity: "$count",
+        },
       },
       { $sort: { popularity: -1 } },
-      { $limit: 5 }
+      { $limit: 5 },
     ]);
 
     res.json({
@@ -218,31 +234,30 @@ export const getDashboardStats = async (req, res) => {
         completionRate,
         todayBookings,
         popularOptionalServices,
-        popularScents
-      }
+        popularScents,
+      },
     });
   } catch (error) {
-    console.error('Dashboard stats error:', error);
+    console.error("Dashboard stats error:", error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
 
-
 export const deleteAllBookings = async (req, res) => {
   try {
     await Booking.deleteMany({});
-    
+
     res.json({
       success: true,
-      message: 'All bookings have been deleted successfully'
+      message: "All bookings have been deleted successfully",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -261,18 +276,18 @@ export const updateBookingStatus = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        error: 'Booking not found'
+        error: "Booking not found",
       });
     }
 
     res.json({
       success: true,
-      data: booking
+      data: booking,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -281,39 +296,38 @@ export const updateBookingStatus = async (req, res) => {
 export const getAllBookings = async (req, res) => {
   try {
     const { status, search, startDate, endDate } = req.query;
-    
+
     let query = {};
-    
-    if (status && status !== 'all') {
+
+    if (status && status !== "all") {
       query.status = status;
     }
-    
+
     if (search) {
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { contact: { $regex: search, $options: 'i' } },
-        { confirmationNumber: { $regex: search, $options: 'i' } }
+        { name: { $regex: search, $options: "i" } },
+        { contact: { $regex: search, $options: "i" } },
+        { confirmationNumber: { $regex: search, $options: "i" } },
       ];
     }
-    
+
     if (startDate && endDate) {
       query.dateTime = {
         $gte: new Date(startDate),
-        $lte: new Date(endDate)
+        $lte: new Date(endDate),
       };
     }
 
-    const bookings = await Booking.find(query)
-      .sort({ dateTime: -1 });
+    const bookings = await Booking.find(query).sort({ dateTime: -1 });
 
     res.json({
       success: true,
-      data: bookings
+      data: bookings,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -322,42 +336,47 @@ export const getAllBookings = async (req, res) => {
 export const getWeeklyBookings = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
+
     // Parse dates from strings to Date objects
     const parsedStartDate = new Date(startDate);
     const parsedEndDate = new Date(endDate);
-    
+
     // Build date strings for each day in the range
     const dates = [];
     const currentDate = new Date(parsedStartDate);
     while (currentDate <= parsedEndDate) {
       dates.push(
-        currentDate.toLocaleString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric'
+        currentDate.toLocaleString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
         })
       );
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     // Create query using $or to match any of the dates
     const bookings = await Booking.find({
       dateTime: {
-        $regex: new RegExp(dates.map(date => `^${date}`).join('|'))
-      }
-    }).sort({ dateTime: 1 });
+        $regex: new RegExp(dates.map((date) => `^${date}`).join("|")),
+      },
+    })
+      .sort({ dateTime: 1 })
+      .select(
+        "confirmationNumber dateTime name contact email serviceName servicePrice selectedScent vehicleType makeModel optionalServices totalPrice status"
+      )
+      .lean();
 
     //console.log('Date patterns:', dates);
     //console.log('Found bookings:', bookings.length);
-    
+
     res.json({
       success: true,
-      data: bookings
+      data: bookings,
     });
   } catch (error) {
-    console.error('Weekly bookings error:', error);
+    console.error("Weekly bookings error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

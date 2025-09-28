@@ -9,6 +9,7 @@ import {
 import { sendStatusUpdateSMS } from "../services/smsService.js";
 import { generatePDF } from "../services/pdfService.js";
 import twilio from "twilio";
+import { BusinessSettings } from "../models/businessSettingsModel.js";
 
 export async function createBooking(req, res) {
   try {
@@ -53,13 +54,107 @@ export async function createBooking(req, res) {
 
 export async function getAllBookings(req, res) {
   try {
-    const bookings = await Booking.find()
-      .sort({ createdAt: -1 })
-      .select("-__v");
+    const { page, limit, status, search, startDate, endDate, sort } = req.query;
+    if (process.env.NODE_ENV === "development") {
+      console.log("getAllBookings called with sort:", sort);
+      console.log(
+        "Testing todays bookings sort - checking current implementation"
+      );
+    }
+
+    // Backward compatibility: if no page is provided, return full list as before
+    if (!page) {
+      const bookings = await Booking.find()
+        .sort({ createdAt: -1 })
+        .select("-__v")
+        .lean();
+
+      return res.json({
+        success: true,
+        data: bookings,
+      });
+    }
+
+    // Server-side pagination + filtering when page is provided
+    const pageNum = Math.max(parseInt(page) || 1, 1);
+    const pageSize = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
+
+    const query = {};
+    if (status && status !== "all") {
+      query.status = status;
+    }
+    if (search) {
+      const rx = new RegExp(search, "i");
+      query.$or = [
+        { name: rx },
+        { contact: rx },
+        { confirmationNumber: rx },
+        { email: rx },
+      ];
+    }
+    // Use createdAt for date range filters (dateTime is a string field)
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (!isNaN(start) && !isNaN(end)) {
+        query.createdAt = { $gte: start, $lte: end };
+      }
+    }
+
+    const skip = (pageNum - 1) * pageSize;
+
+    // Map sort parameter (default to -createdAt; treat dateTime like createdAt for performance)
+    const normalizedSort =
+      sort === "createdAt" || sort === "dateTime"
+        ? "createdAt"
+        : sort === "-createdAt" || sort === "-dateTime"
+          ? "-createdAt"
+          : "-createdAt";
+    const sortObj = normalizedSort.startsWith("-")
+      ? { [normalizedSort.slice(1)]: -1 }
+      : { [normalizedSort]: 1 };
+
+    // Compute LA date-only string to identify appointments scheduled "today"
+    const laNow = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })
+    );
+    const laDatePart = laNow.toLocaleString("en-US", {
+      timeZone: "America/Los_Angeles",
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    const todayRegex = new RegExp(`^${laDatePart}`);
+
+    // Use aggregation to sort on server: today's bookings first, then by createdAt
+    const matchStage = { $match: query };
+    const addTodayFlagStage = {
+      $addFields: {
+        _isToday: { $regexMatch: { input: "$dateTime", regex: todayRegex } },
+      },
+    };
+    const sortStage = { $sort: Object.assign({ _isToday: -1 }, sortObj) };
+    const projectStage = { $project: { __v: 0, statusHistory: 0 } };
+
+    const [paged, total] = await Promise.all([
+      Booking.aggregate([
+        matchStage,
+        addTodayFlagStage,
+        sortStage,
+        { $skip: skip },
+        { $limit: pageSize },
+        projectStage,
+      ]),
+      Booking.countDocuments(query),
+    ]);
 
     res.json({
       success: true,
-      data: bookings,
+      data: paged,
+      total,
+      page: pageNum,
+      pageSize,
     });
   } catch (error) {
     res.status(500).json({
@@ -229,8 +324,23 @@ export const checkDateAvailability = async (req, res) => {
       "8:00 PM",
     ];
 
+    const settings = await BusinessSettings.findOne();
+    const dateObj = new Date(date);
+    const dayOfWeek = dateObj.getDay();
     const maxBookingsPerSlot = 2;
     const slots = {};
+
+    // If business is closed on this day, return all slots unavailable
+    if (
+      settings?.unavailableDay !== null &&
+      settings?.unavailableDay !== undefined &&
+      dayOfWeek === settings.unavailableDay
+    ) {
+      businessHours.forEach((time) => {
+        slots[time] = { available: false };
+      });
+      return res.json({ success: true, slots });
+    }
 
     await Promise.all(
       businessHours.map(async (time) => {
@@ -268,6 +378,29 @@ export const checkSlotAvailability = async (req, res) => {
     // The dateTime comes in format: "Wed, Jan 8, 2025, 11:00 AM"
     // First, let's split the date and time
     const [datePart, timePart] = dateTime.split(", ").slice(-2);
+
+    // Respect business unavailable day
+    try {
+      const settings = await BusinessSettings.findOne();
+      if (
+        settings?.unavailableDay !== null &&
+        settings?.unavailableDay !== undefined
+      ) {
+        const dateOnly = new Date(dateTime.split(", ").slice(0, -1).join(", "));
+        const dayOfWeek = dateOnly.getDay();
+        if (dayOfWeek === settings.unavailableDay) {
+          return res.json({
+            success: true,
+            available: false,
+            currentBookings: 0,
+            maxBookingsPerSlot: 2,
+            requestedDateTime: dateTime,
+          });
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
 
     // Create a regex pattern to match this exact date and time
     const dateTimePattern = `^${dateTime
@@ -404,12 +537,15 @@ export const cancelBooking = async (req, res) => {
     }
 
     // Send cancellation confirmation SMS
-      try {
-        await sendStatusUpdateSMS(booking, booking.status, "Cancelled by customer through cancellation page");
-      } catch (smsError) {
-        console.error("Failed to send SMS status update:", smsError);
-      }
-    
+    try {
+      await sendStatusUpdateSMS(
+        booking,
+        booking.status,
+        "Cancelled by customer through cancellation page"
+      );
+    } catch (smsError) {
+      console.error("Failed to send SMS status update:", smsError);
+    }
 
     res.json({
       success: true,
@@ -528,6 +664,22 @@ export async function updateBooking(req, res) {
 async function checkSlotAvailabilityInternal(dateTime, bookingId) {
   // Add bookingId parameter
   try {
+    // Respect business unavailable day
+    try {
+      const settings = await BusinessSettings.findOne();
+      if (
+        settings?.unavailableDay !== null &&
+        settings?.unavailableDay !== undefined
+      ) {
+        const dateOnly = new Date(dateTime.split(", ").slice(0, -1).join(", "));
+        const dayOfWeek = dateOnly.getDay();
+        if (dayOfWeek === settings.unavailableDay) {
+          return false;
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
     const [datePart, timePart] = dateTime.split(", ").slice(-2);
     const dateTimePattern = `^${dateTime
       .split(", ")
@@ -555,7 +707,7 @@ async function checkSlotAvailabilityInternal(dateTime, bookingId) {
 export const handleSMSWebhook = async (req, res) => {
   try {
     const { Body, From, MessageSid } = req.body;
-    
+
     // Log incoming message
     // console.log({
     //   event: 'sms_received',
@@ -567,18 +719,19 @@ export const handleSMSWebhook = async (req, res) => {
 
     // Send a basic response
     const twiml = new twilio.twiml.MessagingResponse();
-    
-    if (Body.toUpperCase() === 'HELP') {
-      twiml.message('For assistance, please call 4158899108.');
+
+    if (Body.toUpperCase() === "HELP") {
+      twiml.message("For assistance, please call 4158899108.");
     } else {
-      twiml.message('Thank you for your message. We will get back to you shortly.');
+      twiml.message(
+        "Thank you for your message. We will get back to you shortly."
+      );
     }
 
-    res.writeHead(200, { 'Content-Type': 'text/xml' });
+    res.writeHead(200, { "Content-Type": "text/xml" });
     res.end(twiml.toString());
-
   } catch (error) {
-    console.error('SMS webhook error:', error);
-    res.status(500).send('Error processing webhook');
+    console.error("SMS webhook error:", error);
+    res.status(500).send("Error processing webhook");
   }
 };
