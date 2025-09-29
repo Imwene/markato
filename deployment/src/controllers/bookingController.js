@@ -6,7 +6,10 @@ import {
   sendCancellationConfirmation,
   sendStatusUpdateEmail,
 } from "../services/emailService.js";
-import { sendStatusUpdateSMS } from "../services/smsService.js";
+import {
+  sendStatusUpdateSMS,
+  sendBookingConfirmationSMS,
+} from "../services/smsService.js";
 import { generatePDF } from "../services/pdfService.js";
 import twilio from "twilio";
 import { BusinessSettings } from "../models/businessSettingsModel.js";
@@ -37,6 +40,16 @@ export async function createBooking(req, res) {
     } catch (emailError) {
       // Log the error but don't fail the booking creation
       console.error("Failed to send admin notification:", emailError);
+    }
+
+    // Send booking confirmation SMS to customer
+    if (savedBooking.contact) {
+      try {
+        await sendBookingConfirmationSMS(savedBooking);
+      } catch (smsError) {
+        // Log the error but don't fail the booking creation
+        console.error("Failed to send booking confirmation SMS:", smsError);
+      }
     }
 
     res.status(201).json({

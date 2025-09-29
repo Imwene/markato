@@ -17,14 +17,3 @@ tar -czf deployment.tar.gz deployment/
 
 echo "🚀 Uploading to server..."
 scp -i '/Users/meharidaniel/.ssh/markato.pem' deployment.tar.gz ubuntu@ec2-54-183-7-8.us-west-1.compute.amazonaws.com:/home/ubuntu
-
-echo "🔧 Installing dependencies on server..."
-ssh -i '/Users/meharidaniel/.ssh/markato.pem' ubuntu@ec2-54-183-7-8.us-west-1.compute.amazonaws.com << 'EOF'
-  cd /home/ubuntu
-  tar -xzf deployment.tar.gz
-  cd deployment
-  npm install --omit=dev --production
-  echo "✅ Deployment complete!"
-EOF
-
-echo "🎉 Deployment finished successfully!"
