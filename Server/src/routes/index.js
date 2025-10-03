@@ -5,6 +5,7 @@ import serviceRoutes from './serviceRoutes.js';
 import adminRoutes from './adminRoutes.js';
 import configRoutes from './configRoutes.js';
 import authRoutes from './authRoutes.js';
+import customerRoutes from './customerRoutes.js';
 const router = Router();
 
 // API Routes
@@ -13,4 +14,5 @@ router.use('/services', serviceRoutes);
 router.use('/admin', adminRoutes);
 router.use('/config', configRoutes);
 router.use('/auth', authRoutes);
+router.use('/customers', customerRoutes);
 export default router;

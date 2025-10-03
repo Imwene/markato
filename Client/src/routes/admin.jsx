@@ -4,6 +4,7 @@ import { ServicesProvider } from '../context/ServicesContext';
 import AdminLayout from '../components/admin/layout/AdminLayout';
 import AdminDashboard from '../components/admin/dashboard/Dashboard';
 import BookingManager from '../components/admin/bookings/BookingManager';
+import CustomerManager from '../components/admin/customers/CustomerManager';
 import ServiceManager from '../components/admin/services/ServiceManager';
 import ConfigurationManager from '../components/admin/config/ConfigurationsManager';
 import { Navigate } from 'react-router-dom';
@@ -34,6 +35,7 @@ const AdminRoutes = () => {
           <Route index element={<AdminDashboard />} />
           <Route path="/dashboard" element={<AdminDashboard />} />
           <Route path="/bookings" element={<BookingManager />} />
+          <Route path="/customers" element={<CustomerManager />} />
           <Route path="/services" element={<ServiceManager />} />
           <Route path="/config" element={<ConfigurationManager />} />
         </Route>
