@@ -7,7 +7,10 @@ import {
   sendCancellationConfirmation,
   sendStatusUpdateEmail,
 } from "../services/emailService.js";
-import { sendStatusUpdateSMS } from "../services/smsService.js";
+import {
+  sendStatusUpdateSMS,
+  sendBookingConfirmationSMS,
+} from "../services/smsService.js";
 import { generatePDF } from "../services/pdfService.js";
 import { validateAddressAndServiceArea } from "../services/geocodingService.js";
 import { calculateDistance } from "../utils/distanceCalculator.js";
@@ -256,6 +259,16 @@ export async function createBooking(req, res) {
       console.error("Failed to send admin notification:", emailError);
     }
 
+    // Send booking confirmation SMS to customer
+    if (savedBooking.contact) {
+      try {
+        await sendBookingConfirmationSMS(savedBooking);
+      } catch (smsError) {
+        // Log the error but don't fail the booking creation
+        console.error("Failed to send booking confirmation SMS:", smsError);
+      }
+    }
+
     res.status(201).json({
       success: true,
       data: sanitizeBookingData(savedBooking),
@@ -321,22 +334,33 @@ export async function getAllBookings(req, res) {
 
     const skip = (pageNum - 1) * pageSize;
 
-    // Map sort parameter (default to -createdAt; treat dateTime like createdAt for performance)
-    const normalizedSort =
-      sort === "createdAt" || sort === "dateTime"
-        ? "createdAt"
-        : sort === "-createdAt" || sort === "-dateTime"
-          ? "-createdAt"
-          : "-createdAt";
+    // Determine sorting method and direction
+    let sortByAppointmentDate = false;
+    let appointmentSortDirection = 1; // 1 for ascending, -1 for descending
+    let normalizedSort = "-createdAt"; // default
+
+    if (sort === "appointmentDate" || sort === "dateTime") {
+      sortByAppointmentDate = true;
+      appointmentSortDirection = 1; // ascending by default for appointment date
+      normalizedSort = "appointmentDate";
+    } else if (sort === "-appointmentDate" || sort === "-dateTime") {
+      sortByAppointmentDate = true;
+      appointmentSortDirection = -1; // descending
+      normalizedSort = "-appointmentDate";
+    } else if (sort === "createdAt") {
+      normalizedSort = "createdAt";
+    } else if (sort === "-createdAt") {
+      normalizedSort = "-createdAt";
+    }
+
     const sortObj = normalizedSort.startsWith("-")
       ? { [normalizedSort.slice(1)]: -1 }
       : { [normalizedSort]: 1 };
 
     // Compute LA date-only string to identify appointments scheduled "today"
-    const laNow = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })
-    );
-    const laDatePart = laNow.toLocaleString("en-US", {
+    // Get current Pacific Time using proper timezone conversion
+    const pacificNow = new Date();
+    const laDatePart = pacificNow.toLocaleString("en-US", {
       timeZone: "America/Los_Angeles",
       weekday: "short",
       month: "short",
@@ -345,20 +369,254 @@ export async function getAllBookings(req, res) {
     });
     const todayRegex = new RegExp(`^${laDatePart}`);
 
-    // Use aggregation to sort on server: today's bookings first, then by createdAt
+    if (process.env.NODE_ENV === "development") {
+      console.log("Pacific Time today pattern:", laDatePart);
+      console.log("Today regex:", todayRegex);
+    }
+
+    // Build aggregation pipeline stages
     const matchStage = { $match: query };
-    const addTodayFlagStage = {
+    const addFieldsStage = {
       $addFields: {
         _isToday: { $regexMatch: { input: "$dateTime", regex: todayRegex } },
+        // Add parsed appointment date for sorting if needed
+        ...(sortByAppointmentDate && {
+          _parsedAppointmentDate: {
+            $dateFromString: {
+              dateString: {
+                $let: {
+                  vars: {
+                    dateParts: { $split: ["$dateTime", ", "] },
+                  },
+                  in: {
+                    $let: {
+                      vars: {
+                        weekday: { $arrayElemAt: ["$$dateParts", 0] },
+                        month: { $arrayElemAt: ["$$dateParts", 1] },
+                        day: { $arrayElemAt: ["$$dateParts", 2] },
+                        year: { $arrayElemAt: ["$$dateParts", 3] },
+                        timeStr: { $arrayElemAt: ["$$dateParts", 4] },
+                      },
+                      in: {
+                        $concat: [
+                          "$$year",
+                          "-",
+                          {
+                            $switch: {
+                              branches: [
+                                {
+                                  case: { $eq: ["$$month", "Jan"] },
+                                  then: "01",
+                                },
+                                {
+                                  case: { $eq: ["$$month", "Feb"] },
+                                  then: "02",
+                                },
+                                {
+                                  case: { $eq: ["$$month", "Mar"] },
+                                  then: "03",
+                                },
+                                {
+                                  case: { $eq: ["$$month", "Apr"] },
+                                  then: "04",
+                                },
+                                {
+                                  case: { $eq: ["$$month", "May"] },
+                                  then: "05",
+                                },
+                                {
+                                  case: { $eq: ["$$month", "Jun"] },
+                                  then: "06",
+                                },
+                                {
+                                  case: { $eq: ["$$month", "Jul"] },
+                                  then: "07",
+                                },
+                                {
+                                  case: { $eq: ["$$month", "Aug"] },
+                                  then: "08",
+                                },
+                                {
+                                  case: { $eq: ["$$month", "Sep"] },
+                                  then: "09",
+                                },
+                                {
+                                  case: { $eq: ["$$month", "Oct"] },
+                                  then: "10",
+                                },
+                                {
+                                  case: { $eq: ["$$month", "Nov"] },
+                                  then: "11",
+                                },
+                                {
+                                  case: { $eq: ["$$month", "Dec"] },
+                                  then: "12",
+                                },
+                              ],
+                              default: "01",
+                            },
+                          },
+                          "-",
+                          {
+                            $cond: {
+                              if: { $lt: [{ $toInt: "$$day" }, 10] },
+                              then: { $concat: ["0", "$$day"] },
+                              else: "$$day",
+                            },
+                          },
+                          "T",
+                          {
+                            $let: {
+                              vars: {
+                                timeParts: { $split: ["$$timeStr", " "] },
+                              },
+                              in: {
+                                $let: {
+                                  vars: {
+                                    time: { $arrayElemAt: ["$$timeParts", 0] },
+                                    ampm: { $arrayElemAt: ["$$timeParts", 1] },
+                                  },
+                                  in: {
+                                    $let: {
+                                      vars: {
+                                        hourMin: { $split: ["$$time", ":"] },
+                                      },
+                                      in: {
+                                        $let: {
+                                          vars: {
+                                            hour: {
+                                              $toInt: {
+                                                $arrayElemAt: ["$$hourMin", 0],
+                                              },
+                                            },
+                                            minute: {
+                                              $arrayElemAt: ["$$hourMin", 1],
+                                            },
+                                          },
+                                          in: {
+                                            $concat: [
+                                              {
+                                                $cond: {
+                                                  if: { $eq: ["$$ampm", "PM"] },
+                                                  then: {
+                                                    $cond: {
+                                                      if: {
+                                                        $eq: ["$$hour", 12],
+                                                      },
+                                                      then: "12",
+                                                      else: {
+                                                        $let: {
+                                                          vars: {
+                                                            h24: {
+                                                              $add: [
+                                                                "$$hour",
+                                                                12,
+                                                              ],
+                                                            },
+                                                          },
+                                                          in: {
+                                                            $cond: {
+                                                              if: {
+                                                                $lt: [
+                                                                  "$$h24",
+                                                                  10,
+                                                                ],
+                                                              },
+                                                              then: {
+                                                                $concat: [
+                                                                  "0",
+                                                                  {
+                                                                    $toString:
+                                                                      "$$h24",
+                                                                  },
+                                                                ],
+                                                              },
+                                                              else: {
+                                                                $toString:
+                                                                  "$$h24",
+                                                              },
+                                                            },
+                                                          },
+                                                        },
+                                                      },
+                                                    },
+                                                  },
+                                                  else: {
+                                                    $cond: {
+                                                      if: {
+                                                        $eq: ["$$hour", 12],
+                                                      },
+                                                      then: "00",
+                                                      else: {
+                                                        $cond: {
+                                                          if: {
+                                                            $lt: ["$$hour", 10],
+                                                          },
+                                                          then: {
+                                                            $concat: [
+                                                              "0",
+                                                              {
+                                                                $toString:
+                                                                  "$$hour",
+                                                              },
+                                                            ],
+                                                          },
+                                                          else: {
+                                                            $toString: "$$hour",
+                                                          },
+                                                        },
+                                                      },
+                                                    },
+                                                  },
+                                                },
+                                              },
+                                              ":",
+                                              "$$minute",
+                                              ":00.000Z",
+                                            ],
+                                          },
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  },
+                },
+              },
+              onError: new Date("1970-01-01"),
+            },
+          },
+        }),
       },
     };
-    const sortStage = { $sort: Object.assign({ _isToday: -1 }, sortObj) };
+
+    // Build sort stage based on sorting preference
+    // ALWAYS prioritize today's bookings first, regardless of sort parameter
+    let sortStage;
+    if (sortByAppointmentDate) {
+      sortStage = {
+        $sort: {
+          _isToday: -1, // Today's bookings always first
+          _parsedAppointmentDate: appointmentSortDirection,
+          createdAt: -1, // tertiary sort by creation date
+        },
+      };
+    } else {
+      // Traditional sorting with today's bookings first
+      sortStage = { $sort: Object.assign({ _isToday: -1 }, sortObj) };
+    }
     const projectStage = { $project: { __v: 0, statusHistory: 0 } };
 
     const [paged, total] = await Promise.all([
       Booking.aggregate([
         matchStage,
-        addTodayFlagStage,
+        addFieldsStage,
         sortStage,
         { $skip: skip },
         { $limit: pageSize },

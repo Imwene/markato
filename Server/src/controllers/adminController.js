@@ -4,7 +4,24 @@ import Booking from "../models/bookingModel.js";
 // Dashboard Stats
 export const getDashboardStats = async (req, res) => {
   try {
-    // Get today's date and last 7 days
+    // Get Pacific Time "today" as a string format to match booking dateTime field
+    const pacificNow = new Date().toLocaleString("en-US", {
+      timeZone: "America/Los_Angeles",
+    });
+    const pacificDate = new Date(pacificNow);
+
+    const todayPacificString = pacificDate.toLocaleString("en-US", {
+      timeZone: "America/Los_Angeles",
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    // Create regex pattern to match today's bookings (dateTime is stored as string)
+    const todayRegex = new RegExp(`^${todayPacificString}`);
+
+    // Get today's date and last 7 days for historical data (using createdAt)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const last7Days = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -94,12 +111,9 @@ export const getDashboardStats = async (req, res) => {
       }
     });
 
-    // Get today's bookings
+    // Get today's bookings using string matching (dateTime is stored as string)
     const todayBookings = await Booking.find({
-      dateTime: {
-        $gte: today,
-        $lt: tomorrow,
-      },
+      dateTime: { $regex: todayRegex },
     }).select("name serviceName totalPrice status dateTime");
 
     // Get today's revenue
@@ -108,12 +122,12 @@ export const getDashboardStats = async (req, res) => {
       0
     );
 
-    // Get weekly revenue (last 7 days)
+    // Get weekly revenue (last 7 days) - use createdAt for historical data
     const weekAgo = new Date(today);
     weekAgo.setDate(weekAgo.getDate() - 7);
 
     const weeklyBookings = await Booking.find({
-      dateTime: {
+      createdAt: {
         $gte: weekAgo,
         $lt: tomorrow,
       },
@@ -124,12 +138,12 @@ export const getDashboardStats = async (req, res) => {
       0
     );
 
-    // Get monthly revenue (current month)
+    // Get monthly revenue (current month) - use createdAt for historical data
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
     const monthlyBookings = await Booking.find({
-      dateTime: {
+      createdAt: {
         $gte: monthStart,
         $lte: monthEnd,
       },
