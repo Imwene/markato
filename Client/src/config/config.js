@@ -7,8 +7,8 @@ export const CONFIG = {
     DEPOSIT_PERCENTAGE: 0.5, // 50%
     STORE_ADDRESS: "1901 Park Blvd, Oakland, CA 94606",
     STORE_COORDINATES: {
-      lat: 37.8044,
-      lng: -122.2712,
+      lat: 37.8079,
+      lng: -122.2672,
     },
     // East Bay region boundaries and allowed areas
     EAST_BAY_REGION: {
