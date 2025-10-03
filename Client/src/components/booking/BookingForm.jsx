@@ -500,7 +500,6 @@ const BookingForm = ({
             </div>
           </div>
           {/* Appointment Scheduling Section */}
-          ribbons{" "}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-content-dark dark:text-white">
               {serviceType === "mobile"
