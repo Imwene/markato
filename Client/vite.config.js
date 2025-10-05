@@ -149,7 +149,7 @@ export default defineConfig(({ command, mode }) => {
       host: true,
       proxy: {
         "/api": {
-          target: process.env.VITE_API_URL || "http://localhost:8080",
+          target: import.meta.env.VITE_API_URL || "http://localhost:8080",
           changeOrigin: true,
           secure: false,
         },
@@ -162,7 +162,7 @@ export default defineConfig(({ command, mode }) => {
       host: true,
       proxy: {
         "/api": {
-          target: process.env.VITE_API_URL || "http://localhost:8080",
+          target: import.meta.env.VITE_API_URL || "http://localhost:8080",
           changeOrigin: true,
           secure: false,
         },
