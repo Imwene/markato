@@ -519,41 +519,50 @@ const BookingManager = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Booking #</TableHead>
-              <TableHead>Date & Time</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Service</TableHead>
-              <TableHead>Vehicle</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Edit</TableHead>
-              <TableHead>History</TableHead>
+              <TableHead className="w-[8%] min-w-[90px]">Booking #</TableHead>
+              <TableHead className="w-[14%] min-w-[140px]">
+                Date & Time
+              </TableHead>
+              <TableHead className="w-[16%] min-w-[160px]">Customer</TableHead>
+              <TableHead className="w-[14%] min-w-[140px]">Service</TableHead>
+              <TableHead className="w-[12%] min-w-[120px]">Vehicle</TableHead>
+              <TableHead className="w-[12%] min-w-[120px]">Status</TableHead>
+              <TableHead className="w-[8%] min-w-[80px]">Total</TableHead>
+              <TableHead className="w-[8%] min-w-[70px] text-center">
+                Edit
+              </TableHead>
+              <TableHead className="w-[8%] min-w-[70px] text-center">
+                History
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {displayedBookings.map((booking) => (
               <TableRow key={booking._id}>
                 {/* Booking # */}
-                <TableCell className="font-mono text-primary-DEFAULT dark:text-orange-500">
+                <TableCell className="font-mono text-primary-DEFAULT dark:text-orange-500 text-xs lg:text-sm">
                   {booking.confirmationNumber}
                 </TableCell>
 
                 {/* Date & Time */}
-                <TableCell className="text-content-DEFAULT dark:text-white">
+                <TableCell className="text-content-DEFAULT dark:text-white text-xs lg:text-sm">
                   {booking.dateTime}
                 </TableCell>
 
                 {/* Customer */}
                 <TableCell>
-                  <div>
-                    <div className="font-medium text-content-DEFAULT dark:text-white">
+                  <div className="space-y-0.5">
+                    <div className="font-medium text-content-DEFAULT dark:text-white text-xs lg:text-sm">
                       {booking.name}
                     </div>
-                    <div className="text-sm text-content-light dark:text-stone-400">
+                    <div className="text-sm font-semibold text-content-DEFAULT dark:text-stone-300">
                       {booking.contact}
                     </div>
                     {booking.email && (
-                      <div className="text-sm text-content-light dark:text-stone-400">
+                      <div
+                        className="text-xs text-content-light dark:text-stone-400 truncate"
+                        title={booking.email}
+                      >
                         {booking.email}
                       </div>
                     )}
@@ -562,8 +571,8 @@ const BookingManager = () => {
 
                 {/* Service */}
                 <TableCell>
-                  <div>
-                    <div className="font-medium text-content-DEFAULT dark:text-white">
+                  <div className="space-y-0.5">
+                    <div className="font-medium text-content-DEFAULT dark:text-white text-xs lg:text-sm">
                       {booking.serviceName}
                     </div>
                     {booking.optionalServices?.length > 0 && (
@@ -586,7 +595,7 @@ const BookingManager = () => {
                           </div>
                         }
                       >
-                        <div className="text-sm text-primary-DEFAULT dark:text-orange-500 hover:text-primary-light dark:hover:text-orange-400 cursor-pointer">
+                        <div className="text-xs text-primary-DEFAULT dark:text-orange-500 hover:text-primary-light dark:hover:text-orange-400 cursor-pointer">
                           +{booking.optionalServices.length} add-ons
                         </div>
                       </Tooltip>
@@ -596,11 +605,11 @@ const BookingManager = () => {
 
                 {/* Vehicle */}
                 <TableCell>
-                  <div>
-                    <div className="font-medium text-content-DEFAULT dark:text-white">
+                  <div className="space-y-0.5">
+                    <div className="font-medium text-content-DEFAULT dark:text-white text-xs lg:text-sm">
                       {booking.vehicleType}
                     </div>
-                    <div className="text-sm text-content-light dark:text-stone-400">
+                    <div className="text-xs text-content-light dark:text-stone-400">
                       {booking.makeModel}
                     </div>
                   </div>
@@ -615,7 +624,7 @@ const BookingManager = () => {
                     }
                     className={`${getStatusColor(
                       booking.status
-                    )} px-2 py-1 rounded-lg text-sm border-0 focus:ring-1 focus:ring-primary-light dark:focus:ring-orange-500 cursor-pointer`}
+                    )} w-full px-2 py-1.5 rounded-lg text-xs lg:text-sm border-0 focus:ring-1 focus:ring-primary-light dark:focus:ring-orange-500 cursor-pointer`}
                   >
                     <option value="pending">Pending</option>
                     <option value="confirmed">Confirmed</option>
@@ -626,29 +635,29 @@ const BookingManager = () => {
                 </TableCell>
 
                 {/* Total */}
-                <TableCell className="font-medium text-content-DEFAULT dark:text-white">
+                <TableCell className="font-medium text-content-DEFAULT dark:text-white text-xs lg:text-sm whitespace-nowrap">
                   ${booking.totalPrice || 0}
                 </TableCell>
 
-                {/* History */}
-                <TableCell>
+                {/* Edit */}
+                <TableCell className="text-center">
                   <button
                     onClick={() => handleOpenEdit(booking)}
-                    className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors"
+                    className="p-1.5 lg:p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors mx-auto"
                     title="Edit Booking"
                   >
-                    <Edit className="w-5 h-5 text-primary-DEFAULT dark:text-orange-500" />
+                    <Edit className="w-4 h-4 lg:w-5 lg:h-5 text-primary-DEFAULT dark:text-orange-500" />
                   </button>
                 </TableCell>
 
                 {/* History */}
-                <TableCell>
+                <TableCell className="text-center">
                   <button
                     onClick={() => handleOpenHistory(booking)}
-                    className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors"
+                    className="p-1.5 lg:p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors mx-auto"
                     title="View Status History"
                   >
-                    <History className="w-5 h-5 text-primary-DEFAULT dark:text-orange-500" />
+                    <History className="w-4 h-4 lg:w-5 lg:h-5 text-primary-DEFAULT dark:text-orange-500" />
                   </button>
                 </TableCell>
               </TableRow>
