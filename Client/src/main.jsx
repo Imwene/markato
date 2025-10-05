@@ -5,7 +5,7 @@ import './index.css'
 import process from 'process'
 import { registerServiceWorker } from './utils/performance';
 
-if (process.env.NODE_ENV === 'production') {
+if (import.meta.env.MODE === 'production') {
   registerServiceWorker();
 }
 
