@@ -25,11 +25,12 @@ const client = twilio(
 
 // 2. Add specific status messages
 const STATUS_MESSAGES = {
-  pending: "is pending",
-  confirmed: "has been confirmed",
+  pending: "is pending confirmation",
+  confirmed: "has been confirmed by Markato Auto Detail",
   cancelled: "has been cancelled",
-  in_progress: "is now in progress",
-  completed: "has been completed",
+  in_progress: "service is in progress",
+  completed:
+    "service has been completed. Thank you for choosing Markato Auto Detail!",
 };
 
 // 3. Add rate limiting
@@ -97,7 +98,7 @@ export async function sendBookingConfirmationSMS(booking) {
     }
 
     // Build the confirmation message
-    let messageBody = `🎉 Booking Confirmed! 
+    let messageBody = `Markato Auto Detail - Booking Confirmed
 
 Booking #${booking.confirmationNumber}
 Service: ${booking.serviceName}
@@ -105,7 +106,7 @@ Date & Time: ${booking.dateTime}`;
 
     // Add optional services if any
     if (booking.optionalServices && booking.optionalServices.length > 0) {
-      messageBody += `\n\nOptional Services:`;
+      messageBody += `\nAdd-ons:`;
       booking.optionalServices.forEach((service) => {
         if (service.name === "Seat Cloth Shampoo" && service.seatCount) {
           messageBody += `\n• ${service.name} (${service.seatCount} seats): $${service.price}`;
@@ -115,12 +116,12 @@ Date & Time: ${booking.dateTime}`;
       });
     }
 
-    messageBody += `\n\nTotal: $${booking.totalPrice}
+    messageBody += `\nTotal: $${booking.totalPrice}
 
-📍 Location: 1901 Park Blvd, Oakland, CA 94606
-📞 Questions? Call (415) 889-9108
+Location: 1901 Park Blvd, Oakland, CA 94606
+Questions? Call (415) 889-9108
 
-Please arrive 5-10 minutes early. We look forward to serving you!`;
+Please arrive 5-10 minutes early. Thank you for choosing Markato Auto Detail!`;
 
     const message = await sendWithRetry(async () => {
       return client.messages.create({
@@ -183,11 +184,11 @@ export async function sendStatusUpdateSMS(booking, newStatus, note = "") {
     }
 
     // Build the message body and include the note if provided
-    let messageBody = `Booking #${booking.confirmationNumber} ${STATUS_MESSAGES[newStatus]}`;
+    let messageBody = `Markato Auto Detail: Booking #${booking.confirmationNumber} ${STATUS_MESSAGES[newStatus]}`;
     if (note && note.trim().length > 0) {
-      messageBody += `. Note: ${note}`;
+      messageBody += `\nNote: ${note}`;
     }
-    messageBody += `. Need help? Reply HELP`;
+    messageBody += `\n\nQuestions? Call (415) 889-9108`;
 
     const message = await sendWithRetry(async () => {
       return client.messages.create({
