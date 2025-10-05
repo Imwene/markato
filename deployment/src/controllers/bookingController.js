@@ -497,8 +497,11 @@ export async function updateBookingStatus(req, res) {
       }
     }
 
-    // Send SMS status update
-    if (booking.contact) {
+    // Send SMS status update ONLY for completed or cancelled status
+    // Reduces SMS costs by avoiding redundant notifications for intermediate states
+    // Confirmation SMS already sent on booking creation, booking edits trigger separate SMS
+    const smsEnabledStatuses = ["completed", "cancelled"];
+    if (booking.contact && smsEnabledStatuses.includes(status)) {
       try {
         await sendStatusUpdateSMS(booking, status, note);
       } catch (smsError) {
