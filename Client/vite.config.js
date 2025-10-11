@@ -144,12 +144,7 @@ export default defineConfig(({ command, mode }) => {
       reportCompressedSize: false, // Speeds up build
     },
     server: {
-      port: 5173,
-      strictPort: true,
-      host: true,
-      proxy: {
-        "/api": {
-          target: import.meta.env.VITE_API_URL || "http://localhost:8080",
+target: process.env.VITE_API_URL || "http://localhost:8080",
           changeOrigin: true,
           secure: false,
         },
@@ -162,7 +157,7 @@ export default defineConfig(({ command, mode }) => {
       host: true,
       proxy: {
         "/api": {
-          target: import.meta.env.VITE_API_URL || "http://localhost:8080",
+          target: process.env.VITE_API_URL || "http://localhost:8080",
           changeOrigin: true,
           secure: false,
         },

@@ -88,7 +88,7 @@ export const performanceMonitor = {
 
   // Log performance data
   logPerformance: (metric) => {
-    if (import.meta.env.MODE === "production") {
+    if (process.env.NODE_ENV === "production") {
       // Send to analytics service
       //console.log('Performance metric:', metric);
     }
@@ -132,7 +132,7 @@ export const lazyLoadComponent = (importFunc) => {
 
 // Bundle analyzer for development
 export const analyzeBundleSize = () => {
-  if (import.meta.env.MODE !== "production") {
+  if (process.env.NODE_ENV !== "production") {
     const stats = require("../stats.json");
     //console.log('Bundle size analysis:', stats);
   }

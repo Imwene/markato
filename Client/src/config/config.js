@@ -1,5 +1,5 @@
 export const CONFIG = {
-  API_URL: import.meta.env.VITE_API_URL || "/api",
+  API_URL: process.env.VITE_API_URL || "/api",
   ENDPOINTS: {
     AUTH: {
       LOGIN: "/auth/login",
