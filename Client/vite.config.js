@@ -144,7 +144,12 @@ export default defineConfig(({ command, mode }) => {
       reportCompressedSize: false, // Speeds up build
     },
     server: {
-target: process.env.VITE_API_URL || "http://localhost:8080",
+      port: 5173,
+      strictPort: true,
+      host: true,
+      proxy: {
+        "/api": {
+          target: process.env.VITE_API_URL || "http://localhost:8080",
           changeOrigin: true,
           secure: false,
         },
