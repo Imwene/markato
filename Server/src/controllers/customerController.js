@@ -1,6 +1,7 @@
 // src/controllers/customerController.js
 import Customer from '../models/customerModel.js';
 import Booking from '../models/bookingModel.js';
+import { parseAppointmentDateTime } from '../utils/dateTimeParser.js';
 
 // Get all customers with search and pagination
 export const getAllCustomers = async (req, res) => {
@@ -254,15 +255,13 @@ export const dropAllCustomers = async (_req, res) => {
 };
 
 // Extract customers from bookings
-export const extractCustomersFromBookings = async (_req, res) => {
+export const extractCustomersFromBookings = async (req, res) => {
   try {
     console.log('Starting customer extraction from bookings...');
     
     // Get bookings from the last 3 months
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-    
-    console.log(`Finding bookings since ${threeMonthsAgo.toISOString()}`);
     
     const recentBookings = await Booking.find({
       createdAt: { $gte: threeMonthsAgo }
@@ -286,26 +285,23 @@ export const extractCustomersFromBookings = async (_req, res) => {
       return cleaned;
     };
 
-    // Helper function to parse dateTime string to Date object
-    const parseBookingDateTime = (dateTimeString) => {
-      if (!dateTimeString) return null;
-      try {
-        // The dateTime is stored as a string like "Tue Oct 15, 2024, 2:30 PM"
-        // We need to parse this into a Date object
-        const date = new Date(dateTimeString.replace(/, (\d)/, ' $1'));
-        return isNaN(date.getTime()) ? null : date;
-      } catch (error) {
-        console.warn('Failed to parse dateTime:', dateTimeString, error);
-        return null;
-      }
-    };
+    // Use the centralized dateTime parser from utils
+    const parseBookingDateTime = parseAppointmentDateTime;
     
     // Group bookings by phone number to identify unique customers
     const customersByPhone = new Map();
     
+    console.log(`Processing ${recentBookings.length} bookings...`);
+    
+    // Progress tracking
+    let processedCount = 0;
+    const totalBookings = recentBookings.length;
+    const progressInterval = Math.max(1, Math.floor(totalBookings / 20)); // Show progress every 5%
+    
     for (const booking of recentBookings) {
       const phone = normalizePhone(booking.contact);
       if (!phone) {
+        processedCount++;
         continue;
       }
       
@@ -341,11 +337,27 @@ export const extractCustomersFromBookings = async (_req, res) => {
           customer.firstAppointmentDate = appointmentDate;
         }
       }
+      
+      processedCount++;
+      
+      // Show progress
+      if (processedCount % progressInterval === 0 || processedCount === totalBookings) {
+        const percentage = Math.round((processedCount / totalBookings) * 100);
+        const barLength = 20;
+        const filledLength = Math.round((barLength * percentage) / 100);
+        const bar = '█'.repeat(filledLength) + '░'.repeat(barLength - filledLength);
+        console.log(`[${bar}] ${percentage}% (${processedCount}/${totalBookings} bookings processed)`);
+      }
     }
     
-    console.log(`Identified ${customersByPhone.size} unique customers`);
+    console.log(`\nIdentified ${customersByPhone.size} unique customers`);
+    console.log('Creating/updating customer records...');
     
-    // Create or update customers
+    // Create or update customers with progress tracking
+    let customerCount = 0;
+    const totalCustomers = customersByPhone.size;
+    const customerProgressInterval = Math.max(1, Math.floor(totalCustomers / 10)); // Show progress every 10%
+    
     for (const [phone, customerData] of customersByPhone) {
       try {
         // Check if customer already exists
@@ -369,12 +381,7 @@ export const extractCustomersFromBookings = async (_req, res) => {
           );
           customer.bookingIds.push(...newBookingIds);
           
-          // Update lastSeen to most recent appointment date if it's newer
-          if (customerData.lastAppointmentDate && 
-              (!customer.lastSeen || customerData.lastAppointmentDate > customer.lastSeen)) {
-            customer.lastSeen = customerData.lastAppointmentDate;
-          }
-          
+          // Let updateStatistics handle the correct lastSeen calculation
           await customer.updateStatistics();
           customersUpdated++;
         } else {
@@ -385,20 +392,31 @@ export const extractCustomersFromBookings = async (_req, res) => {
             email: customerData.email,
             preferences,
             bookingIds: customerData.bookings,
+            // Let updateStatistics calculate all statistics correctly
             statistics: {
-              totalBookings: customerData.bookings.length,
-              totalSpent: customerData.totalSpent,
-              lastBookingDate: customerData.lastAppointmentDate || new Date(),
-              averageBookingValue: customerData.totalSpent / customerData.bookings.length
-            },
-            lastSeen: customerData.lastAppointmentDate || new Date()
+              totalBookings: 0,
+              totalSpent: 0,
+              averageBookingValue: 0
+            }
           });
           
-          await customer.save();
+          // Use updateStatistics to properly calculate dates
+          await customer.updateStatistics();
           customersCreated++;
         }
         
         bookingsLinked += customerData.bookings.length;
+        
+        customerCount++;
+        
+        // Show customer processing progress
+        if (customerCount % customerProgressInterval === 0 || customerCount === totalCustomers) {
+          const percentage = Math.round((customerCount / totalCustomers) * 100);
+          const barLength = 20;
+          const filledLength = Math.round((barLength * percentage) / 100);
+          const bar = '█'.repeat(filledLength) + '░'.repeat(barLength - filledLength);
+          console.log(`[${bar}] ${percentage}% (${customerCount}/${totalCustomers} customers processed)`);
+        }
         
       } catch (error) {
         console.error(`Error processing customer ${phone}:`, error);

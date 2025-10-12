@@ -1,5 +1,6 @@
 // src/models/customerModel.js
 import { Schema, model } from 'mongoose';
+import { parseAppointmentDateTime, getMostRecentAppointmentDate, getMostRecentAppointmentDateByStatus } from '../utils/dateTimeParser.js';
 
 const customerSchema = new Schema({
   phone: {
@@ -95,11 +96,25 @@ customerSchema.methods.updateStatistics = async function() {
   this.statistics.averageBookingValue = this.statistics.totalBookings > 0 ? 
     this.statistics.totalSpent / this.statistics.totalBookings : 0;
   
-  if (bookings.length > 0) {
-    this.statistics.lastBookingDate = Math.max(...bookings.map(b => new Date(b.createdAt)));
+  // Fix: Last booking date should be the most recent appointment (any status: completed, cancelled, pending)
+  const allAppointmentDates = bookings
+    .map(booking => parseAppointmentDateTime(booking.dateTime))
+    .filter(date => date !== null);
+  
+  if (allAppointmentDates.length > 0) {
+    this.statistics.lastBookingDate = new Date(Math.max(...allAppointmentDates.map(date => date.getTime())));
   }
   
-  this.lastSeen = new Date();
+  // Fix: Last seen should be the most recent completed or cancelled appointment only
+  const lastSeenDate = getMostRecentAppointmentDateByStatus(bookings, ['completed', 'cancelled']);
+  if (lastSeenDate) {
+    this.lastSeen = lastSeenDate;
+  } else {
+    // If no completed/cancelled bookings, last seen should be null/undefined
+    // Not today's date - that was the incorrect logic
+    this.lastSeen = undefined;
+  }
+  
   return this.save();
 };
 

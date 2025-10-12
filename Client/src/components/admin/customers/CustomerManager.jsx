@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "../../ui/table";
 import { Input } from "../../ui/input";
-import { Search, Phone, Mail, Calendar, DollarSign, ChevronLeft, ChevronRight, Plus, User, Clock, Star, Download, Trash2 } from "lucide-react";
+import { Search, Phone, Mail, Calendar, DollarSign, ChevronLeft, ChevronRight, Plus, User, Clock, Star, Download, Trash2, X } from "lucide-react";
 import api from "../../../utils/api";
 import { CONFIG } from "../../../config/config";
 import ExpressBooking from "./ExpressBooking";
@@ -30,6 +30,7 @@ const CustomerManager = () => {
   const [showExpressBooking, setShowExpressBooking] = useState(false);
   const [expressBookingCustomer, setExpressBookingCustomer] = useState(null);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionProgress, setExtractionProgress] = useState(null);
   const [newCustomer, setNewCustomer] = useState({
     phone: "",
     name: "",
@@ -152,20 +153,39 @@ const CustomerManager = () => {
 
     try {
       setIsExtracting(true);
+      setExtractionProgress({ phase: 'Starting extraction...', percentage: 0 });
+
+      // Simulate progress while the actual extraction runs
+      const progressInterval = setInterval(() => {
+        setExtractionProgress(prev => {
+          if (prev.percentage >= 90) return prev; // Don't go past 90% until complete
+          return {
+            ...prev,
+            percentage: prev.percentage + 10,
+            phase: 'Processing bookings and creating customers...'
+          };
+        });
+      }, 500);
+
       const response = await api.post(CONFIG.ENDPOINTS.CUSTOMERS.EXTRACT_FROM_BOOKINGS);
       
+      clearInterval(progressInterval);
+      setExtractionProgress({ phase: 'Finalizing...', percentage: 100 });
+      
       if (response.success) {
-        alert(`Customer extraction completed!\n\n` +
-              `Customers created: ${response.data.customersCreated}\n` +
-              `Customers updated: ${response.data.customersUpdated}\n` +
-              `Bookings linked: ${response.data.bookingsLinked}`);
-        
-        // Refresh the customer list
-        await fetchCustomers(1);
+        setTimeout(() => {
+          alert(`Customer extraction completed!\n\n` +
+                `Customers created: ${response.data.customersCreated}\n` +
+                `Customers updated: ${response.data.customersUpdated}\n` +
+                `Bookings linked: ${response.data.bookingsLinked}`);
+          setExtractionProgress(null);
+          fetchCustomers(1);
+        }, 500);
       }
     } catch (error) {
       console.error("Failed to extract customers:", error);
       alert("Failed to extract customers. Please try again.");
+      setExtractionProgress(null);
     } finally {
       setIsExtracting(false);
     }
@@ -279,6 +299,57 @@ const CustomerManager = () => {
 
   return (
     <div className="space-y-6">
+      {/* Extraction Progress Modal */}
+      {isExtracting && extractionProgress && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background-light dark:bg-stone-800 p-6 rounded-lg w-full max-w-md border border-border-light dark:border-stone-700 shadow-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-content-dark dark:text-white">
+                Extracting Customers
+              </h3>
+              <button
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to cancel the extraction?')) {
+                    setIsExtracting(false);
+                    setExtractionProgress(null);
+                  }
+                }}
+                className="p-1 hover:bg-background-dark dark:hover:bg-stone-700 rounded"
+              >
+                <X className="w-4 h-4 text-content-light" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-content-light dark:text-stone-400 mb-2">
+                  {extractionProgress.phase}
+                </p>
+                {extractionProgress.details && (
+                  <p className="text-xs text-content-light dark:text-stone-500">
+                    {extractionProgress.details}
+                  </p>
+                )}
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="w-full bg-background-dark dark:bg-stone-700 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="h-full bg-primary-light dark:bg-orange-500 transition-all duration-300 ease-out"
+                  style={{ width: `${extractionProgress.percentage || 0}%` }}
+                />
+              </div>
+              
+              <div className="text-center">
+                <span className="text-sm font-medium text-content-DEFAULT dark:text-white">
+                  {extractionProgress.percentage || 0}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
         <h1 className="text-2xl font-bold text-content-dark dark:text-white">
@@ -333,6 +404,8 @@ const CustomerManager = () => {
         >
           <option value="lastSeen-desc">Last Seen (Recent)</option>
           <option value="lastSeen-asc">Last Seen (Oldest)</option>
+          <option value="statistics.lastBookingDate-desc">Last Booking (Recent)</option>
+          <option value="statistics.lastBookingDate-asc">Last Booking (Oldest)</option>
           <option value="statistics.totalBookings-desc">Most Bookings</option>
           <option value="statistics.totalSpent-desc">Highest Spent</option>
           <option value="name-asc">Name (A-Z)</option>
