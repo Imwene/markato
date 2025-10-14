@@ -18,6 +18,7 @@ const ITEMS_PER_PAGE = 20;
 const CustomerManager = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [paginationLoading, setPaginationLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -42,9 +43,14 @@ const CustomerManager = () => {
   });
 
   const fetchCustomers = useCallback(
-    async (page) => {
+    async (page, isPagination = false) => {
       try {
-        setLoading(true);
+        if (isPagination) {
+          setPaginationLoading(true);
+        } else {
+          setLoading(true);
+        }
+
         const qs = new URLSearchParams();
         qs.set("page", page);
         qs.set("limit", ITEMS_PER_PAGE);
@@ -58,7 +64,7 @@ const CustomerManager = () => {
         if (data.success) {
           setCustomers(data.data || []);
           if (typeof data.total === "number") setTotal(data.total);
-          if (typeof data.page === "number") setCurrentPage(data.page);
+          // Remove server page override to prevent race conditions
         }
       } catch (error) {
         if (error.message.includes("token")) {
@@ -67,6 +73,7 @@ const CustomerManager = () => {
         console.error("Failed to fetch customers:", error);
       } finally {
         setLoading(false);
+        setPaginationLoading(false);
       }
     },
     [debouncedSearch, sortBy, sortOrder]
@@ -82,7 +89,7 @@ const CustomerManager = () => {
   }, [debouncedSearch, sortBy, sortOrder]);
 
   useEffect(() => {
-    fetchCustomers(currentPage);
+    fetchCustomers(currentPage, true);
   }, [currentPage, fetchCustomers]);
 
   const handleCreateCustomer = async () => {
@@ -544,19 +551,22 @@ const CustomerManager = () => {
         <div className="flex justify-center items-center gap-4 mt-6">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
+            disabled={currentPage === 1 || paginationLoading}
             className="p-2 rounded-lg hover:bg-background-dark dark:hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <span className="text-content-DEFAULT dark:text-white">
             Page {currentPage} of {totalPages}
+            {paginationLoading && (
+              <span className="ml-2 inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-primary-light dark:border-orange-500" />
+            )}
           </span>
           <button
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
-            disabled={currentPage === totalPages}
+            disabled={currentPage === totalPages || paginationLoading}
             className="p-2 rounded-lg hover:bg-background-dark dark:hover:bg-stone-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronRight className="w-5 h-5" />
