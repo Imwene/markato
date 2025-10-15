@@ -8,7 +8,16 @@ const connectDB = async () => {
     // Set strictQuery option to avoid deprecation warning
     mongoose.set("strictQuery", false);
 
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    // Connection options for performance optimization
+    const options = {
+      maxPoolSize: parseInt(process.env.MONGODB_MAX_POOL_SIZE) || 10,
+      minPoolSize: parseInt(process.env.MONGODB_MIN_POOL_SIZE) || 5,
+      maxIdleTimeMS: parseInt(process.env.MONGODB_MAX_IDLE_TIME_MS) || 30000,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000
+    };
+
+    const conn = await mongoose.connect(process.env.MONGODB_URI, options);
 
     // Handle connection events
     mongoose.connection.on("disconnected", () => {
