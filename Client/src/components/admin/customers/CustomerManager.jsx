@@ -32,6 +32,8 @@ const CustomerManager = () => {
   const [expressBookingCustomer, setExpressBookingCustomer] = useState(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionProgress, setExtractionProgress] = useState(null);
+  const [autolinkLoading, setAutolinkLoading] = useState(() => new Set()); // Track loading customers
+  const getCustomerKey = (customer) => (customer ? String(customer._id || customer.phone || '') : '');
   const [newCustomer, setNewCustomer] = useState({
     phone: "",
     name: "",
@@ -62,7 +64,8 @@ const CustomerManager = () => {
           `${CONFIG.ENDPOINTS.CUSTOMERS.BASE}?${qs.toString()}`
         );
         if (data.success) {
-          setCustomers(data.data || []);
+          const customersData = data.data || [];
+          setCustomers(customersData);
           if (typeof data.total === "number") setTotal(data.total);
           // Remove server page override to prevent race conditions
         }
@@ -125,19 +128,91 @@ const CustomerManager = () => {
     }
   };
 
-  const handleAutoLinkBookings = async (customerId) => {
+  const handleAutoLinkBookings = async (customer) => {
+    if (!customer) {
+      alert('Customer data is missing. Please refresh the page.');
+      return;
+    }
+
+    const identifier = customer._id || customer.phone;
+    if (!identifier) {
+      alert('Customer identifier is missing. Cannot auto-link bookings.');
+      return;
+    }
+
+    if (!customer.phone) {
+      alert('Customer does not have a phone number. Cannot auto-link bookings.');
+      return;
+    }
+
+    const identifierKey = String(identifier);
+
+    console.log('Autolink requested for customer:', {
+      identifier: identifierKey,
+      _id: customer._id,
+      phone: customer.phone,
+      name: customer.name
+    });
+
+    if (autolinkLoading.has(identifierKey)) {
+      console.log('Autolink already in progress for:', identifierKey);
+      return;
+    }
+
+    setAutolinkLoading(prev => new Set(prev).add(identifierKey));
+
+    const endpoint = CONFIG.ENDPOINTS.CUSTOMERS.AUTO_LINK(identifierKey);
+    console.log('Making API call to:', endpoint);
+
     try {
-      const response = await api.post(`${CONFIG.ENDPOINTS.CUSTOMERS.BASE}/${customerId}/auto-link`);
+      const response = await api.post(endpoint);
       if (response.success) {
-        await fetchCustomers(currentPage);
-        if (selectedCustomer && selectedCustomer._id === customerId) {
-          setSelectedCustomer(response.data);
+        const updatedCustomer = response.data;
+        const linkedBookings = response.linkedBookings ?? 0;
+        const message = response.message || `Successfully linked ${linkedBookings} booking${linkedBookings !== 1 ? 's' : ''} to customer!`;
+
+        setCustomers(prevCustomers =>
+          prevCustomers.map(existing => {
+            const matchesId = existing._id && updatedCustomer._id && existing._id === updatedCustomer._id;
+            const matchesPhone = existing.phone && updatedCustomer.phone && existing.phone === updatedCustomer.phone;
+            return matchesId || matchesPhone ? updatedCustomer : existing;
+          })
+        );
+
+        if (selectedCustomer) {
+          const matchesSelectedId = selectedCustomer._id && updatedCustomer._id && selectedCustomer._id === updatedCustomer._id;
+          const matchesSelectedPhone = selectedCustomer.phone && updatedCustomer.phone && selectedCustomer.phone === updatedCustomer.phone;
+          if (matchesSelectedId || matchesSelectedPhone) {
+            setSelectedCustomer(updatedCustomer);
+          }
+        }
+
+        alert(message);
+      } else {
+        if (response.error === 'Customer not found') {
+          alert('Customer not found. The customer list will be refreshed.');
+          await fetchCustomers(currentPage);
+        } else {
+          alert(`Failed to auto-link bookings: ${response.error || 'Unknown error'}`);
         }
       }
     } catch (error) {
-      console.error("Failed to auto-link bookings:", error);
+      console.error('Failed to auto-link bookings:', error);
+      if (error.message && error.message.includes('404')) {
+        alert('Customer not found. Refreshing customer list...');
+        await fetchCustomers(currentPage);
+      } else {
+        alert('Failed to auto-link bookings. Please try again.');
+      }
+    } finally {
+      setAutolinkLoading(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(identifierKey);
+        return newSet;
+      });
     }
   };
+
 
   const handleExpressBooking = (customer) => {
     setExpressBookingCustomer(customer);
@@ -162,23 +237,52 @@ const CustomerManager = () => {
       setIsExtracting(true);
       setExtractionProgress({ phase: 'Starting extraction...', percentage: 0 });
 
-      // Simulate progress while the actual extraction runs
+      // Realistic progress simulation with phases
+      const phases = [
+        { phase: 'Starting extraction...', duration: 1000, targetPercent: 5 },
+        { phase: 'Scanning booking database...', duration: 2000, targetPercent: 15 },
+        { phase: 'Processing booking records...', duration: 4000, targetPercent: 45 },
+        { phase: 'Grouping customers by phone...', duration: 3000, targetPercent: 65 },
+        { phase: 'Creating customer profiles...', duration: 4000, targetPercent: 85 },
+        { phase: 'Linking booking history...', duration: 2000, targetPercent: 95 },
+        { phase: 'Finalizing extraction...', duration: 1000, targetPercent: 100 }
+      ];
+
+      let currentPhaseIndex = 0;
+      let currentPercentage = 0;
+
       const progressInterval = setInterval(() => {
-        setExtractionProgress(prev => {
-          if (prev.percentage >= 90) return prev; // Don't go past 90% until complete
-          return {
-            ...prev,
-            percentage: prev.percentage + 10,
-            phase: 'Processing bookings and creating customers...'
-          };
+        if (currentPhaseIndex >= phases.length) {
+          clearInterval(progressInterval);
+          return;
+        }
+
+        const currentPhase = phases[currentPhaseIndex];
+        const increment = Math.max(1, Math.floor((currentPhase.targetPercent - currentPercentage) / 10));
+
+        currentPercentage = Math.min(currentPhase.targetPercent, currentPercentage + increment);
+
+        setExtractionProgress({
+          phase: currentPhase.phase,
+          percentage: currentPercentage
         });
-      }, 500);
+
+        // Move to next phase when target reached
+        if (currentPercentage >= currentPhase.targetPercent) {
+          currentPhaseIndex++;
+        }
+      }, 200);
 
       const response = await api.post(CONFIG.ENDPOINTS.CUSTOMERS.EXTRACT_FROM_BOOKINGS);
-      
+
       clearInterval(progressInterval);
-      setExtractionProgress({ phase: 'Finalizing...', percentage: 100 });
-      
+
+      // Show completion
+      setExtractionProgress({
+        phase: 'Extraction completed successfully!',
+        percentage: 100
+      });
+
       if (response.success) {
         setTimeout(() => {
           alert(`Customer extraction completed!\n\n` +
@@ -187,7 +291,7 @@ const CustomerManager = () => {
                 `Bookings linked: ${response.data.bookingsLinked}`);
           setExtractionProgress(null);
           fetchCustomers(1);
-        }, 500);
+        }, 1000);
       }
     } catch (error) {
       console.error("Failed to extract customers:", error);
@@ -249,6 +353,7 @@ const CustomerManager = () => {
     <div
       key={customer._id}
       className="p-4 bg-background-DEFAULT dark:bg-stone-800 rounded-lg border border-border-light dark:border-stone-700 mb-4"
+      data-customer-id={customer._id} // Debug attribute
     >
       <div className="flex justify-between items-center mb-3">
         <div>
@@ -260,12 +365,24 @@ const CustomerManager = () => {
             {customer.phone}
           </p>
         </div>
-        <button
-          onClick={() => handleViewCustomer(customer)}
-          className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors"
-        >
-          <User className="w-5 h-5 text-primary-DEFAULT dark:text-orange-500" />
-        </button>
+         <button
+           onClick={() => handleViewCustomer(customer)}
+           className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors"
+         >
+           <User className="w-5 h-5 text-primary-DEFAULT dark:text-orange-500" />
+         </button>
+         <button
+           onClick={() => handleAutoLinkBookings(customer)}
+           disabled={autolinkLoading.has(getCustomerKey(customer))}
+           className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+           title={autolinkLoading.has(getCustomerKey(customer)) ? "Auto-linking bookings..." : "Auto-link Bookings"}
+         >
+           {autolinkLoading.has(getCustomerKey(customer)) ? (
+             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
+           ) : (
+             <Search className="w-4 h-4 text-blue-500" />
+           )}
+         </button>
       </div>
 
       <div className="grid grid-cols-2 gap-4 text-sm">
@@ -531,13 +648,18 @@ const CustomerManager = () => {
                     >
                       <User className="w-4 h-4 text-primary-DEFAULT dark:text-orange-500" />
                     </button>
-                    <button
-                      onClick={() => handleAutoLinkBookings(customer._id)}
-                      className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors"
-                      title="Auto-link Bookings"
-                    >
-                      <Search className="w-4 h-4 text-blue-500" />
-                    </button>
+                     <button
+                       onClick={() => handleAutoLinkBookings(customer)}
+                       disabled={autolinkLoading.has(getCustomerKey(customer))}
+                       className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                       title={autolinkLoading.has(getCustomerKey(customer)) ? "Auto-linking bookings..." : "Auto-link Bookings"}
+                     >
+                       {autolinkLoading.has(getCustomerKey(customer)) ? (
+                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
+                       ) : (
+                         <Search className="w-4 h-4 text-blue-500" />
+                       )}
+                     </button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -776,12 +898,20 @@ const CustomerManager = () => {
                     Actions
                   </h4>
                   <div className="space-y-2">
-                    <button
-                      onClick={() => handleAutoLinkBookings(selectedCustomer._id)}
-                      className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                    >
-                      Auto-link Existing Bookings
-                    </button>
+                     <button
+                       onClick={() => handleAutoLinkBookings(selectedCustomer)}
+                       disabled={autolinkLoading.has(getCustomerKey(selectedCustomer))}
+                       className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                     >
+                       {autolinkLoading.has(getCustomerKey(selectedCustomer)) ? (
+                         <div className="flex items-center justify-center gap-2">
+                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                           Auto-linking Bookings...
+                         </div>
+                       ) : (
+                         "Auto-link Existing Bookings"
+                       )}
+                     </button>
                     <button 
                       onClick={() => handleExpressBooking(selectedCustomer)}
                       className="w-full px-4 py-2 bg-primary-light text-white rounded-lg hover:bg-primary-DEFAULT transition-colors dark:bg-orange-500 dark:hover:bg-orange-600"

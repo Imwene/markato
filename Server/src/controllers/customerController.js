@@ -1,7 +1,8 @@
 // src/controllers/customerController.js
+import mongoose from 'mongoose';
 import Customer from '../models/customerModel.js';
 import Booking from '../models/bookingModel.js';
-import { parseAppointmentDateTime } from '../utils/dateTimeParser.js';
+import { parseAppointmentDateTime, getMostRecentAppointmentDateByStatus } from '../utils/dateTimeParser.js';
 
 // Get all customers with search and pagination
 export const getAllCustomers = async (req, res) => {
@@ -187,32 +188,126 @@ export const linkBookingToCustomer = async (req, res) => {
 // Auto-link existing bookings to customer by phone
 export const autoLinkBookings = async (req, res) => {
   try {
-    const { customerId } = req.params;
-    
-    const customer = await Customer.findById(customerId);
+    const { customerId, id } = req.params;
+    const rawId = customerId || id;
+    console.log('Autolink requested with params:', req.params, 'Resolved ID:', rawId);
+
+    if (!rawId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer identifier is required'
+      });
+    }
+
+    let customer;
+    if (mongoose.Types.ObjectId.isValid(rawId)) {
+      customer = await Customer.findById(rawId);
+    }
+
+    if (!customer) {
+      const normalizedPhone = normalizePhone(rawId);
+      customer = await Customer.findOne({ phone: normalizedPhone || rawId });
+    }
+
     if (!customer) {
       return res.status(404).json({
         success: false,
         error: 'Customer not found'
       });
     }
-    
-    // Find bookings with matching phone number
-    const bookings = await Booking.find({ 
-      contact: customer.phone,
-      _id: { $nin: customer.bookingIds }
+
+    console.log('Autolink resolved customer:', {
+      id: customer._id,
+      phone: customer.phone,
+      name: customer.name
     });
+
+    // Find unlinked bookings with matching phone number (reverse lookup - much faster)
+    const potentialBookings = await Booking.find({
+      contact: customer.phone,
+      customerId: { $exists: false }
+    }).sort({ createdAt: -1 }).limit(500);
+
+    if (potentialBookings.length === 0) {
+      return res.json({
+        success: true,
+        data: customer,
+        linkedBookings: 0,
+        message: 'No unlinked bookings found for this customer'
+      });
+    }
+
+    // Filter out any bookings that are already linked on the customer document
+    const existingBookingIds = new Set(customer.bookingIds.map(id => id.toString()));
+    const bookings = potentialBookings.filter(booking => !existingBookingIds.has(booking._id.toString()));
+
+    if (bookings.length === 0) {
+      return res.json({
+        success: true,
+        data: customer,
+        linkedBookings: 0,
+        message: 'All matching bookings are already linked to this customer'
+      });
+    }
+
+    // Process bookings in batches to prevent timeouts
+    const batchSize = 100;
+    let totalLinked = 0;
+
+    for (let i = 0; i < bookings.length; i += batchSize) {
+      const batch = bookings.slice(i, i + batchSize);
+
+      // Link this batch of bookings
+      const batchIds = batch.map(booking => booking._id);
+      customer.bookingIds.push(...batchIds);
+
+      // Update bookings with customerId reference
+      await Booking.updateMany(
+        { _id: { $in: batchIds } },
+        { $set: { customerId: customer._id } }
+      );
+
+      // Update statistics incrementally for this batch
+      const batchTotalSpent = batch.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+      const batchBookingDates = batch.map(booking => parseAppointmentDateTime(booking.dateTime)).filter(date => date !== null);
+
+      customer.statistics.totalBookings += batch.length;
+      customer.statistics.totalSpent += batchTotalSpent;
+      customer.statistics.averageBookingValue = customer.statistics.totalBookings > 0 ?
+        customer.statistics.totalSpent / customer.statistics.totalBookings : 0;
+
+      // Update last booking date if this batch has newer bookings
+      if (batchBookingDates.length > 0) {
+        const maxBatchDate = new Date(Math.max(...batchBookingDates.map(date => date.getTime())));
+        if (!customer.statistics.lastBookingDate || maxBatchDate > customer.statistics.lastBookingDate) {
+          customer.statistics.lastBookingDate = maxBatchDate;
+        }
+      }
+
+      // Update last seen date for completed/cancelled bookings
+      const lastSeenDate = getMostRecentAppointmentDateByStatus(batch, ['completed', 'cancelled']);
+      if (lastSeenDate && (!customer.lastSeen || lastSeenDate > customer.lastSeen)) {
+        customer.lastSeen = lastSeenDate;
+      }
+
+      totalLinked += batch.length;
+
+      // Save progress every 100 bookings
+      if (i + batchSize < bookings.length || i === 0) {
+        await customer.save();
+      }
+    }
     
-    // Add matching bookings to customer
-    const newBookingIds = bookings.map(booking => booking._id);
-    customer.bookingIds.push(...newBookingIds);
-    
-    await customer.updateStatistics();
-    
+    // Final save
+    await customer.save();
+
     res.json({
       success: true,
       data: customer,
-      linkedBookings: newBookingIds.length
+      linkedBookings: totalLinked,
+      message: totalLinked > 0
+        ? `Successfully linked ${totalLinked} booking${totalLinked !== 1 ? 's' : ''} to customer`
+        : 'All matching bookings are already linked to this customer'
     });
   } catch (error) {
     console.error('Auto-link bookings error:', error);
@@ -259,12 +354,12 @@ export const extractCustomersFromBookings = async (req, res) => {
   try {
     console.log('Starting customer extraction from bookings...');
     
-    // Get bookings from the last 3 months
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    // Get bookings from the last 30 days (reduced for performance)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     const recentBookings = await Booking.find({
-      createdAt: { $gte: threeMonthsAgo }
+      createdAt: { $gte: thirtyDaysAgo }
     }).sort({ createdAt: -1 }).limit(1000); // Limit to prevent timeout
     
     console.log(`Found ${recentBookings.length} recent bookings`);

@@ -38,7 +38,7 @@ export const CONFIG = {
       BASE: "/customers",
       BY_ID: (id) => `/customers/${id}`,
       STATS: "/customers/stats",
-      AUTO_LINK: (id) => `/customers/${id}/auto-link`,
+      AUTO_LINK: (id) => `/customers/${encodeURIComponent(id)}/auto-link`,
       EXTRACT_FROM_BOOKINGS: "/customers/extract-from-bookings",
       DROP_ALL: "/customers/drop-all",
     },
