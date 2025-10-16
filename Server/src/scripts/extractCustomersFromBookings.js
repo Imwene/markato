@@ -18,14 +18,14 @@ const extractCustomersFromBookings = async () => {
 
     console.log('Starting customer extraction from bookings...');
     
-    // Get bookings from the last 3 months
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-    
-    console.log(`Finding bookings since ${threeMonthsAgo.toISOString()}`);
-    
+    // Get bookings from the last 30 days (reduced for performance)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    console.log(`Finding bookings since ${thirtyDaysAgo.toISOString()}`);
+
     const recentBookings = await Booking.find({
-      createdAt: { $gte: threeMonthsAgo }
+      createdAt: { $gte: thirtyDaysAgo }
     }).sort({ createdAt: -1 });
     
     console.log(`Found ${recentBookings.length} recent bookings`);

@@ -4,13 +4,13 @@
 set -e
 
 echo "🏗️  Building client..."
-cd Client && npm run build:production && cd ..
+cd Client && bun run build:production && cd ..
 
 echo "📦 Syncing client files..."
 rsync -av --delete Client/dist/ deployment/dist/
 
-echo "📦 Syncing server files (excluding node_modules)..."
-rsync -av --exclude='node_modules' --exclude='package-lock.json' --exclude='.env' --exclude='.env.production' Server/ deployment/
+echo "📦 Syncing server files (excluding node_modules and bun.lockb)..."
+rsync -av --exclude='node_modules' --exclude='bun.lockb' --exclude='package-lock.json' --exclude='.env' --exclude='.env.production' Server/ deployment/
 
 echo "📁 Creating deployment tarball..."
 tar -czf deployment.tar.gz deployment/
