@@ -142,7 +142,6 @@ const bookingSchema = new Schema(
       default: 0,
     },
     },
-  },
   {
     timestamps: true,
     strict: false, // Allow additional fields for backward compatibility
