@@ -1,14 +1,18 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ServiceList from "./ServiceList";
 import BookingForm from "./BookingForm";
 import Confirmation from "./Confirmation";
 import VehicleTypeSelector from "./VehicleTypeSelector";
 import OptionalServices from "./OptionalServices";
+import ServiceTypeToggle from "./ServiceTypeToggle"; // NEW: Import mobile service component
+import AddressInput from "./AddressInput"; // NEW: Import address input component
+import MobileDetails from "./MobileDetails"; // NEW: Import mobile payment component
 import { useBookingState } from "../../hooks/useBookingState";
 
 const BookingComponent = () => {
   const {
+    // Existing state
     bookingStep,
     selectedVehicleType,
     selectedService,
@@ -21,6 +25,18 @@ const BookingComponent = () => {
     loading,
     error,
     optionalServicesData,
+    canProceedToDetails,
+    isFormValid,
+    baseServicePrice,
+
+    // NEW: Mobile service state
+    serviceType,
+    customerAddress,
+    addressValidation,
+    isValidatingAddress,
+    canProceedFromServiceType,
+
+    // Existing handlers
     handleVehicleTypeChange,
     handleNext,
     handleBack,
@@ -30,15 +46,36 @@ const BookingComponent = () => {
     handleOptionQuantityChange,
     handleInputChange,
     handleBookingSubmit,
-    canProceedToDetails,
-    isFormValid,
+
+    // NEW: Mobile service handlers
+    handleServiceTypeChange,
+    handleAddressChange,
+    validateAddress,
+    
+    // NEW: Payment step state and handlers
+    finalizeMobileBooking,
+    mobileDetails,
+    setMobileDetails,
+    totalPrice,
   } = useBookingState();
 
+  // Track if this is the initial mount to prevent auto-scroll on page load
+  const isInitialMount = useRef(true);
+
   useEffect(() => {
+    // Don't scroll on initial page load
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    // Only scroll during step navigation (after initial mount)
     if (
       bookingStep === "details" ||
       bookingStep === "options" ||
-      bookingStep === "confirmation"
+      bookingStep === "payment" ||
+      bookingStep === "confirmation" ||
+      bookingStep === "service" // Include service step when navigating from service-type
     ) {
       const element = document.getElementById("booking-component");
       if (element) {
@@ -52,6 +89,27 @@ const BookingComponent = () => {
 
   const renderStepContent = () => {
     switch (bookingStep) {
+      // NEW: Service Type Selection Step
+      case "service-type":
+        return (
+          <div className="p-6">
+            <ServiceTypeToggle
+              serviceType={serviceType}
+              onServiceTypeChange={handleServiceTypeChange}
+            />
+            {serviceType === "mobile" && (
+              <div className="mt-6">
+                <AddressInput
+                  address={customerAddress}
+                  onAddressChange={handleAddressChange}
+                  onValidateAddress={validateAddress}
+                  validationStatus={addressValidation}
+                />
+              </div>
+            )}
+          </div>
+        );
+
       case "service":
         return (
           <>
@@ -65,6 +123,7 @@ const BookingComponent = () => {
               onServiceSelect={setSelectedService}
               onScentSelect={setSelectedScent}
               selectedVehicleType={selectedVehicleType}
+              serviceType={serviceType} // NEW: Pass service type for pricing
             />
           </>
         );
@@ -79,6 +138,8 @@ const BookingComponent = () => {
               onOptionSelect={handleOptionSelect}
               onContinue={handleNext}
               onBack={handleBack}
+              serviceType={serviceType} // NEW: Pass service type for pricing
+              selectedServicePrice={baseServicePrice} // NEW: Pass base service price for breakdown
             />
           </>
         );
@@ -91,12 +152,31 @@ const BookingComponent = () => {
               captcha={captcha}
               onSubmit={handleBookingSubmit}
               isFormValid={isFormValid}
-              onBack={handleBack} // Make sure this is correctly passed
+              onBack={handleBack}
+              serviceType={serviceType} // NEW: Pass service type
+              customerAddress={customerAddress} // NEW: Pass address for mobile service
+              addressValidation={addressValidation} // NEW: Pass validation status
             />
           </>
         );
+      case "payment":
+        return (
+          <MobileDetails
+            bookingDetails={bookingDetails}
+            totalPrice={totalPrice}
+            mobileDetails={mobileDetails}
+            setMobileDetails={setMobileDetails}
+            finalizeMobileBooking={finalizeMobileBooking}
+            onBack={handleBack}
+          />
+        );
       case "confirmation":
-        return <Confirmation booking={booking} />;
+        return (
+          <Confirmation
+            booking={booking}
+            serviceType={serviceType} // NEW: Pass service type for display
+          />
+        );
       default:
         return null;
     }
@@ -107,40 +187,141 @@ const BookingComponent = () => {
 
     return (
       <div className="sticky bottom-0 left-0 right-0 p-4 bg-background-light/95 dark:bg-stone-900/95 backdrop-blur-sm border-t border-border-light dark:border-stone-700">
+        {/* NEW: Service Type Step Button */}
+        {bookingStep === "service-type" && (
+          <div className="flex gap-3">
+            <motion.button
+              onClick={handleNext}
+              className={`flex-1 p-3 rounded-lg transition-colors duration-200 ${
+                canProceedFromServiceType
+                  ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
+                  : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
+              }`}
+              whileHover={canProceedFromServiceType ? { scale: 1.02 } : {}}
+              whileTap={canProceedFromServiceType ? { scale: 0.98 } : {}}
+              disabled={!canProceedFromServiceType}
+            >
+              {serviceType === "mobile" &&
+              (!addressValidation || addressValidation.status !== "valid")
+                ? "Please enter a valid address to continue"
+                : "Continue to Services"}
+            </motion.button>
+          </div>
+        )}
+
         {bookingStep === "service" && (
-          <motion.button
-            onClick={handleNext}
-            className={`w-full p-3 rounded-lg transition-colors duration-200 ${
-              canProceedToDetails
-                ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
-                : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
-            }`}
-            whileHover={canProceedToDetails ? { scale: 1.02 } : {}}
-            whileTap={canProceedToDetails ? { scale: 0.98 } : {}}
-            disabled={!canProceedToDetails}
-          >
-            {canProceedToDetails
-              ? "Continue"
-              : "Select a package and scent to continue"}
-          </motion.button>
+          <div className="flex gap-3">
+            <motion.button
+              onClick={handleBack}
+              className="flex-1 p-3 rounded-lg bg-background-DEFAULT dark:bg-stone-800 text-content-DEFAULT dark:text-white border border-border-DEFAULT dark:border-stone-700 hover:bg-background-dark dark:hover:bg-stone-700 transition-colors duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Back to Service Type
+            </motion.button>
+            <motion.button
+              onClick={handleNext}
+              className={`flex-1 p-3 rounded-lg transition-colors duration-200 ${
+                canProceedToDetails
+                  ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
+                  : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
+              }`}
+              whileHover={canProceedToDetails ? { scale: 1.02 } : {}}
+              whileTap={canProceedToDetails ? { scale: 0.98 } : {}}
+              disabled={!canProceedToDetails}
+            >
+              {canProceedToDetails
+                ? "Continue to Add-ons"
+                : "Select a package and scent to continue"}
+            </motion.button>
+          </div>
         )}
       </div>
     );
   };
 
+  // NEW: Enhanced step titles and descriptions
+  const getStepInfo = () => {
+    switch (bookingStep) {
+      case "service-type":
+        return {
+          title: "Choose Your Service Type",
+          description:
+            "Select whether you'd like to visit our location or have us come to you",
+        };
+      case "service":
+        return {
+          title: "Select Your Service Package",
+          description: `Choose the ${
+            serviceType === "mobile" ? "mobile " : ""
+          }service that best fits your needs`,
+        };
+      case "options":
+        return {
+          title: "Enhance Your Service",
+          description: "Add optional services to customize your experience",
+        };
+      case "details":
+        return {
+          title: "Complete Your Booking",
+          description:
+            serviceType === "mobile"
+              ? "Fill in your details to schedule your mobile service"
+              : "Fill in your details to schedule your appointment",
+        };
+      case "payment":
+        return {
+          title: "Mobile Service Deposit",
+          description: "Secure your booking with a 50% deposit payment",
+        };
+      case "confirmation":
+        return {
+          title: "Booking Confirmed",
+          description:
+            serviceType === "mobile"
+              ? "Your mobile service has been scheduled"
+              : "Your appointment has been scheduled",
+        };
+      default:
+        return {
+          title: "Book Your Service",
+          description: "Let's get your vehicle detailed",
+        };
+    }
+  };
+
+  const stepInfo = getStepInfo();
+
   return (
     <div id="booking-component" className="max-w-[1000px] mx-auto">
+      {/* NEW: Enhanced header with step info */}
       <div className="text-center mb-8">
         <h2 className="text-2xl sm:text-3xl font-bold text-content-dark dark:text-white">
-          {bookingStep === "options"
-            ? "Enhance Your Service"
-            : "Choose Your Service Type"}
+          {stepInfo.title}
         </h2>
         <p className="text-content-light dark:text-stone-400 mt-2">
-          {bookingStep === "options"
-            ? "Add optional services to customize your experience"
-            : "Select the service option that best fits your schedule"}
+          {stepInfo.description}
         </p>
+
+        {/* NEW: Service type indicator */}
+        {bookingStep !== "service-type" && bookingStep !== "confirmation" && (
+          <div className="mt-4 flex justify-center">
+            <div
+              className={`
+              px-3 py-1 rounded-full text-sm font-medium
+              ${
+                serviceType === "mobile"
+                  ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
+                  : "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+              }
+            `}
+            >
+              {serviceType === "mobile"
+                ? "📱 Mobile Service (+$50)"
+                : "🏢 Drive-In Service"}
+            </div>
+          </div>
+        )}
       </div>
 
       <AnimatePresence mode="wait">
