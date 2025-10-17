@@ -40,6 +40,8 @@
     "resend": "^4.0.1",
     "sanitize-html": "^2.14.0",
     "sharp": "^0.33.5",
+    "square": "^43.1.1",
+    "squareup": "^1.0.0",
     "twilio": "^5.4.3",
     "web-vitals": "^4.2.4",
     "workbox-webpack-plugin": "^7.3.0"
