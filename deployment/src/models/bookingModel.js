@@ -77,6 +77,11 @@ const bookingSchema = new Schema(
       type: String,
       required: true,
     },
+    customerId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Customer',
+      index: true,
+    },
   },
   {
     timestamps: true,

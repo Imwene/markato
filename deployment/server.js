@@ -28,6 +28,30 @@ app.use(cors(corsOptions));
 // Apply security middleware
 app.use(securityMiddleware);
 
+// Performance monitoring middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  const originalSend = res.send;
+
+  res.send = function(data) {
+    const duration = Date.now() - start;
+
+    // Log slow requests (>5 seconds)
+    if (duration > 5000) {
+      console.warn(`SLOW REQUEST: ${req.method} ${req.url} took ${duration}ms`);
+    }
+
+    // Log very slow requests (>10 seconds) with more details
+    if (duration > 10000) {
+      console.error(`VERY SLOW REQUEST: ${req.method} ${req.url} took ${duration}ms - Body:`, req.body);
+    }
+
+    return originalSend.call(this, data);
+  };
+
+  next();
+});
+
 // Development logging
 if (process.env.NODE_ENV === 'development') {
   app.use((req, res, next) => {

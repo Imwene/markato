@@ -5,6 +5,7 @@ import {
   Calendar,
   Settings,
   Sliders,
+  Users,
   Menu,
   X,
   LogOut,
@@ -31,6 +32,12 @@ const AdminLayout = () => {
       label: "Bookings",
       path: "/admin/bookings",
       description: "Manage customer bookings",
+    },
+    {
+      icon: <Users size={20} />,
+      label: "Customers",
+      path: "/admin/customers",
+      description: "Manage customer profiles",
     },
     {
       icon: <Settings size={20} />,

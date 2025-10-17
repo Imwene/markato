@@ -34,5 +34,13 @@ export const CONFIG = {
       RESEND_EMAIL: (id) => `/bookings/${id}/resend-email`,
       UPDATE_STATUS: (id) => `/bookings/${id}/status`, // Add this line
     },
+    CUSTOMERS: {
+      BASE: "/customers",
+      BY_ID: (id) => `/customers/${id}`,
+      STATS: "/customers/stats",
+      AUTO_LINK: (id) => `/customers/${encodeURIComponent(id)}/auto-link`,
+      EXTRACT_FROM_BOOKINGS: "/customers/extract-from-bookings",
+      DROP_ALL: "/customers/drop-all",
+    },
   },
 };

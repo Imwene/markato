@@ -4,12 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:host": "vite --host",
-    "build": "vite build",
-    "preview": "vite preview",
-    "build:production": "NODE_ENV=production vite build",
-    "analyze": "vite build --mode analyze"
+    "dev": "bun vite",
+    "dev:host": "bun vite --host",
+    "build": "bun vite build",
+    "preview": "bun vite preview",
+    "build:production": "NODE_ENV=production bun vite build",
+    "analyze": "bun vite build --mode analyze"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

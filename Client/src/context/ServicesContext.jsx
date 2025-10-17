@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
+import { CONFIG } from '../config/config';
 
 export const ServicesContext = createContext(null);
 
@@ -11,7 +12,7 @@ export const ServicesProvider = ({ children }) => {
 
     const fetchServices = async () => {
         try {
-            const response = await fetch('/api/services');
+            const response = await fetch(`${CONFIG.API_URL}${CONFIG.ENDPOINTS.SERVICES.BASE}`);
             const data = await response.json();
             
             if (data.success) {
