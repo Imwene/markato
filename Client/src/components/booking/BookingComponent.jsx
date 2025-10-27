@@ -51,11 +51,10 @@ const BookingComponent = () => {
     handleServiceTypeChange,
     handleAddressChange,
     validateAddress,
-    
+
     // NEW: Payment step state and handlers
     finalizeMobileBooking,
     mobileDetails,
-    setMobileDetails,
     totalPrice,
   } = useBookingState();
 
@@ -165,7 +164,6 @@ const BookingComponent = () => {
             bookingDetails={bookingDetails}
             totalPrice={totalPrice}
             mobileDetails={mobileDetails}
-            setMobileDetails={setMobileDetails}
             finalizeMobileBooking={finalizeMobileBooking}
             onBack={handleBack}
           />
@@ -186,20 +184,24 @@ const BookingComponent = () => {
     if (bookingStep === "confirmation") return null;
 
     return (
-      <div className="sticky bottom-0 left-0 right-0 p-4 bg-background-light/95 dark:bg-stone-900/95 backdrop-blur-sm border-t border-border-light dark:border-stone-700">
-        {/* NEW: Service Type Step Button */}
+      <div className="sticky bottom-0 left-0 right-0 p-3 sm:p-4 bg-background-light/95 dark:bg-stone-900/95 backdrop-blur-sm border-t border-border-light dark:border-stone-700 z-40">
+        {/* Improved responsive button layout */}
         {bookingStep === "service-type" && (
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
             <motion.button
               onClick={handleNext}
-              className={`flex-1 p-3 rounded-lg transition-colors duration-200 ${
+              className={`w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-colors duration-200 shadow-sm ${
                 canProceedFromServiceType
                   ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
                   : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
               }`}
-              whileHover={canProceedFromServiceType ? { scale: 1.02 } : {}}
+              whileHover={canProceedFromServiceType ? { scale: 1.015 } : {}}
               whileTap={canProceedFromServiceType ? { scale: 0.98 } : {}}
               disabled={!canProceedFromServiceType}
+              style={{
+                minHeight: 48,
+                letterSpacing: 0.02,
+              }}
             >
               {serviceType === "mobile" &&
               (!addressValidation || addressValidation.status !== "valid")
@@ -210,25 +212,33 @@ const BookingComponent = () => {
         )}
 
         {bookingStep === "service" && (
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
             <motion.button
               onClick={handleBack}
-              className="flex-1 p-3 rounded-lg bg-background-DEFAULT dark:bg-stone-800 text-content-DEFAULT dark:text-white border border-border-DEFAULT dark:border-stone-700 hover:bg-background-dark dark:hover:bg-stone-700 transition-colors duration-200"
-              whileHover={{ scale: 1.02 }}
+              className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold bg-background-DEFAULT dark:bg-stone-800 text-content-DEFAULT dark:text-white border border-border-DEFAULT dark:border-stone-700 hover:bg-background-dark dark:hover:bg-stone-700 transition-colors duration-200 shadow-sm"
+              whileHover={{ scale: 1.015 }}
               whileTap={{ scale: 0.98 }}
+              style={{
+                minHeight: 48,
+                letterSpacing: 0.02,
+              }}
             >
               Back to Service Type
             </motion.button>
             <motion.button
               onClick={handleNext}
-              className={`flex-1 p-3 rounded-lg transition-colors duration-200 ${
+              className={`w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-colors duration-200 shadow-sm ${
                 canProceedToDetails
                   ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
                   : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
               }`}
-              whileHover={canProceedToDetails ? { scale: 1.02 } : {}}
+              whileHover={canProceedToDetails ? { scale: 1.015 } : {}}
               whileTap={canProceedToDetails ? { scale: 0.98 } : {}}
               disabled={!canProceedToDetails}
+              style={{
+                minHeight: 48,
+                letterSpacing: 0.02,
+              }}
             >
               {canProceedToDetails
                 ? "Continue to Add-ons"

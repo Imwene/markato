@@ -9,6 +9,7 @@ import {
   getCurrentPacificDate,
   formatToPacificDateTime,
 } from "../../utils/dateUtils";
+import PropTypes from "prop-types";
 
 const BookingForm = ({
   bookingDetails,
@@ -553,37 +554,42 @@ const BookingForm = ({
                   control={control}
                   rules={validationRules.time}
                   render={({ field }) => (
-                    <div className="relative">
+                    <div className="relative flex items-center">
                       <select
                         {...field}
                         className={`${getInputClassName(
-                          "time"
-                        )} appearance-none cursor-pointer`}
+                          'time'
+                        )} appearance-none cursor-pointer pr-10 w-full`}
                         disabled={!watchedDate || isCheckingAvailability}
                         aria-describedby="timeError"
+                        style={{
+                          height: '48px', // ensure select and icon are vertically center
+                        }}
                       >
                         <option value="">
                           {isCheckingAvailability
-                            ? "Checking availability..."
+                            ? 'Checking availability...'
                             : !watchedDate
-                            ? "Select a date first"
-                            : "Select time"}
+                            ? 'Select a date first'
+                            : 'Select time'}
                         </option>
                         {businessHours.map((time) => {
-                          const isAvailable =
-                            timeSlots[time]?.available !== false;
+                          const isAvailable = timeSlots[time]?.available !== false
                           return (
                             <option
                               key={time}
                               value={time}
                               disabled={!isAvailable}
                             >
-                              {time} {!isAvailable ? "(Unavailable)" : ""}
+                              {time} {!isAvailable ? '(Unavailable)' : ''}
                             </option>
-                          );
+                          )
                         })}
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-content-light dark:text-stone-400 pointer-events-none" />
+                      {/* Precisely align the ChevronDown with select (right edge, vertically centered) */}
+                      <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center h-full">
+                        <ChevronDown className="w-5 h-5 text-content-light dark:text-stone-400" />
+                      </div>
                     </div>
                   )}
                 />
@@ -604,7 +610,7 @@ const BookingForm = ({
             <div className="p-4 bg-background-dark dark:bg-stone-700 rounded-lg">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-content-DEFAULT dark:text-white">
-                  What is {captcha?.question}?
+                  {captcha?.question}
                 </span>
               </div>
               <Controller
@@ -640,7 +646,7 @@ const BookingForm = ({
             </div>
           )}
           {/* NEW: Mobile Service Info */}
-          {serviceType === "mobile" && (
+          {/* {serviceType === "mobile" && (
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <div className="flex items-start space-x-3">
                 <MapPin className="flex-shrink-0 w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
@@ -655,15 +661,19 @@ const BookingForm = ({
                 </div>
               </div>
             </div>
-          )}
+          )} */}
           {/* Form Buttons */}
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
             <motion.button
               type="button"
               onClick={onBack}
-              className="flex-1 p-3 rounded-lg bg-background-DEFAULT dark:bg-stone-800 text-content-DEFAULT dark:text-white border border-border-DEFAULT dark:border-stone-700 hover:bg-background-dark dark:hover:bg-stone-700 transition-colors duration-200"
-              whileHover={{ scale: 1.02 }}
+              className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold bg-background-DEFAULT dark:bg-stone-800 text-content-DEFAULT dark:text-white border border-border-DEFAULT dark:border-stone-700 hover:bg-background-dark dark:hover:bg-stone-700 transition-colors duration-200 shadow-sm"
+              whileHover={{ scale: 1.015 }}
               whileTap={{ scale: 0.98 }}
+              style={{
+                minHeight: 48,
+                letterSpacing: 0.02,
+              }}
             >
               Back to Add-ons
             </motion.button>
@@ -672,29 +682,61 @@ const BookingForm = ({
               type="submit"
               disabled={
                 !isValid ||
-                (serviceType === "mobile" &&
-                  (!addressValidation || addressValidation.status !== "valid"))
+                (serviceType === 'mobile' &&
+                  (!addressValidation || addressValidation.status !== 'valid'))
               }
-              className={`flex-1 p-3 rounded-lg transition-colors duration-200 ${
+              className={`w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-colors duration-200 shadow-sm ${
                 isValid &&
-                (serviceType === "drive-in" ||
-                  (serviceType === "mobile" &&
-                    addressValidation?.status === "valid"))
-                  ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
-                  : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
+                (serviceType === 'drive-in' ||
+                  (serviceType === 'mobile' &&
+                    addressValidation?.status === 'valid'))
+                  ? 'bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600'
+                  : 'bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed'
               }`}
-              whileHover={isValid ? { scale: 1.02 } : {}}
-              whileTap={isValid ? { scale: 0.98 } : {}}
+              whileHover={
+                isValid &&
+                (serviceType === 'drive-in' ||
+                  (serviceType === 'mobile' &&
+                    addressValidation?.status === 'valid'))
+                  ? { scale: 1.015 }
+                  : {}
+              }
+              whileTap={
+                isValid &&
+                (serviceType === 'drive-in' ||
+                  (serviceType === 'mobile' &&
+                    addressValidation?.status === 'valid'))
+                  ? { scale: 0.98 }
+                  : {}
+              }
+              style={{
+                minHeight: 48,
+                letterSpacing: 0.02,
+              }}
             >
-              {serviceType === "mobile"
-                ? "Complete Mobile Booking"
-                : "Complete Booking"}
+              {serviceType === 'mobile'
+                ? 'Complete Mobile Booking'
+                : 'Complete Booking'}
             </motion.button>
           </div>
         </form>
       </motion.div>
     </div>
   );
+};
+
+BookingForm.propTypes = {
+  bookingDetails: PropTypes.object.isRequired,
+  onInputChange: PropTypes.func.isRequired,
+  captcha: PropTypes.object,
+  onSubmit: PropTypes.func.isRequired,
+  isFormValid: PropTypes.bool,
+  onBack: PropTypes.func.isRequired,
+  serviceType: PropTypes.string,
+  customerAddress: PropTypes.string,
+  addressValidation: PropTypes.object,
+  onAddressChange: PropTypes.func,
+  onValidateAddress: PropTypes.func,
 };
 
 export default BookingForm;

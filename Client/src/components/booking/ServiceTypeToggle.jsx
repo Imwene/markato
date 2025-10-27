@@ -136,11 +136,8 @@ const ServiceTypeToggle = ({ serviceType, onServiceTypeChange }) => {
                   East Bay only - Within 15 miles
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="px-2.5 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium">
+                  <span className="px-2.5 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-white rounded-full text-xs font-medium">
                     +$50 Service Fee
-                  </span>
-                  <span className="px-2.5 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-xs font-medium">
-                    50% Deposit Required
                   </span>
                 </div>
               </div>
@@ -178,10 +175,10 @@ const ServiceTypeToggle = ({ serviceType, onServiceTypeChange }) => {
           exit={{ opacity: 0, height: 0 }}
           className="p-5 sm:p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl shadow-sm"
         >
-          <div className="flex flex-col space-y-3 sm:flex-row sm:items-start sm:space-y-0 sm:space-x-3">
-            <div className="flex-shrink-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
               <svg
-                className="w-4 h-4 text-white"
+                className="w-3 h-3 text-white"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -193,16 +190,9 @@ const ServiceTypeToggle = ({ serviceType, onServiceTypeChange }) => {
               </svg>
             </div>
             <div className="text-sm text-blue-700 dark:text-blue-300">
-              <p className="font-medium text-base">Mobile Service Details:</p>
-              <ul className="mt-3 space-y-3 list-disc list-inside">
-                <li>Address validation required before booking</li>
-                <li>50% deposit charged at booking confirmation</li>
-                <li>Remaining balance due at service completion</li>
-                <li>
-                  Cancellations must be made 24+ hours in advance to avoid
-                  deposit forfeiture
-                </li>
-              </ul>
+              <p className="font-medium">
+                50% deposit required • 24hr cancel notice
+              </p>
             </div>
           </div>
         </motion.div>

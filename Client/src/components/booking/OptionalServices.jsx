@@ -252,25 +252,34 @@ const OptionalServices = ({
         </div>
       )}
 
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
         <motion.button
           onClick={onBack}
-          className="flex-1 p-3 rounded-lg bg-background-DEFAULT dark:bg-stone-800 text-content-DEFAULT dark:text-white border border-primary-light/50 dark:border-stone-700 hover:bg-background-dark dark:hover:bg-stone-700 transition-colors duration-200"
-          whileHover={{ scale: 1.02 }}
+          className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold bg-background-DEFAULT dark:bg-stone-800 text-content-DEFAULT dark:text-white border border-border-DEFAULT dark:border-stone-700 hover:bg-background-dark dark:hover:bg-stone-700 transition-colors duration-200 shadow-sm"
+          whileHover={{ scale: 1.015 }}
           whileTap={{ scale: 0.98 }}
+          style={{
+            minHeight: 48,
+            letterSpacing: 0.02,
+          }}
         >
           Back to Services
         </motion.button>
         <motion.button
           onClick={onContinue}
-          className="flex-1 p-3 rounded-lg bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600 transition-colors duration-200"
-          whileHover={{ scale: 1.02 }}
+          className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-colors duration-200 shadow-sm bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
+          whileHover={{ scale: 1.015 }}
           whileTap={{ scale: 0.98 }}
+          style={{
+            minHeight: 48,
+            letterSpacing: 0.02,
+          }}
         >
           Continue to Booking Details
         </motion.button>
       </div>
-    </div>
+      </div>
+    
   );
 };
 

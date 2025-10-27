@@ -1,5 +1,5 @@
 // src/components/booking/AddressInput.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
@@ -8,6 +8,7 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react";
+import PropTypes from "prop-types";
 
 const AddressInput = ({
   address,
@@ -129,7 +130,7 @@ const AddressInput = ({
   const validationMessage = getValidationMessage();
 
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div className={`space-y-3 max-w-3xl mx-auto ${className}`}>
       <div>
         <label
           htmlFor="service-address"
@@ -200,24 +201,24 @@ const AddressInput = ({
 
       {/* Service Area Information */}
       <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-        <div className="flex items-start space-x-2">
-          <MapPin className="flex-shrink-0 w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
-          <div className="text-sm text-blue-700 dark:text-blue-300">
-            <p className="font-medium">East Bay Service Area:</p>
-            <p className="mt-1">
-              We provide mobile service to East Bay locations within 15 miles of our Oakland location
-              (1901 Park Blvd). We do not service the West Bay (San Francisco/Peninsula) area.
-              Please enter your complete East Bay address for validation.
-            </p>
-            <p className="mt-2 text-xs">
-              <strong>East Bay cities include:</strong> Oakland, Berkeley, Alameda, Emeryville, 
-              Richmond, Hayward, Fremont, Walnut Creek, Concord, and surrounding areas.
-            </p>
-          </div>
+        <div className="flex items-center space-x-2">
+          <MapPin className="flex-shrink-0 w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+            East Bay only • Within 15 miles of Oakland • SF/Peninsula not
+            serviced
+          </p>
         </div>
       </div>
     </div>
   );
+};
+
+AddressInput.propTypes = {
+  address: PropTypes.string,
+  onAddressChange: PropTypes.func.isRequired,
+  onValidateAddress: PropTypes.func.isRequired,
+  validationStatus: PropTypes.object,
+  className: PropTypes.string,
 };
 
 export default AddressInput;

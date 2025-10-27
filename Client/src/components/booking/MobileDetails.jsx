@@ -9,14 +9,13 @@ const MobileDetails = ({
   bookingDetails,
   totalPrice,
   mobileDetails,
-  setMobileDetails,
   finalizeMobileBooking,
   onBack,
 }) => {
   const [local, setLocal] = useState({
     parkingType: mobileDetails.parkingType || "driveway",
-    hasWater: !!mobileDetails.hasWater,
-    hasPower: !!mobileDetails.hasPower,
+    hasWater: false, // Hidden field - set to false for now
+    hasPower: false, // Hidden field - set to false for now
     accessNotes: mobileDetails.accessNotes || "",
     arriveContactMethod: mobileDetails.arriveContactMethod || "call",
     depositToken: mobileDetails.depositToken || null,
@@ -93,7 +92,8 @@ const MobileDetails = ({
           </select>
         </div>
 
-        <label className="flex items-center gap-2">
+        {/* Water and electricity fields hidden - sending false values */}
+        {/* <label className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={local.hasWater}
@@ -115,7 +115,7 @@ const MobileDetails = ({
             className="rounded border-border-DEFAULT"
           />
           Onsite Power Available
-        </label>
+        </label> */}
 
         <div className="md:col-span-2">
           <label className="block text-sm font-medium mb-2">
@@ -200,7 +200,6 @@ MobileDetails.propTypes = {
     arriveContactMethod: PropTypes.string,
     depositToken: PropTypes.string,
   }).isRequired,
-  setMobileDetails: PropTypes.func.isRequired,
   finalizeMobileBooking: PropTypes.func.isRequired,
   onBack: PropTypes.func.isRequired,
 };
