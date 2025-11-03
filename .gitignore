@@ -19,3 +19,4 @@ package-lock.json
 deployment/dist/
 
 AGENTS.md
+MONGODB_SELFHOSTING_GUIDE.md

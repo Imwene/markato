@@ -1,204 +1,320 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { MapPin, Car } from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { MapPin, Car, CheckCircle2 } from "lucide-react";
+import PropTypes from "prop-types";
 
-const ServiceTypeToggle = ({ serviceType, onServiceTypeChange }) => {
+// Service configuration data
+const SERVICE_OPTIONS = [
+  {
+    id: "drive-in",
+    title: "Drive-In Service",
+    description: "Visit our location for professional service",
+    icon: Car,
+    location: "1901 Park Blvd, Oakland, CA",
+    badge: {
+      text: "No Additional Fee",
+      color: "green",
+    },
+  },
+  {
+    id: "mobile",
+    title: "Mobile Service",
+    description: "We bring our expertise to your location",
+    icon: MapPin,
+    location: "East Bay Area • Within 15 miles",
+    badge: {
+      text: "+$50 Service Fee",
+      color: "orange",
+    },
+  },
+];
+
+// Helper function for badge styling
+const getBadgeClasses = (color) => {
+  const colors = {
+    green: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
+    orange: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300",
+  };
+  return colors[color] || colors.green;
+};
+
+// ServiceOptionCard component
+const ServiceOptionCard = ({ option, isSelected, onSelect, shouldReduceMotion }) => {
+  const Icon = option.icon;
+  
+  // Animation variants
+  const cardVariants = shouldReduceMotion
+    ? {}
+    : {
+        hover: { scale: 1.02, y: -2 },
+        tap: { scale: 0.98 },
+      };
+
+  const iconVariants = shouldReduceMotion
+    ? {}
+    : {
+        initial: { scale: 0, rotate: -180 },
+        animate: { scale: 1, rotate: 0 },
+      };
+
+  const borderVariants = shouldReduceMotion
+    ? {}
+    : {
+        initial: { scaleX: 0 },
+        animate: { scaleX: 1 },
+      };
+
+  // Handle keyboard interaction
+  const handleKeyDown = (e) => {
+    // Support multiple space key variants for better browser compatibility
+    if (e.key === "Enter" || e.key === " " || e.key === "Space" || e.key === "Spacebar") {
+      e.preventDefault();
+      onSelect(option.id);
+    }
+  };
+
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-6 p-4 sm:p-6">
-      <h3 className="text-xl font-bold text-content-dark dark:text-white text-center">
-        Select Your Service
-      </h3>
+    <motion.div
+      variants={cardVariants}
+      whileHover="hover"
+      whileTap="tap"
+      role="radio"
+      aria-checked={isSelected}
+      tabIndex={isSelected ? 0 : -1}
+      onKeyDown={handleKeyDown}
+      onClick={() => onSelect(option.id)}
+      className={`
+        relative overflow-hidden rounded-2xl border-2 cursor-pointer transition-all duration-300
+        focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-light/50 dark:focus-visible:ring-orange-500/50
+        ${
+          isSelected
+            ? "border-primary-light dark:border-orange-500 shadow-lg shadow-primary-light/20 dark:shadow-orange-500/20"
+            : "border-border-DEFAULT dark:border-stone-700 shadow-md hover:shadow-lg hover:border-primary-light/50 dark:hover:border-orange-500/50"
+        }
+      `}
+    >
+      {/* Background gradient overlay */}
+      <div
+        aria-hidden="true"
+        className={`
+          absolute inset-0 transition-opacity duration-300
+          ${
+            isSelected
+              ? "bg-gradient-to-br from-primary-light/10 via-primary-light/5 to-transparent dark:from-orange-500/15 dark:via-orange-500/8 dark:to-transparent opacity-100"
+              : "bg-gradient-to-br from-background-light to-background-DEFAULT dark:from-stone-800 dark:to-stone-850 opacity-100"
+          }
+        `}
+      />
 
-      <div className="space-y-4 sm:grid sm:grid-cols-2 sm:gap-4 sm:space-y-0">
-        {/* Drive-In Service Option */}
-        <motion.div
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          className={`
-            relative p-5 sm:p-6 rounded-xl border-2 cursor-pointer transition-all duration-200
-            shadow-sm hover:shadow-md
-            ${
-              serviceType === "drive-in"
-                ? "border-primary-light dark:border-orange-500 bg-primary-light/10 dark:bg-orange-500/15"
-                : "border-border-DEFAULT dark:border-stone-700 bg-background-light dark:bg-stone-800"
-            }
-          `}
-          onClick={() => onServiceTypeChange("drive-in")}
-        >
-          <div className="flex flex-col space-y-4 sm:flex-row sm:items-start sm:space-y-0 sm:space-x-4">
-            <div
-              className={`
-                p-3 rounded-full transition-colors duration-200 self-start
-                ${
-                  serviceType === "drive-in"
-                    ? "bg-primary-light dark:bg-orange-500 text-white"
-                    : "bg-background-DEFAULT dark:bg-stone-700 text-content-light dark:text-stone-400"
-                }
-              `}
-            >
-              <Car size={28} />
-            </div>
+      {/* Content */}
+      <div className="relative p-5 lg:p-6">
+        <div className="flex items-start gap-4">
+          {/* Icon */}
+          <div
+            aria-hidden="true"
+            className={`
+              flex-shrink-0 p-2.5 rounded-xl transition-all duration-300
+              ${
+                isSelected
+                  ? "bg-primary-light dark:bg-orange-500 text-white shadow-md"
+                  : "bg-background-DEFAULT dark:bg-stone-700 text-content-light dark:text-stone-400"
+              }
+            `}
+          >
+            <Icon size={24} strokeWidth={2.5} />
+          </div>
 
-            <div className="flex-1">
+          {/* Main content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-3 mb-2">
               <h4
                 className={`
-                  text-lg font-semibold
+                  text-xl font-bold transition-colors duration-200
                   ${
-                    serviceType === "drive-in"
+                    isSelected
                       ? "text-primary-dark dark:text-orange-400"
                       : "text-content-dark dark:text-white"
                   }
                 `}
               >
-                Drive-In Service
+                {option.title}
               </h4>
-              <div className="text-sm text-content-light dark:text-stone-400 space-y-2 mt-2">
-                <p>Visit us at</p>
-                <p className="font-medium text-content-DEFAULT dark:text-stone-300">
-                  1901 Park Blvd, Oakland, CA
-                </p>
-                <div className="mt-3">
-                  <span className="px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
-                    No Additional Fee
-                  </span>
-                </div>
+              
+              {/* Selection indicator */}
+              <div className="flex-shrink-0" aria-hidden="true">
+                {isSelected ? (
+                  <motion.div
+                    variants={iconVariants}
+                    initial="initial"
+                    animate="animate"
+                    transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                  >
+                    <CheckCircle2 
+                      size={24} 
+                      className="text-primary-light dark:text-orange-500" 
+                      strokeWidth={2.5}
+                    />
+                  </motion.div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full border-2 border-border-DEFAULT dark:border-stone-600" />
+                )}
               </div>
             </div>
 
-            <div
-              className={`
-                absolute top-4 right-4 w-6 h-6 rounded-full border-2 transition-all duration-200
-                ${
-                  serviceType === "drive-in"
-                    ? "border-primary-light dark:border-orange-500 bg-primary-light dark:bg-orange-500"
-                    : "border-border-DEFAULT dark:border-stone-600"
-                }
-              `}
-            >
-              {serviceType === "drive-in" && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="w-full h-full rounded-full bg-white dark:bg-white flex items-center justify-center"
-                >
-                  <div className="w-3 h-3 rounded-full bg-primary-light dark:bg-orange-500" />
-                </motion.div>
-              )}
+            <p className="text-sm text-content-light dark:text-stone-400 mb-3">
+              {option.description}
+            </p>
+
+            {/* Location info */}
+            <div className="flex items-start gap-2 mb-3">
+              <MapPin 
+                size={16} 
+                className="text-content-light dark:text-stone-400 mt-0.5 flex-shrink-0" 
+                aria-hidden="true"
+              />
+              <span className="text-sm font-medium text-content-DEFAULT dark:text-stone-300">
+                {option.location}
+              </span>
+            </div>
+
+            {/* Badge */}
+            <div className="inline-flex">
+              <span className={`px-3 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 ${getBadgeClasses(option.badge.color)}`}>
+                {option.badge.color === "green" && <CheckCircle2 size={14} aria-hidden="true" />}
+                {option.badge.text}
+              </span>
             </div>
           </div>
-        </motion.div>
-
-        {/* Mobile Service Option */}
-        <motion.div
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          className={`
-            relative p-5 sm:p-6 rounded-xl border-2 cursor-pointer transition-all duration-200
-            shadow-sm hover:shadow-md
-            ${
-              serviceType === "mobile"
-                ? "border-primary-light dark:border-orange-500 bg-primary-light/10 dark:bg-orange-500/15"
-                : "border-border-DEFAULT dark:border-stone-700 bg-background-light dark:bg-stone-800"
-            }
-          `}
-          onClick={() => onServiceTypeChange("mobile")}
-        >
-          <div className="flex flex-col space-y-4 sm:flex-row sm:items-start sm:space-y-0 sm:space-x-4">
-            <div
-              className={`
-                p-3 rounded-full transition-colors duration-200 self-start
-                ${
-                  serviceType === "mobile"
-                    ? "bg-primary-light dark:bg-orange-500 text-white"
-                    : "bg-background-DEFAULT dark:bg-stone-700 text-content-light dark:text-stone-400"
-                }
-              `}
-            >
-              <MapPin size={28} />
-            </div>
-
-            <div className="flex-1">
-              <h4
-                className={`
-                  text-lg font-semibold
-                  ${
-                    serviceType === "mobile"
-                      ? "text-primary-dark dark:text-orange-400"
-                      : "text-content-dark dark:text-white"
-                  }
-                `}
-              >
-                Mobile Service
-              </h4>
-              <div className="text-sm text-content-light dark:text-stone-400 space-y-2 mt-2">
-                <p>We come to you</p>
-                <p className="font-medium text-content-DEFAULT dark:text-stone-300">
-                  East Bay only - Within 15 miles
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="px-2.5 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-white rounded-full text-xs font-medium">
-                    +$50 Service Fee
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className={`
-                absolute top-4 right-4 w-6 h-6 rounded-full border-2 transition-all duration-200
-                ${
-                  serviceType === "mobile"
-                    ? "border-primary-light dark:border-orange-500 bg-primary-light dark:bg-orange-500"
-                    : "border-border-DEFAULT dark:border-stone-600"
-                }
-              `}
-            >
-              {serviceType === "mobile" && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="w-full h-full rounded-full bg-white dark:bg-white flex items-center justify-center"
-                >
-                  <div className="w-3 h-3 rounded-full bg-primary-light dark:bg-orange-500" />
-                </motion.div>
-              )}
-            </div>
-          </div>
-        </motion.div>
+        </div>
       </div>
 
-      {/* Additional Information */}
-      {serviceType === "mobile" && (
+      {/* Selected border accent */}
+      {isSelected && (
         <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          className="p-5 sm:p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl shadow-sm"
-        >
-          <div className="flex items-start space-x-3">
-            <div className="flex-shrink-0 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
-              <svg
-                className="w-3 h-3 text-white"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="text-sm text-blue-700 dark:text-blue-300">
-              <p className="font-medium">
-                50% deposit required • 24hr cancel notice
-              </p>
-            </div>
-          </div>
-        </motion.div>
+          variants={borderVariants}
+          initial="initial"
+          animate="animate"
+          transition={{ duration: 0.3 }}
+          className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-light to-primary-dark dark:from-orange-500 dark:to-orange-600"
+          aria-hidden="true"
+        />
       )}
+    </motion.div>
+  );
+};
+
+// PropTypes for ServiceOptionCard
+ServiceOptionCard.propTypes = {
+  option: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    description: PropTypes.string.isRequired,
+    icon: PropTypes.elementType.isRequired,
+    location: PropTypes.string.isRequired,
+    badge: PropTypes.shape({
+      text: PropTypes.string.isRequired,
+      color: PropTypes.string.isRequired,
+    }).isRequired,
+  }).isRequired,
+  isSelected: PropTypes.bool.isRequired,
+  onSelect: PropTypes.func.isRequired,
+  shouldReduceMotion: PropTypes.bool,
+};
+
+const ServiceTypeToggle = ({ serviceType, onServiceTypeChange }) => {
+  const shouldReduceMotion = useReducedMotion();
+
+  // Handle arrow key navigation for radio group
+  const handleRadioGroupKeyDown = (e) => {
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const currentIndex = SERVICE_OPTIONS.findIndex(opt => opt.id === serviceType);
+      const prevIndex = currentIndex === 0 ? SERVICE_OPTIONS.length - 1 : currentIndex - 1;
+      onServiceTypeChange(SERVICE_OPTIONS[prevIndex].id);
+    } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const currentIndex = SERVICE_OPTIONS.findIndex(opt => opt.id === serviceType);
+      const nextIndex = currentIndex === SERVICE_OPTIONS.length - 1 ? 0 : currentIndex + 1;
+      onServiceTypeChange(SERVICE_OPTIONS[nextIndex].id);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-6xl mx-auto space-y-5 p-4 sm:p-6">
+      <div className="text-center space-y-2">
+        <h3 
+          id="service-type-heading"
+          className="text-2xl font-bold text-content-dark dark:text-white"
+        >
+          Choose Your Service Type
+        </h3>
+        <p className="text-sm text-content-light dark:text-stone-400">
+          Select the option that works best for you
+        </p>
+      </div>
+
+      <div 
+        role="radiogroup" 
+        aria-labelledby="service-type-heading"
+        onKeyDown={handleRadioGroupKeyDown}
+        className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0"
+      >
+        {SERVICE_OPTIONS.map((option) => (
+          <ServiceOptionCard
+            key={option.id}
+            option={option}
+            isSelected={serviceType === option.id}
+            onSelect={onServiceTypeChange}
+            shouldReduceMotion={shouldReduceMotion}
+          />
+        ))}
+      </div>
+
+      {/* Additional Information - Smooth collapse/expand without reserved space */}
+      <AnimatePresence initial={false}>
+        {serviceType === "mobile" && (
+          <motion.div
+            initial={shouldReduceMotion ? false : { opacity: 0, height: 0 }}
+            animate={shouldReduceMotion ? false : { opacity: 1, height: "auto" }}
+            exit={shouldReduceMotion ? false : { opacity: 0, height: 0 }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="p-4 lg:p-5 bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/10 border border-blue-200 dark:border-blue-800 rounded-xl shadow-sm">
+              <div className="flex items-center gap-3">
+                <div 
+                  className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-md"
+                  aria-hidden="true"
+                >
+                  <svg
+                    className="w-4 h-4 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                    Important: 50% deposit required • 24-hour cancellation notice required
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
+};
+
+// PropTypes for ServiceTypeToggle
+ServiceTypeToggle.propTypes = {
+  serviceType: PropTypes.string.isRequired,
+  onServiceTypeChange: PropTypes.func.isRequired,
 };
 
 export default ServiceTypeToggle;
