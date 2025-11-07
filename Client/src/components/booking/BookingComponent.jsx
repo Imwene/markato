@@ -155,6 +155,8 @@ const BookingComponent = () => {
               serviceType={serviceType} // NEW: Pass service type
               customerAddress={customerAddress} // NEW: Pass address for mobile service
               addressValidation={addressValidation} // NEW: Pass validation status
+              onAddressChange={handleAddressChange} // NEW: Pass address change handler
+              onValidateAddress={validateAddress} // NEW: Pass address validation handler
             />
           </>
         );
