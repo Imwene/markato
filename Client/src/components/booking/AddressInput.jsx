@@ -1,5 +1,5 @@
 // src/components/booking/AddressInput.jsx
-import { useState, useEffect } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
@@ -9,6 +9,63 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import PropTypes from "prop-types";
+import { useDebounce } from "../../hooks/useDebounce";
+
+// Minimum address length required for validation
+const MIN_ADDRESS_LENGTH = 10;
+const VALIDATION_DEBOUNCE_MS = 1000;
+
+// Helper function to check if validation status is an error state
+const isErrorStatus = (status) => {
+  return (
+    status === "invalid" ||
+    status === "outside_service_area" ||
+    status === "outside_east_bay"
+  );
+};
+
+// Memoized service area info component (static content)
+const ServiceAreaInfo = memo(() => (
+  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+    <div className="flex items-center space-x-2">
+      <MapPin className="flex-shrink-0 w-4 h-4 text-blue-600 dark:text-blue-400" />
+      <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+        East Bay only • Within 15 miles of Oakland • SF/Peninsula not serviced
+      </p>
+    </div>
+  </div>
+));
+
+ServiceAreaInfo.displayName = "ServiceAreaInfo";
+
+// Memoized validation icon component
+const ValidationIcon = memo(({ isValidating, status }) => {
+  if (isValidating) {
+    return <Loader2 className="animate-spin text-blue-500" size={20} />;
+  }
+
+  if (!status) return null;
+
+  switch (status) {
+    case "valid":
+      return <CheckCircle className="text-green-500" size={20} />;
+    case "invalid":
+      return <XCircle className="text-red-500" size={20} />;
+    case "outside_service_area":
+      return <AlertTriangle className="text-orange-500" size={20} />;
+    case "outside_east_bay":
+      return <XCircle className="text-red-500" size={20} />;
+    default:
+      return null;
+  }
+});
+
+ValidationIcon.displayName = "ValidationIcon";
+
+ValidationIcon.propTypes = {
+  isValidating: PropTypes.bool.isRequired,
+  status: PropTypes.string,
+};
 
 const AddressInput = ({
   address,
@@ -17,71 +74,35 @@ const AddressInput = ({
   validationStatus,
   className = "",
 }) => {
-  const [localAddress, setLocalAddress] = useState(address || "");
   const [isValidating, setIsValidating] = useState(false);
-  const [validationTimeout, setValidationTimeout] = useState(null);
 
-  // Handle address input changes with debouncing
-  const handleAddressChange = (e) => {
-    const value = e.target.value;
-    setLocalAddress(value);
-    onAddressChange(value);
+  // Memoize validation status check
+  const hasErrorStatus = useMemo(
+    () => validationStatus && isErrorStatus(validationStatus.status),
+    [validationStatus]
+  );
 
-    // Clear existing timeout
-    if (validationTimeout) {
-      clearTimeout(validationTimeout);
+  // Memoize input border styling
+  const inputClassName = useMemo(() => {
+    let borderClass = "border-border-DEFAULT dark:border-stone-700 bg-background-light dark:bg-stone-800";
+    
+    if (validationStatus?.status === "valid") {
+      borderClass = "border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/20";
+    } else if (hasErrorStatus) {
+      borderClass = "border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/20";
     }
 
-    // Only validate if address has sufficient content
-    if (value.trim().length > 10) {
-      setIsValidating(true);
+    return `
+      w-full pl-10 pr-12 py-3 rounded-lg border transition-all duration-200
+      ${borderClass}
+      text-content-DEFAULT dark:text-white placeholder-content-light dark:placeholder-stone-500
+      focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-orange-500 focus:border-transparent
+      disabled:opacity-50 disabled:cursor-not-allowed
+    `;
+  }, [validationStatus?.status, hasErrorStatus]);
 
-      // Debounce validation by 1 second
-      const timeout = setTimeout(() => {
-        onValidateAddress(value);
-        setIsValidating(false);
-      }, 1000);
-
-      setValidationTimeout(timeout);
-    }
-  };
-
-  // Clean up timeout on component unmount
-  useEffect(() => {
-    return () => {
-      if (validationTimeout) {
-        clearTimeout(validationTimeout);
-      }
-    };
-  }, [validationTimeout]);
-
-  // Update local state when external address changes
-  useEffect(() => {
-    setLocalAddress(address || "");
-  }, [address]);
-
-  const getValidationIcon = () => {
-    if (isValidating) {
-      return <Loader2 className="animate-spin text-blue-500" size={20} />;
-    }
-
-    if (!validationStatus) return null;
-
-    switch (validationStatus.status) {
-      case "valid":
-        return <CheckCircle className="text-green-500" size={20} />;
-      case "invalid":
-        return <XCircle className="text-red-500" size={20} />;
-      case "outside_service_area":
-        return <AlertTriangle className="text-orange-500" size={20} />;
-      case "outside_east_bay":
-        return <XCircle className="text-red-500" size={20} />;
-      default:
-        return null;
-    }
-  };
-
-  const getValidationMessage = () => {
+  // Memoize validation message
+  const validationMessage = useMemo(() => {
     if (isValidating) {
       return {
         text: "Validating address...",
@@ -91,43 +112,61 @@ const AddressInput = ({
 
     if (!validationStatus) return null;
 
-    switch (validationStatus.status) {
+    const { status, distance, message } = validationStatus;
+
+    switch (status) {
       case "valid":
         return {
-          text: `✓ Address validated (${validationStatus.distance?.toFixed(
-            1
-          )} miles from our Oakland location)`,
+          text: `✓ Address validated${distance != null ? ` (${distance.toFixed(1)} miles from our Oakland location)` : ""}`,
           color: "text-green-600 dark:text-green-400",
         };
       case "invalid":
         return {
-          text: `✗ ${
-            validationStatus.message ||
-            "Invalid address. Please check and try again."
-          }`,
+          text: `✗ ${message || "Invalid address. Please check and try again."}`,
           color: "text-red-600 dark:text-red-400",
         };
       case "outside_service_area":
         return {
-          text: `⚠ Address is ${validationStatus.distance?.toFixed(
-            1
-          )} miles away (outside our 15-mile East Bay service area)`,
+          text: `⚠ Address is ${distance != null ? `${distance.toFixed(1)} miles` : "too far"} away (outside our 15-mile East Bay service area)`,
           color: "text-orange-600 dark:text-orange-400",
         };
       case "outside_east_bay":
         return {
-          text: `✗ ${
-            validationStatus.message ||
-            "Address is outside our East Bay service area (West Bay/Peninsula not serviced)"
-          }`,
+          text: `✗ ${message || "Address is outside our East Bay service area (West Bay/Peninsula not serviced)"}`,
           color: "text-red-600 dark:text-red-400",
         };
       default:
         return null;
     }
-  };
+  }, [isValidating, validationStatus]);
 
-  const validationMessage = getValidationMessage();
+  // Debounced validation handler with cancel support
+  const debouncedValidate = useDebounce(async (value) => {
+    try {
+      await onValidateAddress(value);
+    } finally {
+      setIsValidating(false);
+    }
+  }, VALIDATION_DEBOUNCE_MS);
+
+  // Handle address input changes with debouncing
+  const handleAddressChange = useCallback(
+    (e) => {
+      const value = e.target.value;
+      onAddressChange(value);
+
+      // Only validate if address has sufficient content
+      if (value.trim().length >= MIN_ADDRESS_LENGTH) {
+        setIsValidating(true);
+        debouncedValidate.run(value);
+      } else {
+        // Cancel any pending validation and reset state
+        debouncedValidate.cancel();
+        setIsValidating(false);
+      }
+    },
+    [onAddressChange, debouncedValidate]
+  );
 
   return (
     <div className={`space-y-3 max-w-3xl mx-auto ${className}`}>
@@ -147,37 +186,22 @@ const AddressInput = ({
           <input
             id="service-address"
             type="text"
-            value={localAddress}
+            value={address || ""}
             onChange={handleAddressChange}
             placeholder="Enter your East Bay address (e.g., 123 Main St, Oakland, CA 94601)"
-            className={`
-              w-full pl-10 pr-12 py-3 rounded-lg border transition-all duration-200
-              ${
-                validationStatus?.status === "valid"
-                  ? "border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/20"
-                  : validationStatus?.status === "invalid" ||
-                    validationStatus?.status === "outside_service_area" ||
-                    validationStatus?.status === "outside_east_bay"
-                  ? "border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/20"
-                  : "border-border-DEFAULT dark:border-stone-700 bg-background-light dark:bg-stone-800"
-              }
-              text-content-DEFAULT dark:text-white placeholder-content-light dark:placeholder-stone-500
-              focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-orange-500 focus:border-transparent
-              disabled:opacity-50 disabled:cursor-not-allowed
-            `}
+            className={inputClassName}
             required
             aria-describedby={
               validationMessage ? "address-validation-message" : undefined
             }
-            aria-invalid={
-              validationStatus?.status === "invalid" ||
-              validationStatus?.status === "outside_service_area" ||
-              validationStatus?.status === "outside_east_bay"
-            }
+            aria-invalid={hasErrorStatus}
           />
 
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-            {getValidationIcon()}
+            <ValidationIcon 
+              isValidating={isValidating} 
+              status={validationStatus?.status} 
+            />
           </div>
         </div>
       </div>
@@ -187,9 +211,10 @@ const AddressInput = ({
         {validationMessage && (
           <motion.div
             id="address-validation-message"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
             className={`text-sm ${validationMessage.color} flex items-start space-x-2`}
             role="status"
             aria-live="polite"
@@ -200,15 +225,7 @@ const AddressInput = ({
       </AnimatePresence>
 
       {/* Service Area Information */}
-      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-        <div className="flex items-center space-x-2">
-          <MapPin className="flex-shrink-0 w-4 h-4 text-blue-600 dark:text-blue-400" />
-          <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-            East Bay only • Within 15 miles of Oakland • SF/Peninsula not
-            serviced
-          </p>
-        </div>
-      </div>
+      <ServiceAreaInfo />
     </div>
   );
 };
@@ -217,7 +234,23 @@ AddressInput.propTypes = {
   address: PropTypes.string,
   onAddressChange: PropTypes.func.isRequired,
   onValidateAddress: PropTypes.func.isRequired,
-  validationStatus: PropTypes.object,
+  validationStatus: PropTypes.shape({
+    status: PropTypes.oneOf([
+      "valid",
+      "invalid",
+      "outside_service_area",
+      "outside_east_bay",
+    ]),
+    address: PropTypes.string,
+    distance: PropTypes.number,
+    message: PropTypes.string,
+    coordinates: PropTypes.shape({
+      lat: PropTypes.number,
+      lng: PropTypes.number,
+    }),
+    formattedAddress: PropTypes.string,
+    addressComponents: PropTypes.object,
+  }),
   className: PropTypes.string,
 };
 

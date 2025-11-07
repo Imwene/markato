@@ -16,8 +16,35 @@ const ServiceList = ({
   serviceType = "drive-in", // NEW: Add service type prop
 }) => {
   const [expandedService, setExpandedService] = useState(null);
-  const { services, loading, error } = useServices();
+  const { services, loading, error, fetchServicesByType } = useServices();
   const { scents, loading: configLoading } = useConfig();
+
+  // Fetch services filtered by serviceType when serviceType changes
+  useEffect(() => {
+    if (serviceType) {
+      fetchServicesByType(serviceType);
+    }
+  }, [serviceType, fetchServicesByType]);
+
+  // Reset selection when serviceType changes or vehicle type changes
+  useEffect(() => {
+    // Check if currently selected service is still available in the filtered list
+    if (selectedService && services.length > 0) {
+      const isSelectedServiceAvailable = services.some(
+        (service) => (service._id || service.id) === selectedService
+      );
+      
+      if (!isSelectedServiceAvailable) {
+        // Selected service is no longer available, reset selection
+        setExpandedService(null);
+        onServiceSelect(null);
+        onScentSelect(null);
+      }
+    } else if (!selectedService) {
+      // No service selected, reset expanded state
+      setExpandedService(null);
+    }
+  }, [services, selectedService, onServiceSelect, onScentSelect]);
 
   useEffect(() => {
     setExpandedService(null);
