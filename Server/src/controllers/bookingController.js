@@ -285,7 +285,7 @@ export async function createBooking(req, res) {
 
 export async function getAllBookings(req, res) {
   try {
-    const { page, limit, status, search, startDate, endDate, sort } = req.query;
+    const { page, limit, status, search, startDate, endDate, sort, serviceType } = req.query;
     if (process.env.NODE_ENV === "development") {
       console.log("getAllBookings called with sort:", sort);
       console.log(
@@ -313,6 +313,9 @@ export async function getAllBookings(req, res) {
     const query = {};
     if (status && status !== "all") {
       query.status = status;
+    }
+    if (serviceType && serviceType !== "all") {
+      query.serviceType = serviceType;
     }
     if (search) {
       const rx = new RegExp(search, "i");
