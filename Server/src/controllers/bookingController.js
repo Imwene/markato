@@ -12,7 +12,10 @@ import {
   sendBookingConfirmationSMS,
 } from "../services/smsService.js";
 import { generatePDF } from "../services/pdfService.js";
-import { validateAddressAndServiceArea } from "../services/geocodingService.js";
+import {
+  validateAddressAndServiceArea,
+  getAddressSuggestions,
+} from "../services/geocodingService.js";
 import { calculateDistance } from "../utils/distanceCalculator.js";
 import { chargeDeposit } from "../services/squarePaymentService.js";
 import twilio from "twilio";
@@ -21,15 +24,17 @@ import { BusinessSettings } from "../models/businessSettingsModel.js";
 // Helper function to convert BigInt values to numbers for JSON serialization
 function sanitizeBookingData(booking) {
   const bookingObj = booking.toObject ? booking.toObject() : booking;
-  
+
   // Convert any BigInt values to numbers
-  const sanitized = JSON.parse(JSON.stringify(bookingObj, (key, value) => {
-    if (typeof value === 'bigint') {
-      return Number(value);
-    }
-    return value;
-  }));
-  
+  const sanitized = JSON.parse(
+    JSON.stringify(bookingObj, (key, value) => {
+      if (typeof value === "bigint") {
+        return Number(value);
+      }
+      return value;
+    })
+  );
+
   return sanitized;
 }
 
@@ -38,10 +43,14 @@ export async function validateAddress(req, res) {
   try {
     const { address } = req.body;
 
-    if (!address || typeof address !== 'string' || address.trim().length === 0) {
+    if (
+      !address ||
+      typeof address !== "string" ||
+      address.trim().length === 0
+    ) {
       return res.status(400).json({
         success: false,
-        error: 'Address is required'
+        error: "Address is required",
       });
     }
 
@@ -50,24 +59,28 @@ export async function validateAddress(req, res) {
     if (!result.success) {
       return res.status(400).json({
         success: false,
-        error: result.error || 'Address validation failed'
+        error: result.error || "Address validation failed",
       });
     }
 
     // Determine the validation status based on result
-    let status = 'valid';
-    let message = '';
-    
+    let status = "valid";
+    let message = "";
+
     if (!result.isValid) {
-      if (result.validationStatus === 'outside_east_bay') {
-        status = 'outside_east_bay';
-        message = result.validationMessage || 'Address is outside our East Bay service area';
-      } else if (result.validationStatus === 'outside_service_area') {
-        status = 'outside_service_area';
-        message = result.validationMessage || `Address is outside our ${result.serviceRadius}-mile service area`;
+      if (result.validationStatus === "outside_east_bay") {
+        status = "outside_east_bay";
+        message =
+          result.validationMessage ||
+          "Address is outside our East Bay service area";
+      } else if (result.validationStatus === "outside_service_area") {
+        status = "outside_service_area";
+        message =
+          result.validationMessage ||
+          `Address is outside our ${result.serviceRadius}-mile service area`;
       } else {
-        status = 'invalid';
-        message = result.validationMessage || 'Invalid address';
+        status = "invalid";
+        message = result.validationMessage || "Invalid address";
       }
     }
 
@@ -81,13 +94,47 @@ export async function validateAddress(req, res) {
       coordinates: result.coordinates,
       formattedAddress: result.formattedAddress,
       addressComponents: result.addressComponents,
-      eastBayValidation: result.eastBayValidation
+      eastBayValidation: result.eastBayValidation,
     });
   } catch (error) {
-    console.error('Address validation error:', error);
+    console.error("Address validation error:", error);
     res.status(500).json({
       success: false,
-      error: 'Server error during address validation'
+      error: "Server error during address validation",
+    });
+  }
+}
+
+// NEW: Address autocomplete endpoint
+export async function suggestAddresses(req, res) {
+  try {
+    const { input } = req.query;
+
+    if (!input || typeof input !== "string" || input.trim().length < 3) {
+      return res.json({
+        success: true,
+        predictions: [],
+      });
+    }
+
+    const result = await getAddressSuggestions(input);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.error || "Failed to get suggestions",
+      });
+    }
+
+    res.json({
+      success: true,
+      predictions: result.predictions,
+    });
+  } catch (error) {
+    console.error("Address suggestion error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Server error during address suggestion",
     });
   }
 }
@@ -144,13 +191,13 @@ export async function createBooking(req, res) {
 
     // Generate confirmation number
     const now = new Date();
-    const dateStr = `${(now.getMonth() + 1).toString().padStart(2, '0')}${now
+    const dateStr = `${(now.getMonth() + 1).toString().padStart(2, "0")}${now
       .getDate()
       .toString()
-      .padStart(2, '0')}${now.getFullYear().toString()}`;
+      .padStart(2, "0")}${now.getFullYear().toString()}`;
     const random = Math.floor(Math.random() * 10000)
       .toString()
-      .padStart(4, '0');
+      .padStart(4, "0");
     const confirmationNumber = `BK-${dateStr}-${random}`;
 
     const bookingData = {
@@ -168,43 +215,45 @@ export async function createBooking(req, res) {
     if (req.body.depositToken && depositRequired && depositAmount > 0) {
       // Validate Square configuration before attempting payment
       if (!process.env.SQUARE_ACCESS_TOKEN || !process.env.SQUARE_LOCATION_ID) {
-        console.error('Square payment configuration missing:', {
+        console.error("Square payment configuration missing:", {
           hasAccessToken: !!process.env.SQUARE_ACCESS_TOKEN,
           hasLocationId: !!process.env.SQUARE_LOCATION_ID,
-          environment: process.env.NODE_ENV
+          environment: process.env.NODE_ENV,
         });
         return res.status(500).json({
           success: false,
-          error: 'Payment system configuration error. Please contact support.',
-          bookingNotCreated: true
+          error: "Payment system configuration error. Please contact support.",
+          bookingNotCreated: true,
         });
       }
-      
+
       try {
         const depositAmountCents = Math.round(depositAmount * 100); // Convert dollars to cents
-        console.log(`Processing deposit payment: $${depositAmount} (${depositAmountCents} cents) for booking ${confirmationNumber}`);
-        console.log('Payment details:', {
-          sourceId: req.body.depositToken?.substring(0, 20) + '...',
+        console.log(
+          `Processing deposit payment: $${depositAmount} (${depositAmountCents} cents) for booking ${confirmationNumber}`
+        );
+        console.log("Payment details:", {
+          sourceId: req.body.depositToken?.substring(0, 20) + "...",
           amount: depositAmountCents,
           customerName: req.body.name,
-          customerEmail: req.body.email
+          customerEmail: req.body.email,
         });
-        
+
         const paymentResult = await chargeDeposit({
           sourceId: req.body.depositToken,
           amount: depositAmountCents, // Amount in cents
-          currency: 'USD',
+          currency: "USD",
           note: `Mobile service deposit for booking ${confirmationNumber} - Customer: ${req.body.name}`,
           referenceId: confirmationNumber,
-          autocomplete: true
+          autocomplete: true,
         });
 
-        console.log('✅ Payment processed successfully:', {
+        console.log("✅ Payment processed successfully:", {
           paymentId: paymentResult.id,
           status: paymentResult.status,
           amountCents: Number(paymentResult.amountMoney?.amount || 0),
           currency: paymentResult.amountMoney?.currency,
-          confirmationNumber
+          confirmationNumber,
         });
 
         // Add payment information to booking data (convert BigInt values to numbers)
@@ -216,31 +265,30 @@ export async function createBooking(req, res) {
           cardDetails: paymentResult.cardDetails || {},
           squareAmountMoney: {
             amount: Number(paymentResult.amountMoney?.amount || 0),
-            currency: paymentResult.amountMoney?.currency || 'USD'
-          }
+            currency: paymentResult.amountMoney?.currency || "USD",
+          },
         };
         bookingData.depositPaid = true;
-        
       } catch (paymentError) {
-        console.error('Payment processing failed:', {
+        console.error("Payment processing failed:", {
           error: paymentError.message,
           confirmationNumber,
-          depositToken: req.body.depositToken?.substring(0, 10) + '...',
-          amount: depositAmount
+          depositToken: req.body.depositToken?.substring(0, 10) + "...",
+          amount: depositAmount,
         });
-        
+
         return res.status(400).json({
           success: false,
-          error: 'Payment processing failed: ' + paymentError.message,
-          bookingNotCreated: true
+          error: "Payment processing failed: " + paymentError.message,
+          bookingNotCreated: true,
         });
       }
     }
 
     const booking = new Booking(bookingData);
     const savedBooking = await booking.save();
-    
-    console.log('✅ Booking created successfully:', {
+
+    console.log("✅ Booking created successfully:", {
       confirmationNumber: savedBooking.confirmationNumber,
       serviceType: savedBooking.serviceType,
       totalPrice: savedBooking.totalPrice,
@@ -248,7 +296,7 @@ export async function createBooking(req, res) {
       depositAmount: savedBooking.depositAmount,
       depositPaid: savedBooking.depositPaid,
       paymentProcessed: !!savedBooking.paymentDetails,
-      customerId: savedBooking._id
+      customerId: savedBooking._id,
     });
 
     //send admin notification
@@ -282,10 +330,18 @@ export async function createBooking(req, res) {
   }
 }
 
-
 export async function getAllBookings(req, res) {
   try {
-    const { page, limit, status, search, startDate, endDate, sort, serviceType } = req.query;
+    const {
+      page,
+      limit,
+      status,
+      search,
+      startDate,
+      endDate,
+      sort,
+      serviceType,
+    } = req.query;
     if (process.env.NODE_ENV === "development") {
       console.log("getAllBookings called with sort:", sort);
       console.log(

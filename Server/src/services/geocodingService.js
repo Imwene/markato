@@ -123,14 +123,14 @@ export const validateServiceArea = async (lat, lng, cityName = null) => {
     const isValidRegion = eastBayValidation.isInEastBay;
     const isValid = isValidDistance && isValidRegion;
 
-    let validationStatus = 'valid';
-    let validationMessage = '';
+    let validationStatus = "valid";
+    let validationMessage = "";
 
     if (!isValidRegion) {
-      validationStatus = 'outside_east_bay';
+      validationStatus = "outside_east_bay";
       validationMessage = eastBayValidation.reason;
     } else if (!isValidDistance) {
-      validationStatus = 'outside_service_area';
+      validationStatus = "outside_service_area";
       validationMessage = `Address is ${distance.toFixed(1)} miles away (outside our ${serviceRadius}-mile service area)`;
     }
 
@@ -197,6 +197,62 @@ export const validateAddressAndServiceArea = async (address) => {
       success: false,
       error: error.message || "Failed to validate address",
       isValid: false,
+    };
+  }
+};
+
+/**
+ * Get address predictions using Google Places Autocomplete API
+ * @param {string} input - The input text to search for
+ * @returns {Promise<object>} List of address predictions
+ */
+export const getAddressSuggestions = async (input) => {
+  try {
+    if (!process.env.GOOGLE_MAPS_API_KEY) {
+      throw new Error("Google Maps API key not configured");
+    }
+
+    if (!input || typeof input !== "string" || input.trim().length < 3) {
+      return { success: true, predictions: [] };
+    }
+
+    const response = await client.placeAutocomplete({
+      params: {
+        input: input.trim(),
+        key: process.env.GOOGLE_MAPS_API_KEY,
+        components: ["country:us"], // Restrict to US
+        // Bias towards Oakland/East Bay area (approximate)
+        location: { lat: 37.8044, lng: -122.2712 },
+        radius: 50000, // 50km radius bias
+        strictbounds: false, // Allow results outside but bias inside
+      },
+    });
+
+    if (
+      response.data.status !== "OK" &&
+      response.data.status !== "ZERO_RESULTS"
+    ) {
+      // ZERO_RESULTS is not an error, just empty list
+      throw new Error(`Places API error: ${response.data.status}`);
+    }
+
+    const predictions = response.data.predictions || [];
+
+    return {
+      success: true,
+      predictions: predictions.map((p) => ({
+        description: p.description,
+        placeId: p.place_id,
+        mainText: p.structured_formatting?.main_text || "",
+        secondaryText: p.structured_formatting?.secondary_text || "",
+      })),
+    };
+  } catch (error) {
+    console.error("Autocomplete error:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to get suggestions",
+      predictions: [],
     };
   }
 };

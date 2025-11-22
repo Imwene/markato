@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ServiceList from "./ServiceList";
 import BookingForm from "./BookingForm";
@@ -33,7 +33,6 @@ const BookingComponent = () => {
     serviceType,
     customerAddress,
     addressValidation,
-    isValidatingAddress,
     canProceedFromServiceType,
 
     // Existing handlers
@@ -91,21 +90,21 @@ const BookingComponent = () => {
       // NEW: Service Type Selection Step
       case "service-type":
         return (
-          <div className="p-6">
-            <ServiceTypeToggle
-              serviceType={serviceType}
-              onServiceTypeChange={handleServiceTypeChange}
-            />
-            {serviceType === "mobile" && (
-              <div className="mt-6">
+          <div className="p-4 sm:p-6 lg:p-8">
+            <div className="max-w-4xl mx-auto space-y-6">
+              <ServiceTypeToggle
+                serviceType={serviceType}
+                onServiceTypeChange={handleServiceTypeChange}
+              />
+              {serviceType === "mobile" && (
                 <AddressInput
                   address={customerAddress}
                   onAddressChange={handleAddressChange}
                   onValidateAddress={validateAddress}
                   validationStatus={addressValidation}
                 />
-              </div>
-            )}
+              )}
+            </div>
           </div>
         );
 
@@ -343,7 +342,7 @@ const BookingComponent = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          className="rounded-lg border-border-DEFAULT dark:border-stone-700 bg-background-light dark:bg-stone-800 overflow-hidden"
+          className="rounded-lg border-border-DEFAULT dark:border-stone-700 bg-background-light dark:bg-stone-800"
         >
           {loading ? (
             <div className="flex justify-center items-center py-20">

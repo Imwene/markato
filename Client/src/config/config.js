@@ -14,37 +14,77 @@ export const CONFIG = {
     EAST_BAY_REGION: {
       // Primary East Bay cities that are definitely serviced
       ALLOWED_CITIES: [
-        'Oakland', 'Berkeley', 'Alameda', 'Emeryville', 'Piedmont',
-        'Albany', 'El Cerrito', 'Richmond', 'San Leandro', 'Castro Valley',
-        'Hayward', 'Union City', 'Fremont', 'Newark', 'Milpitas',
-        'San Lorenzo', 'Ashland', 'Cherryland', 'Dublin', 'Pleasanton',
-        'Livermore', 'Danville', 'San Ramon', 'Walnut Creek', 'Concord',
-        'Martinez', 'Pleasant Hill', 'Lafayette', 'Orinda', 'Moraga'
+        "Oakland",
+        "Berkeley",
+        "Alameda",
+        "Emeryville",
+        "Piedmont",
+        "Albany",
+        "El Cerrito",
+        "Richmond",
+        "San Leandro",
+        "Castro Valley",
+        "Hayward",
+        "Union City",
+        "Fremont",
+        "Newark",
+        "Milpitas",
+        "San Lorenzo",
+        "Ashland",
+        "Cherryland",
+        "Dublin",
+        "Pleasanton",
+        "Livermore",
+        "Danville",
+        "San Ramon",
+        "Walnut Creek",
+        "Concord",
+        "Martinez",
+        "Pleasant Hill",
+        "Lafayette",
+        "Orinda",
+        "Moraga",
       ],
       // Cities/areas explicitly excluded (West Bay/Peninsula)
       EXCLUDED_CITIES: [
-        'San Francisco', 'Daly City', 'South San Francisco', 'Brisbane',
-        'Millbrae', 'Burlingame', 'San Mateo', 'Foster City', 'Belmont',
-        'San Carlos', 'Redwood City', 'Menlo Park', 'Palo Alto',
-        'Mountain View', 'Sunnyvale', 'Santa Clara', 'San Jose',
-        'Cupertino', 'Campbell', 'Los Gatos', 'Saratoga'
+        "San Francisco",
+        "Daly City",
+        "South San Francisco",
+        "Brisbane",
+        "Millbrae",
+        "Burlingame",
+        "San Mateo",
+        "Foster City",
+        "Belmont",
+        "San Carlos",
+        "Redwood City",
+        "Menlo Park",
+        "Palo Alto",
+        "Mountain View",
+        "Sunnyvale",
+        "Santa Clara",
+        "San Jose",
+        "Cupertino",
+        "Campbell",
+        "Los Gatos",
+        "Saratoga",
       ],
       // Rough boundary coordinates for East Bay (simplified polygon)
       BOUNDARY_COORDINATES: {
         // These coordinates roughly define the East Bay service area
         north: 38.1, // Richmond area
-        south: 37.4, // Fremont area  
+        south: 37.4, // Fremont area
         east: -121.7, // Livermore area
         west: -122.3, // Bay shoreline
-      }
-    }
+      },
+    },
   },
-  
+
   SQUARE: {
     APP_ID: import.meta.env.VITE_SQUARE_APP_ID,
     LOCATION_ID: import.meta.env.VITE_SQUARE_LOCATION_ID,
   },
-  
+
   ENDPOINTS: {
     AUTH: {
       LOGIN: "/auth/login",
@@ -79,6 +119,7 @@ export const CONFIG = {
       RESEND_EMAIL: (id) => `/bookings/${id}/resend-email`,
       UPDATE_STATUS: (id) => `/bookings/${id}/status`, // Add this line
       VALIDATE_ADDRESS: "/bookings/validate-address",
+      ADDRESS_SUGGESTIONS: "/bookings/address-suggestions",
     },
     CUSTOMERS: {
       BASE: "/customers",

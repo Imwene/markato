@@ -31,16 +31,23 @@ const SERVICE_OPTIONS = [
 // Helper function for badge styling
 const getBadgeClasses = (color) => {
   const colors = {
-    green: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
-    orange: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300",
+    green:
+      "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
+    orange:
+      "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300",
   };
   return colors[color] || colors.green;
 };
 
 // ServiceOptionCard component
-const ServiceOptionCard = ({ option, isSelected, onSelect, shouldReduceMotion }) => {
+const ServiceOptionCard = ({
+  option,
+  isSelected,
+  onSelect,
+  shouldReduceMotion,
+}) => {
   const Icon = option.icon;
-  
+
   // Animation variants
   const cardVariants = shouldReduceMotion
     ? {}
@@ -66,7 +73,12 @@ const ServiceOptionCard = ({ option, isSelected, onSelect, shouldReduceMotion })
   // Handle keyboard interaction
   const handleKeyDown = (e) => {
     // Support multiple space key variants for better browser compatibility
-    if (e.key === "Enter" || e.key === " " || e.key === "Space" || e.key === "Spacebar") {
+    if (
+      e.key === "Enter" ||
+      e.key === " " ||
+      e.key === "Space" ||
+      e.key === "Spacebar"
+    ) {
       e.preventDefault();
       onSelect(option.id);
     }
@@ -138,7 +150,7 @@ const ServiceOptionCard = ({ option, isSelected, onSelect, shouldReduceMotion })
               >
                 {option.title}
               </h4>
-              
+
               {/* Selection indicator */}
               <div className="flex-shrink-0" aria-hidden="true">
                 {isSelected ? (
@@ -148,9 +160,9 @@ const ServiceOptionCard = ({ option, isSelected, onSelect, shouldReduceMotion })
                     animate="animate"
                     transition={{ type: "spring", stiffness: 200, damping: 15 }}
                   >
-                    <CheckCircle2 
-                      size={24} 
-                      className="text-primary-light dark:text-orange-500" 
+                    <CheckCircle2
+                      size={24}
+                      className="text-primary-light dark:text-orange-500"
                       strokeWidth={2.5}
                     />
                   </motion.div>
@@ -166,9 +178,9 @@ const ServiceOptionCard = ({ option, isSelected, onSelect, shouldReduceMotion })
 
             {/* Location info */}
             <div className="flex items-start gap-2 mb-3">
-              <MapPin 
-                size={16} 
-                className="text-content-light dark:text-stone-400 mt-0.5 flex-shrink-0" 
+              <MapPin
+                size={16}
+                className="text-content-light dark:text-stone-400 mt-0.5 flex-shrink-0"
                 aria-hidden="true"
               />
               <span className="text-sm font-medium text-content-DEFAULT dark:text-stone-300">
@@ -178,8 +190,14 @@ const ServiceOptionCard = ({ option, isSelected, onSelect, shouldReduceMotion })
 
             {/* Badge */}
             <div className="inline-flex">
-              <span className={`px-3 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 ${getBadgeClasses(option.badge.color)}`}>
-                {option.badge.color === "green" && <CheckCircle2 size={14} aria-hidden="true" />}
+              <span
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 ${getBadgeClasses(
+                  option.badge.color
+                )}`}
+              >
+                {option.badge.color === "green" && (
+                  <CheckCircle2 size={14} aria-hidden="true" />
+                )}
                 {option.badge.text}
               </span>
             </div>
@@ -227,34 +245,28 @@ const ServiceTypeToggle = ({ serviceType, onServiceTypeChange }) => {
   const handleRadioGroupKeyDown = (e) => {
     if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       e.preventDefault();
-      const currentIndex = SERVICE_OPTIONS.findIndex(opt => opt.id === serviceType);
-      const prevIndex = currentIndex === 0 ? SERVICE_OPTIONS.length - 1 : currentIndex - 1;
+      const currentIndex = SERVICE_OPTIONS.findIndex(
+        (opt) => opt.id === serviceType
+      );
+      const prevIndex =
+        currentIndex === 0 ? SERVICE_OPTIONS.length - 1 : currentIndex - 1;
       onServiceTypeChange(SERVICE_OPTIONS[prevIndex].id);
     } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
-      const currentIndex = SERVICE_OPTIONS.findIndex(opt => opt.id === serviceType);
-      const nextIndex = currentIndex === SERVICE_OPTIONS.length - 1 ? 0 : currentIndex + 1;
+      const currentIndex = SERVICE_OPTIONS.findIndex(
+        (opt) => opt.id === serviceType
+      );
+      const nextIndex =
+        currentIndex === SERVICE_OPTIONS.length - 1 ? 0 : currentIndex + 1;
       onServiceTypeChange(SERVICE_OPTIONS[nextIndex].id);
     }
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-5 p-4 sm:p-6">
-      <div className="text-center space-y-2">
-        <h3 
-          id="service-type-heading"
-          className="text-2xl font-bold text-content-dark dark:text-white"
-        >
-          Choose Your Service Type
-        </h3>
-        <p className="text-sm text-content-light dark:text-stone-400">
-          Select the option that works best for you
-        </p>
-      </div>
-
-      <div 
-        role="radiogroup" 
-        aria-labelledby="service-type-heading"
+    <div className="w-full space-y-5">
+      <div
+        role="radiogroup"
+        aria-label="Choose your service type"
         onKeyDown={handleRadioGroupKeyDown}
         className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0"
       >
@@ -274,14 +286,20 @@ const ServiceTypeToggle = ({ serviceType, onServiceTypeChange }) => {
         {serviceType === "mobile" && (
           <motion.div
             initial={shouldReduceMotion ? false : { opacity: 0, height: 0 }}
-            animate={shouldReduceMotion ? false : { opacity: 1, height: "auto" }}
+            animate={
+              shouldReduceMotion ? false : { opacity: 1, height: "auto" }
+            }
             exit={shouldReduceMotion ? false : { opacity: 0, height: 0 }}
-            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.3, ease: "easeInOut" }}
+            transition={
+              shouldReduceMotion
+                ? { duration: 0 }
+                : { duration: 0.3, ease: "easeInOut" }
+            }
             className="overflow-hidden"
           >
             <div className="p-4 lg:p-5 bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/10 border border-blue-200 dark:border-blue-800 rounded-xl shadow-sm">
               <div className="flex items-center gap-3">
-                <div 
+                <div
                   className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-md"
                   aria-hidden="true"
                 >
@@ -299,7 +317,8 @@ const ServiceTypeToggle = ({ serviceType, onServiceTypeChange }) => {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-                    Important: 50% deposit required • 24-hour cancellation notice required
+                    Important: 50% deposit required • 24-hour cancellation
+                    notice required
                   </p>
                 </div>
               </div>

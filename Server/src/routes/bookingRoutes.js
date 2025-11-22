@@ -13,6 +13,7 @@ import {
   updateBooking,
   handleSMSWebhook,
   validateAddress,
+  suggestAddresses,
 } from "../controllers/bookingController.js";
 
 import { protect, adminOnly } from "../middlewares/authMiddleware.js";
@@ -24,6 +25,9 @@ const twilioAuthMiddleware = twilio.webhook({ validate: true });
 
 // NEW: Address validation route (public route - no auth required)
 router.post("/validate-address", validateAddress);
+
+// NEW: Address autocomplete route (public route - no auth required)
+router.get("/address-suggestions", suggestAddresses);
 
 router.get("/check-cancellation/:confirmationNumber/:email", checkCancellation);
 router.post("/cancel/:confirmationNumber/:email", cancelBooking);

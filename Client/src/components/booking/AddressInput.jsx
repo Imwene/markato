@@ -1,5 +1,5 @@
 // src/components/booking/AddressInput.jsx
-import { useState, useMemo, useCallback, memo } from "react";
+import { useState, useMemo, useCallback, memo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
@@ -10,10 +10,12 @@ import {
 } from "lucide-react";
 import PropTypes from "prop-types";
 import { useDebounce } from "../../hooks/useDebounce";
+import { CONFIG } from "../../config/config";
 
 // Minimum address length required for validation
 const MIN_ADDRESS_LENGTH = 10;
 const VALIDATION_DEBOUNCE_MS = 1000;
+const SUGGESTION_DEBOUNCE_MS = 300;
 
 // Helper function to check if validation status is an error state
 const isErrorStatus = (status) => {
@@ -75,6 +77,45 @@ const AddressInput = ({
   className = "",
 }) => {
   const [isValidating, setIsValidating] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const wrapperRef = useRef(null);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [wrapperRef]);
+
+  // Debounced suggestion fetcher
+  const fetchSuggestions = useDebounce(async (input) => {
+    if (!input || input.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${CONFIG.API_URL}${
+          CONFIG.ENDPOINTS.BOOKINGS.ADDRESS_SUGGESTIONS
+        }?input=${encodeURIComponent(input)}`
+      );
+      const data = await response.json();
+      if (data.success) {
+        setSuggestions(data.predictions || []);
+        setShowSuggestions(true);
+      }
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+    }
+  }, SUGGESTION_DEBOUNCE_MS);
 
   // Memoize validation status check
   const hasErrorStatus = useMemo(
@@ -84,12 +125,15 @@ const AddressInput = ({
 
   // Memoize input border styling
   const inputClassName = useMemo(() => {
-    let borderClass = "border-border-DEFAULT dark:border-stone-700 bg-background-light dark:bg-stone-800";
-    
+    let borderClass =
+      "border-border-DEFAULT dark:border-stone-700 bg-background-light dark:bg-stone-800";
+
     if (validationStatus?.status === "valid") {
-      borderClass = "border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/20";
+      borderClass =
+        "border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/20";
     } else if (hasErrorStatus) {
-      borderClass = "border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/20";
+      borderClass =
+        "border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/20";
     }
 
     return `
@@ -117,22 +161,33 @@ const AddressInput = ({
     switch (status) {
       case "valid":
         return {
-          text: `✓ Address validated${distance != null ? ` (${distance.toFixed(1)} miles from our Oakland location)` : ""}`,
+          text: `✓ Address validated${
+            distance != null
+              ? ` (${distance.toFixed(1)} miles from our Oakland location)`
+              : ""
+          }`,
           color: "text-green-600 dark:text-green-400",
         };
       case "invalid":
         return {
-          text: `✗ ${message || "Invalid address. Please check and try again."}`,
+          text: `✗ ${
+            message || "Invalid address. Please check and try again."
+          }`,
           color: "text-red-600 dark:text-red-400",
         };
       case "outside_service_area":
         return {
-          text: `⚠ Address is ${distance != null ? `${distance.toFixed(1)} miles` : "too far"} away (outside our 15-mile East Bay service area)`,
+          text: `⚠ Address is ${
+            distance != null ? `${distance.toFixed(1)} miles` : "too far"
+          } away (outside our 15-mile East Bay service area)`,
           color: "text-orange-600 dark:text-orange-400",
         };
       case "outside_east_bay":
         return {
-          text: `✗ ${message || "Address is outside our East Bay service area (West Bay/Peninsula not serviced)"}`,
+          text: `✗ ${
+            message ||
+            "Address is outside our East Bay service area (West Bay/Peninsula not serviced)"
+          }`,
           color: "text-red-600 dark:text-red-400",
         };
       default:
@@ -155,6 +210,9 @@ const AddressInput = ({
       const value = e.target.value;
       onAddressChange(value);
 
+      // Fetch suggestions
+      fetchSuggestions.run(value);
+
       // Only validate if address has sufficient content
       if (value.trim().length >= MIN_ADDRESS_LENGTH) {
         setIsValidating(true);
@@ -165,11 +223,29 @@ const AddressInput = ({
         setIsValidating(false);
       }
     },
-    [onAddressChange, debouncedValidate]
+    [onAddressChange, debouncedValidate, fetchSuggestions]
   );
 
+  const handleSuggestionClick = async (prediction) => {
+    const newAddress = prediction.description;
+    onAddressChange(newAddress);
+    setSuggestions([]);
+    setShowSuggestions(false);
+
+    // Trigger validation immediately
+    setIsValidating(true);
+    try {
+      await onValidateAddress(newAddress);
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
   return (
-    <div className={`space-y-3 max-w-3xl mx-auto ${className}`}>
+    <div
+      className={`space-y-3 max-w-3xl mx-auto ${className}`}
+      ref={wrapperRef}
+    >
       <div>
         <label
           htmlFor="service-address"
@@ -188,9 +264,13 @@ const AddressInput = ({
             type="text"
             value={address || ""}
             onChange={handleAddressChange}
+            onFocus={() =>
+              address && address.length >= 3 && setShowSuggestions(true)
+            }
             placeholder="Enter your East Bay address (e.g., 123 Main St, Oakland, CA 94601)"
             className={inputClassName}
             required
+            autoComplete="off"
             aria-describedby={
               validationMessage ? "address-validation-message" : undefined
             }
@@ -198,11 +278,43 @@ const AddressInput = ({
           />
 
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-            <ValidationIcon 
-              isValidating={isValidating} 
-              status={validationStatus?.status} 
+            <ValidationIcon
+              isValidating={isValidating}
+              status={validationStatus?.status}
             />
           </div>
+
+          {/* Suggestions Dropdown */}
+          <AnimatePresence>
+            {showSuggestions && suggestions.length > 0 && (
+              <motion.ul
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute z-50 w-full mt-1 bg-white dark:bg-stone-800 rounded-lg shadow-lg border border-border-DEFAULT dark:border-stone-700 max-h-60 overflow-auto"
+              >
+                {suggestions.map((prediction) => (
+                  <li
+                    key={prediction.placeId}
+                    onClick={() => handleSuggestionClick(prediction)}
+                    className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-stone-700 cursor-pointer transition-colors duration-150 border-b border-border-light dark:border-stone-700 last:border-0"
+                  >
+                    <div className="flex items-center">
+                      <MapPin className="h-4 w-4 text-gray-400 dark:text-gray-500 mr-3 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-content-DEFAULT dark:text-white">
+                          {prediction.mainText}
+                        </p>
+                        <p className="text-xs text-content-light dark:text-stone-400">
+                          {prediction.secondaryText}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </motion.ul>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
