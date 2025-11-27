@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Clock } from "lucide-react";
 import { CONFIG } from "../../../config/config";
 import api from "../../../utils/api";
@@ -13,13 +13,10 @@ const WeeklyAppointments = () => {
   // Refs for auto-scroll functionality
   const containerRef = useRef(null);
   const dayRefs = useRef([]);
+  const scrollTimeoutRef = useRef(null);
+  const isMountedRef = useRef(true);
 
-  useEffect(() => {
-    fetchWeeklyAppointments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentWeek]);
-
-  const fetchWeeklyAppointments = async () => {
+  const fetchWeeklyAppointments = useCallback(async () => {
     try {
       setLoading(true);
       const startDate = getWeekStartDate(currentWeek);
@@ -31,15 +28,28 @@ const WeeklyAppointments = () => {
         }?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
       );
 
-      if (bookings.success) {
+      if (isMountedRef.current && bookings.success) {
         setAppointments(bookings.data);
       }
     } catch (error) {
       console.error("Error fetching appointments:", error);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [currentWeek]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    fetchWeeklyAppointments();
+    return () => {
+      isMountedRef.current = false;
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [fetchWeeklyAppointments]);
 
   const getWeekStartDate = (date) => {
     const start = new Date(date);
@@ -270,7 +280,14 @@ const WeeklyAppointments = () => {
     const target = dayRefs.current[todayIndex];
 
     if (target) {
-      setTimeout(() => {
+      // Clear any previous scroll timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      scrollTimeoutRef.current = setTimeout(() => {
+        if (!isMountedRef.current) return;
+        
         // Calculate the correct position relative to the scrollable container
         // This ensures the day header is visible with padding above it
         let offsetTop = 0;

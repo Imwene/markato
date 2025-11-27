@@ -69,19 +69,26 @@ export const cacheManager = {
 };
 
 // Performance monitoring
+const METRICS_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes max age for metrics
+const METRICS_CLEANUP_INTERVAL_MS = 60 * 1000; // Cleanup every minute
+
 export const performanceMonitor = {
   metrics: {},
 
   // Start timing
   startTiming: (label) => {
-    performanceMonitor.metrics[label] = performance.now();
+    performanceMonitor.metrics[label] = {
+      startTime: performance.now(),
+      timestamp: Date.now(),
+    };
   },
 
   // End timing and get duration
   endTiming: (label) => {
-    if (!performanceMonitor.metrics[label]) return 0;
+    const metric = performanceMonitor.metrics[label];
+    if (!metric) return 0;
 
-    const duration = performance.now() - performanceMonitor.metrics[label];
+    const duration = performance.now() - metric.startTime;
     delete performanceMonitor.metrics[label];
     return duration;
   },
@@ -93,7 +100,30 @@ export const performanceMonitor = {
       //console.log('Performance metric:', metric);
     }
   },
+
+  // Clear stale metrics (older than METRICS_MAX_AGE_MS)
+  clearStaleMetrics: () => {
+    const now = Date.now();
+    Object.keys(performanceMonitor.metrics).forEach((key) => {
+      const metric = performanceMonitor.metrics[key];
+      if (metric && metric.timestamp && now - metric.timestamp > METRICS_MAX_AGE_MS) {
+        delete performanceMonitor.metrics[key];
+      }
+    });
+  },
+
+  // Clear all metrics
+  clearAllMetrics: () => {
+    performanceMonitor.metrics = {};
+  },
 };
+
+// Auto-cleanup stale metrics periodically (browser-only)
+if (typeof window !== 'undefined') {
+  setInterval(() => {
+    performanceMonitor.clearStaleMetrics();
+  }, METRICS_CLEANUP_INTERVAL_MS);
+}
 
 // Service Worker Registration
 export const registerServiceWorker = async () => {

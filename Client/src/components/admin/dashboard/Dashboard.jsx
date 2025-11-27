@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Calendar, Users, Clock, Star, Wind, Plus } from "lucide-react";
 import api from "../../../utils/api.js";
 import { useNavigate } from "react-router-dom";
@@ -19,21 +19,27 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [showWalkInForm, setShowWalkInForm] = useState(false);
   const navigate = useNavigate();
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
     fetchDashboardStats();
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
       const data = await api.get(CONFIG.ENDPOINTS.ADMIN.DASHBOARD);
-      if (data.success) {
+      if (isMountedRef.current && data.success) {
         setStats(data.stats);
       }
     } catch (error) {
+      if (!isMountedRef.current) return;
       console.error("Failed to fetch dashboard stats:", error);
       if (error.message === "No token, authorization denied") {
         navigate("/login");
@@ -41,9 +47,11 @@ const Dashboard = () => {
         setError(error.message);
       }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [navigate]);
 
   const handleDeleteAllBookings = async () => {
     if (

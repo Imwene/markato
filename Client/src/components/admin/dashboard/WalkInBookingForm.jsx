@@ -27,9 +27,9 @@ const UNLISTED_SERVICES = {
     id: "custom_interior",
     name: "Interior Only",
     pricing: {
-      "sedan": [30, 50],
+      sedan: [30, 50],
       "mini-suv": [40, 70],
-      "suv": [50, 80],
+      suv: [50, 80],
       "van/truck": [50, 80],
     },
   },
@@ -37,9 +37,9 @@ const UNLISTED_SERVICES = {
     id: "custom_exterior",
     name: "Exterior Only",
     pricing: {
-      "sedan": [25, 40],
+      sedan: [25, 40],
       "mini-suv": [35, 50],
-      "suv": [40, 45, 60],
+      suv: [40, 45, 60],
       "van/truck": [40, 45, 60],
     },
   },
@@ -152,10 +152,10 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
     } else if (!phoneRegex.test(formData.contact)) {
       errors.contact = "Invalid phone number format";
     }
-    if (!formData.email?.trim()) {
-      errors.email = "Email is required";
-    } else if (!emailRegex.test(formData.email)) {
-      errors.email = "Invalid email format";
+    if (formData.email?.trim()) {
+      if (!emailRegex.test(formData.email)) {
+        errors.email = "Invalid email format";
+      }
     }
     if (!formData.makeModel?.trim())
       errors.makeModel = "Vehicle make/model is required";
@@ -640,7 +640,10 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Email</label>
+            <label className="block text-sm font-medium mb-2">
+              Email{" "}
+              <span className="text-content-light text-xs">(Optional)</span>
+            </label>
             <input
               type="email"
               name="email"
@@ -648,7 +651,6 @@ const WalkInBookingForm = ({ onClose, onSuccess }) => {
               onChange={handleInputChange}
               className="w-full p-2 rounded-lg border border-border-DEFAULT bg-background-light dark:bg-stone-800"
               placeholder="customer@example.com"
-              required
             />
             {validationErrors.email && (
               <p className="mt-1 text-sm text-red-500">

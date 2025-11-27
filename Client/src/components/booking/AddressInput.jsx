@@ -17,6 +17,9 @@ const MIN_ADDRESS_LENGTH = 10;
 const VALIDATION_DEBOUNCE_MS = 1000;
 const SUGGESTION_DEBOUNCE_MS = 300;
 
+// AbortController ref for suggestions fetch
+let suggestionsAbortController = null;
+
 // Helper function to check if validation status is an error state
 const isErrorStatus = (status) => {
   return (
@@ -94,18 +97,35 @@ const AddressInput = ({
     };
   }, [wrapperRef]);
 
-  // Debounced suggestion fetcher
+  // Cleanup abort controller on unmount
+  useEffect(() => {
+    return () => {
+      if (suggestionsAbortController) {
+        suggestionsAbortController.abort();
+        suggestionsAbortController = null;
+      }
+    };
+  }, []);
+
+  // Debounced suggestion fetcher with abort support
   const fetchSuggestions = useDebounce(async (input) => {
     if (!input || input.length < 3) {
       setSuggestions([]);
       return;
     }
 
+    // Cancel any previous suggestion request
+    if (suggestionsAbortController) {
+      suggestionsAbortController.abort();
+    }
+    suggestionsAbortController = new AbortController();
+
     try {
       const response = await fetch(
         `${CONFIG.API_URL}${
           CONFIG.ENDPOINTS.BOOKINGS.ADDRESS_SUGGESTIONS
-        }?input=${encodeURIComponent(input)}`
+        }?input=${encodeURIComponent(input)}`,
+        { signal: suggestionsAbortController.signal }
       );
       const data = await response.json();
       if (data.success) {
@@ -113,6 +133,7 @@ const AddressInput = ({
         setShowSuggestions(true);
       }
     } catch (error) {
+      if (error.name === 'AbortError') return;
       console.error("Error fetching suggestions:", error);
     }
   }, SUGGESTION_DEBOUNCE_MS);
