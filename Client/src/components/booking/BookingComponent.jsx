@@ -70,21 +70,13 @@ const BookingComponent = () => {
       return;
     }
 
-    // Only scroll during step navigation (after initial mount)
-    if (
-      bookingStep === "details" ||
-      bookingStep === "options" ||
-      bookingStep === "payment" ||
-      bookingStep === "confirmation" ||
-      bookingStep === "service" // Include service step when navigating from service-type
-    ) {
-      const element = document.getElementById("booking-component");
-      if (element) {
-        const yOffset = -80;
-        const y =
-          element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-        window.scrollTo({ top: y, behavior: "smooth" });
-      }
+    // Scroll to booking form on any step change (after initial mount)
+    const element = document.getElementById("booking-component");
+    if (element) {
+      const yOffset = -80;
+      const y =
+        element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: "smooth" });
     }
   }, [bookingStep]);
 
@@ -186,10 +178,10 @@ const BookingComponent = () => {
     if (bookingStep === "confirmation") return null;
 
     return (
-      <div className="sticky bottom-0 left-0 right-0 p-3 sm:p-4 bg-white/80 dark:bg-stone-900/80 backdrop-blur-md border-t border-stone-200/50 dark:border-stone-700/50 z-40">
+      <div className="sticky bottom-0 left-0 right-0 px-2 pt-8 pb-3 sm:px-3 sm:pt-10 sm:pb-4 bg-white dark:bg-stone-900 backdrop-blur-md border-t border-stone-200/50 dark:border-stone-700/50 z-50">
         {/* Improved responsive button layout */}
         {bookingStep === "service-type" && (
-          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
+          <div className="flex flex-col sm:flex-row gap-3 w-full px-1 sm:px-0">
             <motion.button
               onClick={handleNext}
               className={`w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-all duration-200 ${
@@ -214,7 +206,7 @@ const BookingComponent = () => {
         )}
 
         {bookingStep === "service" && (
-          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
+          <div className="flex flex-col sm:flex-row gap-3 w-full px-1 sm:px-0">
             <motion.button
               onClick={handleBack}
               className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold bg-white dark:bg-stone-800 text-stone-700 dark:text-white border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all duration-200 shadow-sm hover:shadow-md"
@@ -250,7 +242,7 @@ const BookingComponent = () => {
         )}
 
         {bookingStep === "options" && (
-          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
+          <div className="flex flex-col sm:flex-row gap-3 w-full px-1 sm:px-0">
             <motion.button
               onClick={handleBack}
               className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold bg-white dark:bg-stone-800 text-stone-700 dark:text-white border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all duration-200 shadow-sm hover:shadow-md"
@@ -279,7 +271,7 @@ const BookingComponent = () => {
         )}
 
         {bookingStep === "details" && (
-          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
+          <div className="flex flex-col sm:flex-row gap-3 w-full px-1 sm:px-0">
             <motion.button
               onClick={handleBack}
               className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold bg-white dark:bg-stone-800 text-stone-700 dark:text-white border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all duration-200 shadow-sm hover:shadow-md"
