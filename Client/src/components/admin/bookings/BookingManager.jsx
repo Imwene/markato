@@ -69,6 +69,7 @@ const BookingManager = () => {
         const qs = new URLSearchParams();
         qs.set("page", page);
         qs.set("limit", ITEMS_PER_PAGE);
+        qs.set("serviceType", "drive-in"); // Filter for drive-in bookings only
         if (filter && filter !== "all") qs.set("status", filter);
         if (debouncedSearch) qs.set("search", debouncedSearch);
 

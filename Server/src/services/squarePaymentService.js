@@ -43,11 +43,42 @@ export async function chargeDeposit({
   };
 
   try {
-    const res = await client.payments.create(body);
-    return res.payment;
+    // Use paymentsApi if available (newer SDKs), fallback to payments (older SDKs)
+    const paymentsApi = client.paymentsApi || client.payments;
+
+    if (!paymentsApi) {
+      throw new Error("Square Payments API not found on client object");
+    }
+
+    const res = await paymentsApi.create(body);
+
+    // Handle different response structures
+    const payment = res.result
+      ? res.result.payment
+      : res.payment || res.body?.payment;
+
+    if (!payment) {
+      console.error(
+        "Square API Response:",
+        JSON.stringify(
+          res,
+          (key, value) =>
+            typeof value === "bigint" ? value.toString() : value,
+          2
+        )
+      );
+      throw new Error("Payment created but no payment object returned");
+    }
+
+    return payment;
   } catch (err) {
+    console.error("Square Payment Error:", err);
     if (err instanceof SquareError) {
       throw new Error(`Square API error: ${JSON.stringify(err.errors)}`);
+    }
+    // Handle JSON stringified errors if they come in that format
+    if (err.result && err.result.errors) {
+      throw new Error(`Square API error: ${JSON.stringify(err.result.errors)}`);
     }
     throw err;
   }

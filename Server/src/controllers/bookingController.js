@@ -202,6 +202,7 @@ export async function createBooking(req, res) {
 
     const bookingData = {
       ...req.body,
+      serviceType: req.body.serviceType || "drive-in", // Ensure serviceType is set
       servicePrice: adjustedServicePrice,
       totalPrice,
       optionalServices: req.body.optionalServices || [],
