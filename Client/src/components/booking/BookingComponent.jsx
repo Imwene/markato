@@ -434,7 +434,7 @@ const BookingComponent = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          className="rounded-lg border border-stone-200/50 dark:border-stone-700/50 bg-white/60 dark:bg-stone-800/60 backdrop-blur-sm shadow-sm"
+          className="rounded-lg"
         >
           {loading ? (
             <div className="flex justify-center items-center py-20">
