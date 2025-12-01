@@ -95,24 +95,24 @@ const ServiceOptionCard = ({
       onKeyDown={handleKeyDown}
       onClick={() => onSelect(option.id)}
       className={`
-        relative overflow-hidden rounded-2xl border-2 cursor-pointer transition-all duration-300
-        focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-light/50 dark:focus-visible:ring-orange-500/50
+        relative overflow-hidden rounded-2xl border cursor-pointer transition-all duration-300
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-light/30 dark:focus-visible:ring-orange-500/30
         ${
           isSelected
-            ? "border-primary-light dark:border-orange-500 shadow-lg shadow-primary-light/20 dark:shadow-orange-500/20"
-            : "border-border-DEFAULT dark:border-stone-700 shadow-md hover:shadow-lg hover:border-primary-light/50 dark:hover:border-orange-500/50"
+            ? "border-primary-light/60 dark:border-orange-500/60 shadow-sm"
+            : "border-border-DEFAULT/60 dark:border-stone-700/60 shadow-sm hover:border-primary-light/40 dark:hover:border-orange-500/40"
         }
       `}
     >
-      {/* Background gradient overlay */}
+      {/* Background overlay */}
       <div
         aria-hidden="true"
         className={`
           absolute inset-0 transition-opacity duration-300
           ${
             isSelected
-              ? "bg-gradient-to-br from-primary-light/10 via-primary-light/5 to-transparent dark:from-orange-500/15 dark:via-orange-500/8 dark:to-transparent opacity-100"
-              : "bg-gradient-to-br from-background-light to-background-DEFAULT dark:from-stone-800 dark:to-stone-850 opacity-100"
+              ? "bg-white/50 dark:bg-stone-800/80 opacity-100"
+              : "bg-white/80 dark:bg-stone-800/60 opacity-100"
           }
         `}
       />
@@ -127,8 +127,8 @@ const ServiceOptionCard = ({
               flex-shrink-0 p-2.5 rounded-xl transition-all duration-300
               ${
                 isSelected
-                  ? "bg-primary-light dark:bg-orange-500 text-white shadow-md"
-                  : "bg-background-DEFAULT dark:bg-stone-700 text-content-light dark:text-stone-400"
+                  ? "bg-primary-light/10 dark:bg-orange-500/15 text-primary-light dark:text-orange-400 border border-primary-light/20 dark:border-orange-500/30"
+                  : "bg-stone-100 dark:bg-stone-700/50 text-content-light dark:text-stone-400"
               }
             `}
           >
@@ -143,7 +143,7 @@ const ServiceOptionCard = ({
                   text-xl font-bold transition-colors duration-200
                   ${
                     isSelected
-                      ? "text-primary-dark dark:text-orange-400"
+                      ? "text-content-dark dark:text-white"
                       : "text-content-dark dark:text-white"
                   }
                 `}
@@ -205,14 +205,14 @@ const ServiceOptionCard = ({
         </div>
       </div>
 
-      {/* Selected border accent */}
+      {/* Selected border accent - subtle left accent */}
       {isSelected && (
         <motion.div
           variants={borderVariants}
           initial="initial"
           animate="animate"
           transition={{ duration: 0.3 }}
-          className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-light to-primary-dark dark:from-orange-500 dark:to-orange-600"
+          className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary-light to-primary-dark dark:from-orange-500 dark:to-orange-600"
           aria-hidden="true"
         />
       )}

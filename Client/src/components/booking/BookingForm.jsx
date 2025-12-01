@@ -17,12 +17,12 @@ const BookingForm = ({
   captcha,
   onSubmit,
   isFormValid: parentIsFormValid,
-  onBack,
   serviceType = "drive-in",
   customerAddress = "",
   addressValidation = null,
   onAddressChange,
   onValidateAddress,
+  formRef,
 }) => {
   // React Hook Form setup
   const {
@@ -359,7 +359,7 @@ const BookingForm = ({
         transition={{ duration: 0.3 }}
         className="bg-white dark:bg-stone-800 rounded-lg shadow-lg"
       >
-        <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-6">
+        <form ref={formRef} onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-6">
           {/* NEW: Mobile Service Address Section */}
           {serviceType === "mobile" && (
             <div className="space-y-4">
@@ -662,63 +662,6 @@ const BookingForm = ({
               </div>
             </div>
           )} */}
-          {/* Form Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
-            <motion.button
-              type="button"
-              onClick={onBack}
-              className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold bg-background-DEFAULT dark:bg-stone-800 text-content-DEFAULT dark:text-white border border-border-DEFAULT dark:border-stone-700 hover:bg-background-dark dark:hover:bg-stone-700 transition-colors duration-200 shadow-sm"
-              whileHover={{ scale: 1.015 }}
-              whileTap={{ scale: 0.98 }}
-              style={{
-                minHeight: 48,
-                letterSpacing: 0.02,
-              }}
-            >
-              Back to Add-ons
-            </motion.button>
-
-            <motion.button
-              type="submit"
-              disabled={
-                !isValid ||
-                (serviceType === 'mobile' &&
-                  (!addressValidation || addressValidation.status !== 'valid'))
-              }
-              className={`w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-colors duration-200 shadow-sm ${
-                isValid &&
-                (serviceType === 'drive-in' ||
-                  (serviceType === 'mobile' &&
-                    addressValidation?.status === 'valid'))
-                  ? 'bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600'
-                  : 'bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed'
-              }`}
-              whileHover={
-                isValid &&
-                (serviceType === 'drive-in' ||
-                  (serviceType === 'mobile' &&
-                    addressValidation?.status === 'valid'))
-                  ? { scale: 1.015 }
-                  : {}
-              }
-              whileTap={
-                isValid &&
-                (serviceType === 'drive-in' ||
-                  (serviceType === 'mobile' &&
-                    addressValidation?.status === 'valid'))
-                  ? { scale: 0.98 }
-                  : {}
-              }
-              style={{
-                minHeight: 48,
-                letterSpacing: 0.02,
-              }}
-            >
-              {serviceType === 'mobile'
-                ? 'Complete Mobile Booking'
-                : 'Complete Booking'}
-            </motion.button>
-          </div>
         </form>
       </motion.div>
     </div>
@@ -731,12 +674,12 @@ BookingForm.propTypes = {
   captcha: PropTypes.object,
   onSubmit: PropTypes.func.isRequired,
   isFormValid: PropTypes.bool,
-  onBack: PropTypes.func.isRequired,
   serviceType: PropTypes.string,
   customerAddress: PropTypes.string,
   addressValidation: PropTypes.object,
   onAddressChange: PropTypes.func,
   onValidateAddress: PropTypes.func,
+  formRef: PropTypes.object,
 };
 
 export default BookingForm;

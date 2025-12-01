@@ -60,6 +60,9 @@ const BookingComponent = () => {
   // Track if this is the initial mount to prevent auto-scroll on page load
   const isInitialMount = useRef(true);
 
+  // Reference to the booking form for submission
+  const bookingFormRef = useRef(null);
+
   useEffect(() => {
     // Don't scroll on initial page load
     if (isInitialMount.current) {
@@ -134,8 +137,6 @@ const BookingComponent = () => {
               optionQuantities={optionQuantities}
               onQuantityChange={handleOptionQuantityChange}
               onOptionSelect={handleOptionSelect}
-              onContinue={handleNext}
-              onBack={handleBack}
               serviceType={serviceType} // NEW: Pass service type for pricing
               selectedServicePrice={baseServicePrice} // NEW: Pass base service price for breakdown
             />
@@ -150,12 +151,12 @@ const BookingComponent = () => {
               captcha={captcha}
               onSubmit={handleBookingSubmit}
               isFormValid={isFormValid}
-              onBack={handleBack}
               serviceType={serviceType} // NEW: Pass service type
               customerAddress={customerAddress} // NEW: Pass address for mobile service
               addressValidation={addressValidation} // NEW: Pass validation status
               onAddressChange={handleAddressChange} // NEW: Pass address change handler
               onValidateAddress={validateAddress} // NEW: Pass address validation handler
+              formRef={bookingFormRef}
             />
           </>
         );
@@ -185,16 +186,16 @@ const BookingComponent = () => {
     if (bookingStep === "confirmation") return null;
 
     return (
-      <div className="sticky bottom-0 left-0 right-0 p-3 sm:p-4 bg-background-light/95 dark:bg-stone-900/95 backdrop-blur-sm border-t border-border-light dark:border-stone-700 z-40">
+      <div className="sticky bottom-0 left-0 right-0 p-3 sm:p-4 bg-white/80 dark:bg-stone-900/80 backdrop-blur-md border-t border-stone-200/50 dark:border-stone-700/50 z-40">
         {/* Improved responsive button layout */}
         {bookingStep === "service-type" && (
           <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
             <motion.button
               onClick={handleNext}
-              className={`w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-colors duration-200 shadow-sm ${
+              className={`w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-all duration-200 ${
                 canProceedFromServiceType
-                  ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
-                  : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
+                  ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600 shadow-sm hover:shadow-md"
+                  : "bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-500 cursor-not-allowed"
               }`}
               whileHover={canProceedFromServiceType ? { scale: 1.015 } : {}}
               whileTap={canProceedFromServiceType ? { scale: 0.98 } : {}}
@@ -216,7 +217,7 @@ const BookingComponent = () => {
           <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
             <motion.button
               onClick={handleBack}
-              className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold bg-background-DEFAULT dark:bg-stone-800 text-content-DEFAULT dark:text-white border border-border-DEFAULT dark:border-stone-700 hover:bg-background-dark dark:hover:bg-stone-700 transition-colors duration-200 shadow-sm"
+              className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold bg-white dark:bg-stone-800 text-stone-700 dark:text-white border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all duration-200 shadow-sm hover:shadow-md"
               whileHover={{ scale: 1.015 }}
               whileTap={{ scale: 0.98 }}
               style={{
@@ -228,10 +229,10 @@ const BookingComponent = () => {
             </motion.button>
             <motion.button
               onClick={handleNext}
-              className={`w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-colors duration-200 shadow-sm ${
+              className={`w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-all duration-200 ${
                 canProceedToDetails
-                  ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
-                  : "bg-background-dark dark:bg-stone-800 text-content-light dark:text-stone-500 cursor-not-allowed"
+                  ? "bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600 shadow-sm hover:shadow-md"
+                  : "bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-500 cursor-not-allowed"
               }`}
               whileHover={canProceedToDetails ? { scale: 1.015 } : {}}
               whileTap={canProceedToDetails ? { scale: 0.98 } : {}}
@@ -244,6 +245,97 @@ const BookingComponent = () => {
               {canProceedToDetails
                 ? "Continue to Add-ons"
                 : "Select a package and scent to continue"}
+            </motion.button>
+          </div>
+        )}
+
+        {bookingStep === "options" && (
+          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
+            <motion.button
+              onClick={handleBack}
+              className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold bg-white dark:bg-stone-800 text-stone-700 dark:text-white border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all duration-200 shadow-sm hover:shadow-md"
+              whileHover={{ scale: 1.015 }}
+              whileTap={{ scale: 0.98 }}
+              style={{
+                minHeight: 48,
+                letterSpacing: 0.02,
+              }}
+            >
+              Back to Services
+            </motion.button>
+            <motion.button
+              onClick={handleNext}
+              className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-all duration-200 shadow-sm hover:shadow-md bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600"
+              whileHover={{ scale: 1.015 }}
+              whileTap={{ scale: 0.98 }}
+              style={{
+                minHeight: 48,
+                letterSpacing: 0.02,
+              }}
+            >
+              Continue to Booking Details
+            </motion.button>
+          </div>
+        )}
+
+        {bookingStep === "details" && (
+          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto">
+            <motion.button
+              onClick={handleBack}
+              className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold bg-white dark:bg-stone-800 text-stone-700 dark:text-white border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all duration-200 shadow-sm hover:shadow-md"
+              whileHover={{ scale: 1.015 }}
+              whileTap={{ scale: 0.98 }}
+              style={{
+                minHeight: 48,
+                letterSpacing: 0.02,
+              }}
+            >
+              Back to Add-ons
+            </motion.button>
+            <motion.button
+              onClick={() => {
+                // Trigger form submission via ref
+                if (bookingFormRef.current) {
+                  bookingFormRef.current.requestSubmit();
+                }
+              }}
+              disabled={
+                !isFormValid ||
+                (serviceType === 'mobile' &&
+                  (!addressValidation || addressValidation.status !== 'valid'))
+              }
+              className={`w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-all duration-200 shadow-sm hover:shadow-md ${
+                isFormValid &&
+                (serviceType === 'drive-in' ||
+                  (serviceType === 'mobile' &&
+                    addressValidation?.status === 'valid'))
+                  ? 'bg-primary-light dark:bg-orange-500 text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600'
+                  : 'bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-500 cursor-not-allowed'
+              }`}
+              whileHover={
+                isFormValid &&
+                (serviceType === 'drive-in' ||
+                  (serviceType === 'mobile' &&
+                    addressValidation?.status === 'valid'))
+                  ? { scale: 1.015 }
+                  : {}
+              }
+              whileTap={
+                isFormValid &&
+                (serviceType === 'drive-in' ||
+                  (serviceType === 'mobile' &&
+                    addressValidation?.status === 'valid'))
+                  ? { scale: 0.98 }
+                  : {}
+              }
+              style={{
+                minHeight: 48,
+                letterSpacing: 0.02,
+              }}
+            >
+              {serviceType === 'mobile'
+                ? 'Complete Mobile Booking'
+                : 'Complete Booking'}
             </motion.button>
           </div>
         )}
@@ -319,17 +411,17 @@ const BookingComponent = () => {
           <div className="mt-4 flex justify-center">
             <div
               className={`
-              px-3 py-1 rounded-full text-sm font-medium
+              px-4 py-1.5 rounded-lg text-sm font-medium border backdrop-blur-sm
               ${
                 serviceType === "mobile"
-                  ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
-                  : "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                  ? "bg-orange-50/50 dark:bg-orange-900/10 text-orange-800 dark:text-orange-300 border-orange-200/50 dark:border-orange-800/30"
+                  : "bg-emerald-50/50 dark:bg-emerald-900/10 text-emerald-800 dark:text-emerald-300 border-emerald-200/50 dark:border-emerald-800/30"
               }
             `}
             >
               {serviceType === "mobile"
-                ? "📱 Mobile Service (+$50)"
-                : "🏢 Drive-In Service"}
+                ? "Mobile Service (+$50)"
+                : "Drive-In Service"}
             </div>
           </div>
         )}
@@ -342,7 +434,7 @@ const BookingComponent = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          className="rounded-lg border-border-DEFAULT dark:border-stone-700 bg-background-light dark:bg-stone-800"
+          className="rounded-lg border border-stone-200/50 dark:border-stone-700/50 bg-white/60 dark:bg-stone-800/60 backdrop-blur-sm shadow-sm"
         >
           {loading ? (
             <div className="flex justify-center items-center py-20">
