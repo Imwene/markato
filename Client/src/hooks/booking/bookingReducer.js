@@ -200,6 +200,7 @@ export const bookingReducer = (state, action) => {
         ...state,
         pendingBookingPayload: action.payload,
         bookingStep: "payment",
+        loading: false, // Stop loading when moving to payment step
       };
 
     case "RESET":

@@ -372,7 +372,11 @@ export async function getAllBookings(req, res) {
       query.status = status;
     }
     if (serviceType && serviceType !== "all") {
-      query.serviceType = serviceType;
+      if (serviceType === "drive-in") {
+        query.serviceType = { $ne: "mobile" };
+      } else {
+        query.serviceType = serviceType;
+      }
     }
     if (search) {
       const rx = new RegExp(search, "i");

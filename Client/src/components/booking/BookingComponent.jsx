@@ -26,7 +26,6 @@ const BookingComponent = () => {
     error,
     optionalServicesData,
     canProceedToDetails,
-    isFormValid,
     baseServicePrice,
 
     // NEW: Mobile service state
@@ -57,26 +56,24 @@ const BookingComponent = () => {
     totalPrice,
   } = useBookingState();
 
-  // Track if this is the initial mount to prevent auto-scroll on page load
-  const isInitialMount = useRef(true);
+  // Track previous step to handle scroll transitions
+  const previousStep = useRef(bookingStep);
 
   // Reference to the booking form for submission
   const bookingFormRef = useRef(null);
 
   useEffect(() => {
-    // Don't scroll on initial page load
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
-    // Scroll to booking form on any step change (after initial mount)
-    const element = document.getElementById("booking-component");
-    if (element) {
-      const yOffset = -80;
-      const y =
-        element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      window.scrollTo({ top: y, behavior: "smooth" });
+    // Only scroll if the step has actually changed
+    if (previousStep.current !== bookingStep) {
+      const element = document.getElementById("booking-component");
+      if (element) {
+        const yOffset = -80;
+        const y =
+          element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: "smooth" });
+      }
+      // Update the previous step
+      previousStep.current = bookingStep;
     }
   }, [bookingStep]);
 
@@ -142,7 +139,6 @@ const BookingComponent = () => {
               onInputChange={handleInputChange}
               captcha={captcha}
               onSubmit={handleBookingSubmit}
-              isFormValid={isFormValid}
               serviceType={serviceType} // NEW: Pass service type
               customerAddress={customerAddress} // NEW: Pass address for mobile service
               addressValidation={addressValidation} // NEW: Pass validation status
@@ -292,12 +288,12 @@ const BookingComponent = () => {
                 }
               }}
               disabled={
-                !isFormValid ||
+                loading ||
                 (serviceType === 'mobile' &&
                   (!addressValidation || addressValidation.status !== 'valid'))
               }
               className={`w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-all duration-200 shadow-sm hover:shadow-md ${
-                isFormValid &&
+                !loading &&
                 (serviceType === 'drive-in' ||
                   (serviceType === 'mobile' &&
                     addressValidation?.status === 'valid'))
@@ -305,7 +301,7 @@ const BookingComponent = () => {
                   : 'bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-500 cursor-not-allowed'
               }`}
               whileHover={
-                isFormValid &&
+                !loading &&
                 (serviceType === 'drive-in' ||
                   (serviceType === 'mobile' &&
                     addressValidation?.status === 'valid'))
@@ -313,7 +309,7 @@ const BookingComponent = () => {
                   : {}
               }
               whileTap={
-                isFormValid &&
+                !loading &&
                 (serviceType === 'drive-in' ||
                   (serviceType === 'mobile' &&
                     addressValidation?.status === 'valid'))
