@@ -42,6 +42,10 @@ const serviceSchema = new Schema({
     type: Boolean,
     default: true
   },
+  isMobileAvailable: {
+    type: Boolean,
+    default: true
+  },
   sortOrder: {
     type: Number,
     default: 0

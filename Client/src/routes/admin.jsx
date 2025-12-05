@@ -6,6 +6,7 @@ import AdminDashboard from '../components/admin/dashboard/Dashboard';
 import BookingManager from '../components/admin/bookings/BookingManager';
 import CustomerManager from '../components/admin/customers/CustomerManager';
 import ServiceManager from '../components/admin/services/ServiceManager';
+import MobileBookingsManager from '../components/admin/mobile-bookings/MobileBookingsManager';
 import ConfigurationManager from '../components/admin/config/ConfigurationsManager';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -37,6 +38,7 @@ const AdminRoutes = () => {
           <Route path="/bookings" element={<BookingManager />} />
           <Route path="/customers" element={<CustomerManager />} />
           <Route path="/services" element={<ServiceManager />} />
+          <Route path="/mobile-bookings" element={<MobileBookingsManager />} />
           <Route path="/config" element={<ConfigurationManager />} />
         </Route>
       </Routes>

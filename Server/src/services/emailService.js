@@ -110,7 +110,7 @@ const createAdminEmailTemplate = (booking) => {
           <tr>
             <td style="padding: 8px 0; color: #4a5568;">Service:</td>
             <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">
-              ${booking.serviceName}
+              ${booking.serviceName} ${booking.serviceType === 'mobile' ? '(Mobile Service)' : '(Drive-in Service)'}
             </td>
           </tr>
           <tr>
@@ -134,6 +134,61 @@ const createAdminEmailTemplate = (booking) => {
         </table>
       </div>
 
+      <!-- Mobile Service Details -->
+      ${booking.serviceType === 'mobile' && booking.customerAddress ? `
+        <div style="background: #fff7ed; border-radius: 8px; padding: 24px; margin-bottom: 24px; border: 1px solid #fed7aa;">
+          <h2 style="font-size: 18px; font-weight: 600; color: #1a202c; margin: 0 0 16px 0;">
+            📍 Mobile Service Location
+          </h2>
+          <table style="width: 100%;">
+            <tr>
+              <td style="padding: 8px 0; color: #4a5568;">Address:</td>
+              <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">
+                ${booking.customerAddress.street}<br/>
+                ${booking.customerAddress.city}, ${booking.customerAddress.state} ${booking.customerAddress.zipCode}
+              </td>
+            </tr>
+            ${booking.distanceFromStore ? `
+            <tr>
+              <td style="padding: 8px 0; color: #4a5568;">Distance:</td>
+              <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">
+                ${booking.distanceFromStore} miles from shop
+              </td>
+            </tr>
+            ` : ''}
+            ${booking.mobileDetails ? `
+            <tr>
+              <td style="padding: 8px 0; color: #4a5568;">Parking:</td>
+              <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">
+                ${booking.mobileDetails.parkingType || 'Not specified'}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #4a5568;">Utilities:</td>
+              <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">
+                Water: ${booking.mobileDetails.hasWater ? '✅ Available' : '❌ Not Available'}<br/>
+                Power: ${booking.mobileDetails.hasPower ? '✅ Available' : '❌ Not Available'}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #4a5568;">Contact Method:</td>
+              <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">
+                ${booking.mobileDetails.arriveContactMethod === 'call' ? 'Phone Call' : 'Text Message'}
+              </td>
+            </tr>
+            ${booking.mobileDetails.accessNotes ? `
+            <tr>
+              <td style="padding: 8px 0; color: #4a5568; vertical-align: top;">Access Notes:</td>
+              <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">
+                ${booking.mobileDetails.accessNotes}
+              </td>
+            </tr>
+            ` : ''}
+            ` : ''}
+          </table>
+        </div>
+      ` : ''}
+
       ${optionalServicesSection}
 
       <!-- Total Amount -->
@@ -144,6 +199,18 @@ const createAdminEmailTemplate = (booking) => {
             booking.totalPrice
           }</span>
         </div>
+        ${booking.serviceType === 'mobile' && booking.depositRequired ? `
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e5e5;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 16px; color: #4a5568;">Deposit Paid (50%):</span>
+            <span style="color: #10b981; font-size: 18px; font-weight: 600;">$${booking.depositAmount || (booking.totalPrice * 0.5).toFixed(2)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+            <span style="font-size: 16px; color: #4a5568;">Remaining Balance:</span>
+            <span style="color: #f59e0b; font-size: 18px; font-weight: 600;">$${(booking.totalPrice - (booking.depositAmount || booking.totalPrice * 0.5)).toFixed(2)}</span>
+          </div>
+        </div>
+        ` : ''}
       </div>
 
       <!-- Quick Actions -->
@@ -269,7 +336,7 @@ const createEmailTemplate = (booking) => {
           <tr>
             <td style="padding: 8px 0; color: #4a5568;">Service:</td>
             <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">
-              ${booking.serviceName}
+              ${booking.serviceName} ${booking.serviceType === 'mobile' ? '(Mobile Service)' : '(Drive-in Service)'}
             </td>
           </tr>
           <tr>
@@ -293,6 +360,30 @@ const createEmailTemplate = (booking) => {
         </table>
       </div>
 
+      <!-- Mobile Service Details -->
+      ${booking.serviceType === 'mobile' && booking.customerAddress ? `
+        <div style="background: #fff7ed; border-radius: 8px; padding: 24px; margin-bottom: 24px; border: 1px solid #fed7aa;">
+          <h2 style="font-size: 18px; font-weight: 600; color: #1a202c; margin: 0 0 16px 0;">
+            📍 Your Mobile Service Location
+          </h2>
+          <table style="width: 100%;">
+            <tr>
+              <td style="padding: 8px 0; color: #4a5568;">Service Address:</td>
+              <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">
+                ${booking.customerAddress.street}<br/>
+                ${booking.customerAddress.city}, ${booking.customerAddress.state} ${booking.customerAddress.zipCode}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #4a5568;">Contact Method:</td>
+              <td style="padding: 8px 0; color: #1a202c; font-weight: 500;">
+                We'll ${booking.mobileDetails?.arriveContactMethod === 'call' ? 'call' : 'text'} you when we arrive
+              </td>
+            </tr>
+          </table>
+        </div>
+      ` : ''}
+
       ${optionalServicesSection}
 
       <!-- Total Amount -->
@@ -303,6 +394,18 @@ const createEmailTemplate = (booking) => {
             booking.totalPrice
           }</span>
         </div>
+        ${booking.serviceType === 'mobile' && booking.depositRequired ? `
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e5e5;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 16px; color: #4a5568;">Deposit Paid:</span>
+            <span style="color: #10b981; font-size: 18px; font-weight: 600;">$${booking.depositAmount || (booking.totalPrice * 0.5).toFixed(2)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+            <span style="font-size: 16px; color: #4a5568;">Remaining Balance Due at Service:</span>
+            <span style="color: #f59e0b; font-size: 18px; font-weight: 600;">$${(booking.totalPrice - (booking.depositAmount || booking.totalPrice * 0.5)).toFixed(2)}</span>
+          </div>
+        </div>
+        ` : ''}
       </div>
 
       <!-- Important Notes -->
@@ -311,8 +414,15 @@ const createEmailTemplate = (booking) => {
           Important Information
         </h3>
         <div style="color: #4a5568;">
+          ${booking.serviceType === 'mobile' ? `
+          <p style="margin: 0 0 12px 0;">• Our team will arrive at your location at the scheduled time.</p>
+          <p style="margin: 0 0 12px 0;">• We'll contact you via ${booking.mobileDetails?.arriveContactMethod === 'call' ? 'phone call' : 'text message'} when we arrive.</p>
+          <p style="margin: 0 0 12px 0;">• Please ensure vehicle access and any parking arrangements are ready.</p>
+          <p style="margin: 0 0 12px 0;">• Remaining balance of $${(booking.totalPrice - (booking.depositAmount || booking.totalPrice * 0.5)).toFixed(2)} due at service completion.</p>
+          ` : `
           <p style="margin: 0 0 12px 0;">• Please arrive 5-10 minutes before your appointment time.</p>
           <p style="margin: 0 0 12px 0;">• Location: 1901 Park Blvd, Oakland, CA 94606</p>
+          `}
           <p style="margin: 0 0 12px 0;">• For any questions or changes to your booking, please contact us:</p>
           <p style="margin: 0;">
             <a href="tel:+14158899108" style="color: #0cc0df; text-decoration: none;">

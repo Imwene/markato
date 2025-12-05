@@ -17,6 +17,7 @@ const ServiceFormModal = ({ service, onClose, onSave }) => {
       }), {}),
     category: service?.category || 'DRIVE-IN',
     isActive: service?.isActive ?? true,
+    isMobileAvailable: service?.isMobileAvailable ?? true,
     sortOrder: service?.sortOrder || 0
   });
 
@@ -248,17 +249,31 @@ const ServiceFormModal = ({ service, onClose, onSave }) => {
             </div>
 
             {/* Status */}
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={formData.isActive}
-                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="rounded border-border-DEFAULT bg-background-light dark:bg-stone-800"
-              />
-              <label htmlFor="isActive" className="text-sm text-content-DEFAULT dark:text-white">
-                Active
-              </label>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="rounded border-border-DEFAULT bg-background-light dark:bg-stone-800"
+                />
+                <label htmlFor="isActive" className="text-sm text-content-DEFAULT dark:text-white">
+                  Active
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isMobileAvailable"
+                  checked={formData.isMobileAvailable}
+                  onChange={(e) => setFormData({ ...formData, isMobileAvailable: e.target.checked })}
+                  className="rounded border-border-DEFAULT bg-background-light dark:bg-stone-800"
+                />
+                <label htmlFor="isMobileAvailable" className="text-sm text-content-DEFAULT dark:text-white">
+                  Available for Mobile Service
+                </label>
+              </div>
             </div>
 
             {/* Error Message */}

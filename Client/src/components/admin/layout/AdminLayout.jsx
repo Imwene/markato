@@ -10,6 +10,7 @@ import {
   X,
   LogOut,
   ChevronRight,
+  Truck,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -44,6 +45,12 @@ const AdminLayout = () => {
       label: "Services",
       path: "/admin/services",
       description: "Configure available services",
+    },
+    {
+      icon: <Truck size={20} />,
+      label: "Mobile Bookings",
+      path: "/admin/mobile-bookings",
+      description: "Manage mobile service bookings",
     },
     {
       icon: <Sliders size={20} />,

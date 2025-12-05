@@ -8,7 +8,22 @@ import {
   TableRow,
 } from "../../ui/table";
 import { Input } from "../../ui/input";
-import { Search, Phone, Mail, Calendar, DollarSign, ChevronLeft, ChevronRight, Plus, User, Clock, Star, Download, Trash2, X } from "lucide-react";
+import {
+  Search,
+  Phone,
+  Mail,
+  Calendar,
+  DollarSign,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  User,
+  Clock,
+  Star,
+  Download,
+  Trash2,
+  X,
+} from "lucide-react";
 import api from "../../../utils/api";
 import { CONFIG } from "../../../config/config";
 import ExpressBooking from "./ExpressBooking";
@@ -33,15 +48,16 @@ const CustomerManager = () => {
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractionProgress, setExtractionProgress] = useState(null);
   const [autolinkLoading, setAutolinkLoading] = useState(() => new Set()); // Track loading customers
-  const getCustomerKey = (customer) => (customer ? String(customer._id || customer.phone || '') : '');
+  const getCustomerKey = (customer) =>
+    customer ? String(customer._id || customer.phone || "") : "";
   const [newCustomer, setNewCustomer] = useState({
     phone: "",
     name: "",
     email: "",
     preferences: {
       defaultVehicleType: "",
-      notes: ""
-    }
+      notes: "",
+    },
   });
 
   const fetchCustomers = useCallback(
@@ -97,7 +113,10 @@ const CustomerManager = () => {
 
   const handleCreateCustomer = async () => {
     try {
-      const response = await api.post(CONFIG.ENDPOINTS.CUSTOMERS.BASE, newCustomer);
+      const response = await api.post(
+        CONFIG.ENDPOINTS.CUSTOMERS.BASE,
+        newCustomer
+      );
       if (response.success) {
         await fetchCustomers(1);
         setShowCreateModal(false);
@@ -107,8 +126,8 @@ const CustomerManager = () => {
           email: "",
           preferences: {
             defaultVehicleType: "",
-            notes: ""
-          }
+            notes: "",
+          },
         });
       }
     } catch (error) {
@@ -118,7 +137,9 @@ const CustomerManager = () => {
 
   const handleViewCustomer = async (customer) => {
     try {
-      const response = await api.get(`${CONFIG.ENDPOINTS.CUSTOMERS.BASE}/${customer._id}`);
+      const response = await api.get(
+        `${CONFIG.ENDPOINTS.CUSTOMERS.BASE}/${customer._id}`
+      );
       if (response.success) {
         setSelectedCustomer(response.data);
         setShowCustomerModal(true);
@@ -130,58 +151,76 @@ const CustomerManager = () => {
 
   const handleAutoLinkBookings = async (customer) => {
     if (!customer) {
-      alert('Customer data is missing. Please refresh the page.');
+      alert("Customer data is missing. Please refresh the page.");
       return;
     }
 
     const identifier = customer._id || customer.phone;
     if (!identifier) {
-      alert('Customer identifier is missing. Cannot auto-link bookings.');
+      alert("Customer identifier is missing. Cannot auto-link bookings.");
       return;
     }
 
     if (!customer.phone) {
-      alert('Customer does not have a phone number. Cannot auto-link bookings.');
+      alert(
+        "Customer does not have a phone number. Cannot auto-link bookings."
+      );
       return;
     }
 
     const identifierKey = String(identifier);
 
-    console.log('Autolink requested for customer:', {
+    console.log("Autolink requested for customer:", {
       identifier: identifierKey,
       _id: customer._id,
       phone: customer.phone,
-      name: customer.name
+      name: customer.name,
     });
 
     if (autolinkLoading.has(identifierKey)) {
-      console.log('Autolink already in progress for:', identifierKey);
+      console.log("Autolink already in progress for:", identifierKey);
       return;
     }
 
-    setAutolinkLoading(prev => new Set(prev).add(identifierKey));
+    setAutolinkLoading((prev) => new Set(prev).add(identifierKey));
 
     const endpoint = CONFIG.ENDPOINTS.CUSTOMERS.AUTO_LINK(identifierKey);
-    console.log('Making API call to:', endpoint);
+    console.log("Making API call to:", endpoint);
 
     try {
       const response = await api.post(endpoint);
       if (response.success) {
         const updatedCustomer = response.data;
         const linkedBookings = response.linkedBookings ?? 0;
-        const message = response.message || `Successfully linked ${linkedBookings} booking${linkedBookings !== 1 ? 's' : ''} to customer!`;
+        const message =
+          response.message ||
+          `Successfully linked ${linkedBookings} booking${
+            linkedBookings !== 1 ? "s" : ""
+          } to customer!`;
 
-        setCustomers(prevCustomers =>
-          prevCustomers.map(existing => {
-            const matchesId = existing._id && updatedCustomer._id && existing._id === updatedCustomer._id;
-            const matchesPhone = existing.phone && updatedCustomer.phone && existing.phone === updatedCustomer.phone;
+        setCustomers((prevCustomers) =>
+          prevCustomers.map((existing) => {
+            const matchesId =
+              existing._id &&
+              updatedCustomer._id &&
+              existing._id === updatedCustomer._id;
+            const matchesPhone =
+              existing.phone &&
+              updatedCustomer.phone &&
+              existing.phone === updatedCustomer.phone;
             return matchesId || matchesPhone ? updatedCustomer : existing;
           })
         );
 
         if (selectedCustomer) {
-          const matchesSelectedId = selectedCustomer._id && updatedCustomer._id && selectedCustomer._id === updatedCustomer._id;
-          const matchesSelectedPhone = selectedCustomer.phone && updatedCustomer.phone && selectedCustomer.phone === updatedCustomer.phone;
+          const matchesSelectedId =
+            selectedCustomer._id &&
+            updatedCustomer._id &&
+            selectedCustomer._id === updatedCustomer._id;
+          const matchesSelectedPhone =
+            selectedCustomer.phone &&
+            updatedCustomer.phone &&
+            selectedCustomer.phone === updatedCustomer.phone;
           if (matchesSelectedId || matchesSelectedPhone) {
             setSelectedCustomer(updatedCustomer);
           }
@@ -189,30 +228,31 @@ const CustomerManager = () => {
 
         alert(message);
       } else {
-        if (response.error === 'Customer not found') {
-          alert('Customer not found. The customer list will be refreshed.');
+        if (response.error === "Customer not found") {
+          alert("Customer not found. The customer list will be refreshed.");
           await fetchCustomers(currentPage);
         } else {
-          alert(`Failed to auto-link bookings: ${response.error || 'Unknown error'}`);
+          alert(
+            `Failed to auto-link bookings: ${response.error || "Unknown error"}`
+          );
         }
       }
     } catch (error) {
-      console.error('Failed to auto-link bookings:', error);
-      if (error.message && error.message.includes('404')) {
-        alert('Customer not found. Refreshing customer list...');
+      console.error("Failed to auto-link bookings:", error);
+      if (error.message && error.message.includes("404")) {
+        alert("Customer not found. Refreshing customer list...");
         await fetchCustomers(currentPage);
       } else {
-        alert('Failed to auto-link bookings. Please try again.');
+        alert("Failed to auto-link bookings. Please try again.");
       }
     } finally {
-      setAutolinkLoading(prev => {
+      setAutolinkLoading((prev) => {
         const newSet = new Set(prev);
         newSet.delete(identifierKey);
         return newSet;
       });
     }
   };
-
 
   const handleExpressBooking = (customer) => {
     setExpressBookingCustomer(customer);
@@ -226,45 +266,81 @@ const CustomerManager = () => {
   };
 
   const handleExtractCustomers = async () => {
-    if (!window.confirm(
-      "This will extract customer information from all bookings in the last 3 months. " +
-      "It may take a few minutes to complete. Continue?"
-    )) {
+    if (
+      !window.confirm(
+        "This will extract customer information from all bookings in the last 3 months. " +
+          "It may take a few minutes to complete. Continue?"
+      )
+    ) {
       return;
     }
 
+    let progressInterval = null;
+    let completionTimeout = null;
+    let isCancelled = false;
+
     try {
       setIsExtracting(true);
-      setExtractionProgress({ phase: 'Starting extraction...', percentage: 0 });
+      setExtractionProgress({ phase: "Starting extraction...", percentage: 0 });
 
       // Realistic progress simulation with phases
       const phases = [
-        { phase: 'Starting extraction...', duration: 1000, targetPercent: 5 },
-        { phase: 'Scanning booking database...', duration: 2000, targetPercent: 15 },
-        { phase: 'Processing booking records...', duration: 4000, targetPercent: 45 },
-        { phase: 'Grouping customers by phone...', duration: 3000, targetPercent: 65 },
-        { phase: 'Creating customer profiles...', duration: 4000, targetPercent: 85 },
-        { phase: 'Linking booking history...', duration: 2000, targetPercent: 95 },
-        { phase: 'Finalizing extraction...', duration: 1000, targetPercent: 100 }
+        { phase: "Starting extraction...", duration: 1000, targetPercent: 5 },
+        {
+          phase: "Scanning booking database...",
+          duration: 2000,
+          targetPercent: 15,
+        },
+        {
+          phase: "Processing booking records...",
+          duration: 4000,
+          targetPercent: 45,
+        },
+        {
+          phase: "Grouping customers by phone...",
+          duration: 3000,
+          targetPercent: 65,
+        },
+        {
+          phase: "Creating customer profiles...",
+          duration: 4000,
+          targetPercent: 85,
+        },
+        {
+          phase: "Linking booking history...",
+          duration: 2000,
+          targetPercent: 95,
+        },
+        {
+          phase: "Finalizing extraction...",
+          duration: 1000,
+          targetPercent: 100,
+        },
       ];
 
       let currentPhaseIndex = 0;
       let currentPercentage = 0;
 
-      const progressInterval = setInterval(() => {
-        if (currentPhaseIndex >= phases.length) {
-          clearInterval(progressInterval);
+      progressInterval = setInterval(() => {
+        if (isCancelled || currentPhaseIndex >= phases.length) {
+          if (progressInterval) clearInterval(progressInterval);
           return;
         }
 
         const currentPhase = phases[currentPhaseIndex];
-        const increment = Math.max(1, Math.floor((currentPhase.targetPercent - currentPercentage) / 10));
+        const increment = Math.max(
+          1,
+          Math.floor((currentPhase.targetPercent - currentPercentage) / 10)
+        );
 
-        currentPercentage = Math.min(currentPhase.targetPercent, currentPercentage + increment);
+        currentPercentage = Math.min(
+          currentPhase.targetPercent,
+          currentPercentage + increment
+        );
 
         setExtractionProgress({
           phase: currentPhase.phase,
-          percentage: currentPercentage
+          percentage: currentPercentage,
         });
 
         // Move to next phase when target reached
@@ -273,55 +349,80 @@ const CustomerManager = () => {
         }
       }, 200);
 
-      const response = await api.post(CONFIG.ENDPOINTS.CUSTOMERS.EXTRACT_FROM_BOOKINGS);
+      const response = await api.post(
+        CONFIG.ENDPOINTS.CUSTOMERS.EXTRACT_FROM_BOOKINGS
+      );
 
-      clearInterval(progressInterval);
+      if (progressInterval) clearInterval(progressInterval);
+      progressInterval = null;
+
+      if (isCancelled) return;
 
       // Show completion
       setExtractionProgress({
-        phase: 'Extraction completed successfully!',
-        percentage: 100
+        phase: "Extraction completed successfully!",
+        percentage: 100,
       });
 
       if (response.success) {
-        setTimeout(() => {
-          alert(`Customer extraction completed!\n\n` +
-                `Customers created: ${response.data.customersCreated}\n` +
-                `Customers updated: ${response.data.customersUpdated}\n` +
-                `Bookings linked: ${response.data.bookingsLinked}`);
+        completionTimeout = setTimeout(() => {
+          if (isCancelled) return;
+          alert(
+            `Customer extraction completed!\n\n` +
+              `Customers created: ${response.data.customersCreated}\n` +
+              `Customers updated: ${response.data.customersUpdated}\n` +
+              `Bookings linked: ${response.data.bookingsLinked}`
+          );
           setExtractionProgress(null);
           fetchCustomers(1);
         }, 1000);
       }
     } catch (error) {
-      console.error("Failed to extract customers:", error);
-      alert("Failed to extract customers. Please try again.");
-      setExtractionProgress(null);
+      if (progressInterval) clearInterval(progressInterval);
+      if (!isCancelled) {
+        console.error("Failed to extract customers:", error);
+        alert("Failed to extract customers. Please try again.");
+        setExtractionProgress(null);
+      }
     } finally {
+      if (progressInterval) clearInterval(progressInterval);
       setIsExtracting(false);
     }
+
+    // Return cleanup function for external cancellation
+    return () => {
+      isCancelled = true;
+      if (progressInterval) clearInterval(progressInterval);
+      if (completionTimeout) clearTimeout(completionTimeout);
+    };
   };
 
   const handleDropAllCustomers = async () => {
-    if (!window.confirm(
-      "⚠️ DANGER: This will permanently delete ALL customer records. " +
-      "This action cannot be undone. Are you absolutely sure?"
-    )) {
+    if (
+      !window.confirm(
+        "⚠️ DANGER: This will permanently delete ALL customer records. " +
+          "This action cannot be undone. Are you absolutely sure?"
+      )
+    ) {
       return;
     }
 
-    if (!window.confirm(
-      "Final confirmation: Type 'DELETE' to confirm deletion of all customer records."
-    )) {
+    if (
+      !window.confirm(
+        "Final confirmation: Type 'DELETE' to confirm deletion of all customer records."
+      )
+    ) {
       return;
     }
 
     try {
       const response = await api.delete(CONFIG.ENDPOINTS.CUSTOMERS.DROP_ALL);
-      
+
       if (response.success) {
-        alert(`Successfully deleted ${response.data.deletedCount} customer records.`);
-        
+        alert(
+          `Successfully deleted ${response.data.deletedCount} customer records.`
+        );
+
         // Refresh the customer list
         await fetchCustomers(1);
       }
@@ -336,14 +437,14 @@ const CustomerManager = () => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-      year: "numeric"
+      year: "numeric",
     });
   };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD"
+      currency: "USD",
     }).format(amount || 0);
   };
 
@@ -365,24 +466,28 @@ const CustomerManager = () => {
             {customer.phone}
           </p>
         </div>
-         <button
-           onClick={() => handleViewCustomer(customer)}
-           className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors"
-         >
-           <User className="w-5 h-5 text-primary-DEFAULT dark:text-orange-500" />
-         </button>
-         <button
-           onClick={() => handleAutoLinkBookings(customer)}
-           disabled={autolinkLoading.has(getCustomerKey(customer))}
-           className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-           title={autolinkLoading.has(getCustomerKey(customer)) ? "Auto-linking bookings..." : "Auto-link Bookings"}
-         >
-           {autolinkLoading.has(getCustomerKey(customer)) ? (
-             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
-           ) : (
-             <Search className="w-4 h-4 text-blue-500" />
-           )}
-         </button>
+        <button
+          onClick={() => handleViewCustomer(customer)}
+          className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors"
+        >
+          <User className="w-5 h-5 text-primary-DEFAULT dark:text-orange-500" />
+        </button>
+        <button
+          onClick={() => handleAutoLinkBookings(customer)}
+          disabled={autolinkLoading.has(getCustomerKey(customer))}
+          className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title={
+            autolinkLoading.has(getCustomerKey(customer))
+              ? "Auto-linking bookings..."
+              : "Auto-link Bookings"
+          }
+        >
+          {autolinkLoading.has(getCustomerKey(customer)) ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
+          ) : (
+            <Search className="w-4 h-4 text-blue-500" />
+          )}
+        </button>
       </div>
 
       <div className="grid grid-cols-2 gap-4 text-sm">
@@ -433,7 +538,11 @@ const CustomerManager = () => {
               </h3>
               <button
                 onClick={() => {
-                  if (window.confirm('Are you sure you want to cancel the extraction?')) {
+                  if (
+                    window.confirm(
+                      "Are you sure you want to cancel the extraction?"
+                    )
+                  ) {
                     setIsExtracting(false);
                     setExtractionProgress(null);
                   }
@@ -443,7 +552,7 @@ const CustomerManager = () => {
                 <X className="w-4 h-4 text-content-light" />
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-content-light dark:text-stone-400 mb-2">
@@ -455,15 +564,15 @@ const CustomerManager = () => {
                   </p>
                 )}
               </div>
-              
+
               {/* Progress Bar */}
               <div className="w-full bg-background-dark dark:bg-stone-700 rounded-full h-3 overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-primary-light dark:bg-orange-500 transition-all duration-300 ease-out"
                   style={{ width: `${extractionProgress.percentage || 0}%` }}
                 />
               </div>
-              
+
               <div className="text-center">
                 <span className="text-sm font-medium text-content-DEFAULT dark:text-white">
                   {extractionProgress.percentage || 0}%
@@ -493,7 +602,9 @@ const CustomerManager = () => {
             className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
-            <span>{isExtracting ? "Extracting..." : "Extract from Bookings"}</span>
+            <span>
+              {isExtracting ? "Extracting..." : "Extract from Bookings"}
+            </span>
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
@@ -528,8 +639,12 @@ const CustomerManager = () => {
         >
           <option value="lastSeen-desc">Last Seen (Recent)</option>
           <option value="lastSeen-asc">Last Seen (Oldest)</option>
-          <option value="statistics.lastBookingDate-desc">Last Booking (Recent)</option>
-          <option value="statistics.lastBookingDate-asc">Last Booking (Oldest)</option>
+          <option value="statistics.lastBookingDate-desc">
+            Last Booking (Recent)
+          </option>
+          <option value="statistics.lastBookingDate-asc">
+            Last Booking (Oldest)
+          </option>
           <option value="statistics.totalBookings-desc">Most Bookings</option>
           <option value="statistics.totalSpent-desc">Highest Spent</option>
           <option value="name-asc">Name (A-Z)</option>
@@ -648,18 +763,22 @@ const CustomerManager = () => {
                     >
                       <User className="w-4 h-4 text-primary-DEFAULT dark:text-orange-500" />
                     </button>
-                     <button
-                       onClick={() => handleAutoLinkBookings(customer)}
-                       disabled={autolinkLoading.has(getCustomerKey(customer))}
-                       className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                       title={autolinkLoading.has(getCustomerKey(customer)) ? "Auto-linking bookings..." : "Auto-link Bookings"}
-                     >
-                       {autolinkLoading.has(getCustomerKey(customer)) ? (
-                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
-                       ) : (
-                         <Search className="w-4 h-4 text-blue-500" />
-                       )}
-                     </button>
+                    <button
+                      onClick={() => handleAutoLinkBookings(customer)}
+                      disabled={autolinkLoading.has(getCustomerKey(customer))}
+                      className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={
+                        autolinkLoading.has(getCustomerKey(customer))
+                          ? "Auto-linking bookings..."
+                          : "Auto-link Bookings"
+                      }
+                    >
+                      {autolinkLoading.has(getCustomerKey(customer)) ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
+                      ) : (
+                        <Search className="w-4 h-4 text-blue-500" />
+                      )}
+                    </button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -751,8 +870,8 @@ const CustomerManager = () => {
                       ...newCustomer,
                       preferences: {
                         ...newCustomer.preferences,
-                        notes: e.target.value
-                      }
+                        notes: e.target.value,
+                      },
                     })
                   }
                   placeholder="Customer preferences or notes..."
@@ -843,7 +962,9 @@ const CustomerManager = () => {
                         Total Spent:
                       </span>
                       <span className="font-medium text-content-DEFAULT dark:text-white">
-                        {formatCurrency(selectedCustomer.statistics?.totalSpent)}
+                        {formatCurrency(
+                          selectedCustomer.statistics?.totalSpent
+                        )}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -851,7 +972,9 @@ const CustomerManager = () => {
                         Average Booking:
                       </span>
                       <span className="font-medium text-content-DEFAULT dark:text-white">
-                        {formatCurrency(selectedCustomer.statistics?.averageBookingValue)}
+                        {formatCurrency(
+                          selectedCustomer.statistics?.averageBookingValue
+                        )}
                       </span>
                     </div>
                   </div>
@@ -898,21 +1021,23 @@ const CustomerManager = () => {
                     Actions
                   </h4>
                   <div className="space-y-2">
-                     <button
-                       onClick={() => handleAutoLinkBookings(selectedCustomer)}
-                       disabled={autolinkLoading.has(getCustomerKey(selectedCustomer))}
-                       className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                     >
-                       {autolinkLoading.has(getCustomerKey(selectedCustomer)) ? (
-                         <div className="flex items-center justify-center gap-2">
-                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                           Auto-linking Bookings...
-                         </div>
-                       ) : (
-                         "Auto-link Existing Bookings"
-                       )}
-                     </button>
-                    <button 
+                    <button
+                      onClick={() => handleAutoLinkBookings(selectedCustomer)}
+                      disabled={autolinkLoading.has(
+                        getCustomerKey(selectedCustomer)
+                      )}
+                      className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {autolinkLoading.has(getCustomerKey(selectedCustomer)) ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                          Auto-linking Bookings...
+                        </div>
+                      ) : (
+                        "Auto-link Existing Bookings"
+                      )}
+                    </button>
+                    <button
                       onClick={() => handleExpressBooking(selectedCustomer)}
                       className="w-full px-4 py-2 bg-primary-light text-white rounded-lg hover:bg-primary-DEFAULT transition-colors dark:bg-orange-500 dark:hover:bg-orange-600"
                     >

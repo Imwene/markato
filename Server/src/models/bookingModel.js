@@ -82,7 +82,66 @@ const bookingSchema = new Schema(
       ref: 'Customer',
       index: true,
     },
-  },
+
+    // NEW MOBILE SERVICE FIELDS
+    serviceType: {
+      type: String,
+      enum: ["drive-in", "mobile"],
+      default: "drive-in",
+    },
+    customerAddress: {
+      street: {
+        type: String,
+        required: function () {
+          return this.serviceType === "mobile";
+        },
+      },
+      city: {
+        type: String,
+        required: function () {
+          return this.serviceType === "mobile";
+        },
+      },
+      state: {
+        type: String,
+        required: function () {
+          return this.serviceType === "mobile";
+        },
+      },
+      zipCode: {
+        type: String,
+        required: function () {
+          return this.serviceType === "mobile";
+        },
+      },
+      coordinates: {
+        lat: {
+          type: Number,
+          required: function () {
+            return this.serviceType === "mobile";
+          },
+        },
+        lng: {
+          type: Number,
+          required: function () {
+            return this.serviceType === "mobile";
+          },
+        },
+      },
+    },
+    depositAmount: {
+      type: Number,
+      default: 0,
+    },
+    depositRequired: {
+      type: Boolean,
+      default: false,
+    },
+    distanceFromStore: {
+      type: Number,
+      default: 0,
+    },
+    },
   {
     timestamps: true,
     strict: false, // Allow additional fields for backward compatibility

@@ -14,10 +14,13 @@ const CancellationPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchBooking = async () => {
       try {
         const response = await fetch(
-          `${CONFIG.API_URL}/bookings/check-cancellation/${confirmationNumber}/${email}`
+          `${CONFIG.API_URL}/bookings/check-cancellation/${confirmationNumber}/${email}`,
+          { signal: abortController.signal }
         );
         const data = await response.json();
 
@@ -27,13 +30,18 @@ const CancellationPage = () => {
           setError(data.error);
         }
       } catch (error) {
+        if (error.name === 'AbortError') return;
         setError("Failed to fetch booking details");
       } finally {
-        setLoading(false);
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchBooking();
+
+    return () => abortController.abort();
   }, [confirmationNumber, email]);
 
   const handleCancellation = async () => {

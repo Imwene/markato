@@ -243,6 +243,9 @@ const ServiceManager = () => {
               <TableHead className="text-content-light dark:text-stone-400">
                 Status
               </TableHead>
+              <TableHead className="text-content-light dark:text-stone-400">
+                Mobile Available
+              </TableHead>
               <TableHead className="text-right text-content-light dark:text-stone-400">
                 Actions
               </TableHead>
@@ -307,6 +310,17 @@ const ServiceManager = () => {
                     }`}
                   >
                     {service.isActive ? "Active" : "Inactive"}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      service.isMobileAvailable !== false
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
+                    }`}
+                  >
+                    {service.isMobileAvailable !== false ? "Yes" : "No"}
                   </span>
                 </TableCell>
                 <TableCell className="text-right">

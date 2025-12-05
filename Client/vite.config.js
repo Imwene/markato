@@ -23,6 +23,13 @@ export default defineConfig(({ command, mode }) => {
       },
       server: {
         host: true,
+        allowedHosts: [
+          "localhost",
+          "127.0.0.1",
+          "petrogenetic-danae-inexact.ngrok-free.dev", // Your permanent ngrok domain
+          ".ngrok-free.app", // Allows any ngrok-free.app subdomain
+          ".ngrok-free.dev", // Allows any ngrok-free.dev subdomain
+        ],
         proxy: {
           "/api": {
             target: "http://localhost:8080",

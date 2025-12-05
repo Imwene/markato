@@ -1,5 +1,6 @@
 // src/controllers/bookingController.js
 import Booking from "../models/bookingModel.js";
+import StoreConfig from "../models/storeConfigModel.js";
 import {
   sendBookingConfirmation,
   sendAdminNotification,
@@ -11,28 +12,303 @@ import {
   sendBookingConfirmationSMS,
 } from "../services/smsService.js";
 import { generatePDF } from "../services/pdfService.js";
+import {
+  validateAddressAndServiceArea,
+  getAddressSuggestions,
+} from "../services/geocodingService.js";
+import { calculateDistance } from "../utils/distanceCalculator.js";
+import { chargeDeposit } from "../services/squarePaymentService.js";
 import twilio from "twilio";
 import { BusinessSettings } from "../models/businessSettingsModel.js";
 
+// Helper function to convert BigInt values to numbers for JSON serialization
+function sanitizeBookingData(booking) {
+  const bookingObj = booking.toObject ? booking.toObject() : booking;
+
+  // Convert any BigInt values to numbers
+  const sanitized = JSON.parse(
+    JSON.stringify(bookingObj, (key, value) => {
+      if (typeof value === "bigint") {
+        return Number(value);
+      }
+      return value;
+    })
+  );
+
+  return sanitized;
+}
+
+// NEW: Address validation endpoint
+export async function validateAddress(req, res) {
+  try {
+    const { address } = req.body;
+
+    if (
+      !address ||
+      typeof address !== "string" ||
+      address.trim().length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: "Address is required",
+      });
+    }
+
+    const result = await validateAddressAndServiceArea(address);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.error || "Address validation failed",
+      });
+    }
+
+    // Determine the validation status based on result
+    let status = "valid";
+    let message = "";
+
+    if (!result.isValid) {
+      if (result.validationStatus === "outside_east_bay") {
+        status = "outside_east_bay";
+        message =
+          result.validationMessage ||
+          "Address is outside our East Bay service area";
+      } else if (result.validationStatus === "outside_service_area") {
+        status = "outside_service_area";
+        message =
+          result.validationMessage ||
+          `Address is outside our ${result.serviceRadius}-mile service area`;
+      } else {
+        status = "invalid";
+        message = result.validationMessage || "Invalid address";
+      }
+    }
+
+    res.json({
+      success: true,
+      status: status,
+      isValid: result.isValid,
+      message: message,
+      distance: result.distance,
+      serviceRadius: result.serviceRadius,
+      coordinates: result.coordinates,
+      formattedAddress: result.formattedAddress,
+      addressComponents: result.addressComponents,
+      eastBayValidation: result.eastBayValidation,
+    });
+  } catch (error) {
+    console.error("Address validation error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Server error during address validation",
+    });
+  }
+}
+
+// NEW: Address autocomplete endpoint
+export async function suggestAddresses(req, res) {
+  try {
+    const { input } = req.query;
+
+    if (!input || typeof input !== "string" || input.trim().length < 3) {
+      return res.json({
+        success: true,
+        predictions: [],
+      });
+    }
+
+    const result = await getAddressSuggestions(input);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.error || "Failed to get suggestions",
+      });
+    }
+
+    res.json({
+      success: true,
+      predictions: result.predictions,
+    });
+  } catch (error) {
+    console.error("Address suggestion error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Server error during address suggestion",
+    });
+  }
+}
+
 export async function createBooking(req, res) {
   try {
-    //console.log('Received booking:', req.body);
+    // Server-side enforcement: Reject mobile bookings when mobile detailing is disabled
+    if (req.body.serviceType === "mobile") {
+      const businessSettings = await BusinessSettings.findOne();
+      if (!businessSettings?.mobileDetailingEnabled) {
+        return res.status(400).json({
+          success: false,
+          error: "Mobile detailing service is currently unavailable. Please book a drive-in service instead.",
+          code: "MOBILE_DETAILING_DISABLED",
+        });
+      }
+    }
 
     const basePrice = parseFloat(req.body.servicePrice);
     const optionalServicesTotal = (req.body.optionalServices || []).reduce(
       (total, service) => total + parseFloat(service.price),
       0
     );
-    const totalPrice = basePrice + optionalServicesTotal;
+
+    // Get store configuration for mobile service upcharge
+    const storeConfig = await StoreConfig.findOne({ isActive: true });
+    const mobileUpcharge =
+      storeConfig?.mobileServiceUpcharge ||
+      parseFloat(process.env.MOBILE_UPCHARGE) ||
+      50;
+
+    let totalPrice = basePrice + optionalServicesTotal;
+    let adjustedServicePrice = basePrice;
+    let depositRequired = false;
+    let depositAmount = 0;
+    let distanceFromStore = 0;
+
+    // Handle mobile service pricing and deposits
+    if (req.body.serviceType === "mobile") {
+      adjustedServicePrice = basePrice + mobileUpcharge;
+      totalPrice = adjustedServicePrice + optionalServicesTotal;
+      depositRequired = true;
+      depositAmount = Math.round(totalPrice * 0.5); // 50% deposit
+
+      // Calculate distance if coordinates provided
+      if (req.body.customerAddress?.coordinates) {
+        const storeLat =
+          storeConfig?.address?.coordinates?.lat ||
+          parseFloat(process.env.STORE_LAT) ||
+          37.8044;
+        const storeLng =
+          storeConfig?.address?.coordinates?.lng ||
+          parseFloat(process.env.STORE_LNG) ||
+          -122.2712;
+
+        distanceFromStore = calculateDistance(
+          storeLat,
+          storeLng,
+          req.body.customerAddress.coordinates.lat,
+          req.body.customerAddress.coordinates.lng
+        );
+      }
+    }
+
+    // Generate confirmation number
+    const now = new Date();
+    const dateStr = `${(now.getMonth() + 1).toString().padStart(2, "0")}${now
+      .getDate()
+      .toString()
+      .padStart(2, "0")}${now.getFullYear().toString()}`;
+    const random = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, "0");
+    const confirmationNumber = `BK-${dateStr}-${random}`;
 
     const bookingData = {
       ...req.body,
+      serviceType: req.body.serviceType || "drive-in", // Ensure serviceType is set
+      servicePrice: adjustedServicePrice,
       totalPrice,
       optionalServices: req.body.optionalServices || [],
+      depositRequired,
+      depositAmount,
+      distanceFromStore,
+      confirmationNumber,
     };
+
+    // Process payment if deposit token is provided (mobile service)
+    if (req.body.depositToken && depositRequired && depositAmount > 0) {
+      // Validate Square configuration before attempting payment
+      if (!process.env.SQUARE_ACCESS_TOKEN || !process.env.SQUARE_LOCATION_ID) {
+        console.error("Square payment configuration missing:", {
+          hasAccessToken: !!process.env.SQUARE_ACCESS_TOKEN,
+          hasLocationId: !!process.env.SQUARE_LOCATION_ID,
+          environment: process.env.NODE_ENV,
+        });
+        return res.status(500).json({
+          success: false,
+          error: "Payment system configuration error. Please contact support.",
+          bookingNotCreated: true,
+        });
+      }
+
+      try {
+        const depositAmountCents = Math.round(depositAmount * 100); // Convert dollars to cents
+        console.log(
+          `Processing deposit payment: $${depositAmount} (${depositAmountCents} cents) for booking ${confirmationNumber}`
+        );
+        console.log("Payment details:", {
+          sourceId: req.body.depositToken?.substring(0, 20) + "...",
+          amount: depositAmountCents,
+          customerName: req.body.name,
+          customerEmail: req.body.email,
+        });
+
+        const paymentResult = await chargeDeposit({
+          sourceId: req.body.depositToken,
+          amount: depositAmountCents, // Amount in cents
+          currency: "USD",
+          note: `Mobile service deposit for booking ${confirmationNumber} - Customer: ${req.body.name}`,
+          referenceId: confirmationNumber,
+          autocomplete: true,
+        });
+
+        console.log("✅ Payment processed successfully:", {
+          paymentId: paymentResult.id,
+          status: paymentResult.status,
+          amountCents: Number(paymentResult.amountMoney?.amount || 0),
+          currency: paymentResult.amountMoney?.currency,
+          confirmationNumber,
+        });
+
+        // Add payment information to booking data (convert BigInt values to numbers)
+        bookingData.paymentDetails = {
+          paymentId: paymentResult.id,
+          status: paymentResult.status,
+          amountCharged: depositAmount,
+          processedAt: new Date(),
+          cardDetails: paymentResult.cardDetails || {},
+          squareAmountMoney: {
+            amount: Number(paymentResult.amountMoney?.amount || 0),
+            currency: paymentResult.amountMoney?.currency || "USD",
+          },
+        };
+        bookingData.depositPaid = true;
+      } catch (paymentError) {
+        console.error("Payment processing failed:", {
+          error: paymentError.message,
+          confirmationNumber,
+          depositToken: req.body.depositToken?.substring(0, 10) + "...",
+          amount: depositAmount,
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: "Payment processing failed: " + paymentError.message,
+          bookingNotCreated: true,
+        });
+      }
+    }
 
     const booking = new Booking(bookingData);
     const savedBooking = await booking.save();
+
+    console.log("✅ Booking created successfully:", {
+      confirmationNumber: savedBooking.confirmationNumber,
+      serviceType: savedBooking.serviceType,
+      totalPrice: savedBooking.totalPrice,
+      depositRequired: savedBooking.depositRequired,
+      depositAmount: savedBooking.depositAmount,
+      depositPaid: savedBooking.depositPaid,
+      paymentProcessed: !!savedBooking.paymentDetails,
+      customerId: savedBooking._id,
+    });
 
     //send admin notification
     try {
@@ -54,7 +330,7 @@ export async function createBooking(req, res) {
 
     res.status(201).json({
       success: true,
-      data: savedBooking,
+      data: sanitizeBookingData(savedBooking),
     });
   } catch (error) {
     console.error("Booking error:", error);
@@ -67,7 +343,16 @@ export async function createBooking(req, res) {
 
 export async function getAllBookings(req, res) {
   try {
-    const { page, limit, status, search, startDate, endDate, sort } = req.query;
+    const {
+      page,
+      limit,
+      status,
+      search,
+      startDate,
+      endDate,
+      sort,
+      serviceType,
+    } = req.query;
     if (process.env.NODE_ENV === "development") {
       console.log("getAllBookings called with sort:", sort);
       console.log(
@@ -95,6 +380,13 @@ export async function getAllBookings(req, res) {
     const query = {};
     if (status && status !== "all") {
       query.status = status;
+    }
+    if (serviceType && serviceType !== "all") {
+      if (serviceType === "drive-in") {
+        query.serviceType = { $ne: "mobile" };
+      } else {
+        query.serviceType = serviceType;
+      }
     }
     if (search) {
       const rx = new RegExp(search, "i");
