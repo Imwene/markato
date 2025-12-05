@@ -166,18 +166,19 @@ const AddressInput = ({
     `;
   }, [validationStatus?.status, hasErrorStatus]);
 
-  // Memoize validation message
+  // Memoize validation message with more informative error details
   const validationMessage = useMemo(() => {
     if (isValidating) {
       return {
         text: "Validating address...",
         color: "text-blue-600 dark:text-blue-400",
+        details: null,
       };
     }
 
     if (!validationStatus) return null;
 
-    const { status, distance, message } = validationStatus;
+    const { status, distance, message, formattedAddress, addressComponents } = validationStatus;
 
     switch (status) {
       case "valid":
@@ -188,28 +189,29 @@ const AddressInput = ({
               : ""
           }`,
           color: "text-green-600 dark:text-green-400",
+          details: formattedAddress ? `We'll come to: ${formattedAddress}` : null,
         };
       case "invalid":
         return {
-          text: `✗ ${
-            message || "Invalid address. Please check and try again."
-          }`,
+          text: "✗ We couldn't find this address",
           color: "text-red-600 dark:text-red-400",
+          details: message || "Please enter a complete street address including city and state (e.g., 123 Main St, Oakland, CA 94601). Make sure the address exists and is spelled correctly.",
         };
       case "outside_service_area":
         return {
-          text: `⚠ Address is ${
-            distance != null ? `${distance.toFixed(1)} miles` : "too far"
-          } away (outside our 15-mile East Bay service area)`,
+          text: `⚠ Address is too far from our service area`,
           color: "text-orange-600 dark:text-orange-400",
+          details: `Your location${addressComponents?.city ? ` in ${addressComponents.city}` : ""} is ${
+            distance != null ? `${distance.toFixed(1)} miles` : "too far"
+          } from our Oakland location. We currently service addresses within 15 miles of Oakland in the East Bay area. Please consider our drive-in service at 1901 Park Blvd, Oakland instead.`,
         };
       case "outside_east_bay":
         return {
-          text: `✗ ${
-            message ||
-            "Address is outside our East Bay service area (West Bay/Peninsula not serviced)"
-          }`,
+          text: `✗ Address is outside our service area`,
           color: "text-red-600 dark:text-red-400",
+          details: addressComponents?.city 
+            ? `We don't currently offer mobile service in ${addressComponents.city}. Our mobile detailing is only available in the East Bay (Oakland, Berkeley, Alameda, Fremont, and surrounding cities). San Francisco, Peninsula, and South Bay are not serviced. Please consider our drive-in service at 1901 Park Blvd, Oakland instead.`
+            : (message || "This address is in the West Bay, Peninsula, or South Bay area which we don't currently service. Our mobile detailing is only available in the East Bay. Please consider our drive-in service at 1901 Park Blvd, Oakland instead."),
         };
       default:
         return null;
@@ -312,7 +314,7 @@ const AddressInput = ({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute z-50 w-full mt-1 bg-white dark:bg-stone-800 rounded-lg shadow-lg border border-border-DEFAULT dark:border-stone-700 max-h-60 overflow-auto"
+                className="absolute z-[9999] w-full mt-1 bg-white dark:bg-stone-800 rounded-lg shadow-xl border border-border-DEFAULT dark:border-stone-700 max-h-60 overflow-auto"
               >
                 {suggestions.map((prediction) => (
                   <li
@@ -348,11 +350,24 @@ const AddressInput = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className={`text-sm ${validationMessage.color} flex items-start space-x-2`}
+            className="space-y-2"
             role="status"
             aria-live="polite"
           >
-            <div className="flex-1">{validationMessage.text}</div>
+            <div className={`text-sm font-medium ${validationMessage.color}`}>
+              {validationMessage.text}
+            </div>
+            {validationMessage.details && (
+              <div className={`text-xs ${
+                validationMessage.color.includes("green") 
+                  ? "text-green-600/80 dark:text-green-400/80" 
+                  : validationMessage.color.includes("orange")
+                    ? "text-orange-600/80 dark:text-orange-400/80 bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-800"
+                    : "text-red-600/80 dark:text-red-400/80 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800"
+              }`}>
+                {validationMessage.details}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

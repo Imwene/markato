@@ -8,9 +8,87 @@ import {
   TableRow,
 } from "../../ui/table";
 import { Input } from "../../ui/input";
-import { Plus, Edit2, Save, X, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Edit2, Save, X, ArrowUp, ArrowDown, AlertTriangle, Clock, Trash2 } from "lucide-react";
 import api from "../../../utils/api";
 import { CONFIG } from "../../../config/config.js";
+
+// Confirmation Dialog Component for mobile detailing toggle
+const ConfirmationDialog = ({ isOpen, onClose, onConfirm, isEnabling, isSaving, error }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop - don't allow closing while saving */}
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={isSaving ? undefined : onClose}
+      />
+      
+      {/* Dialog */}
+      <div className="relative bg-white dark:bg-stone-800 rounded-xl shadow-xl max-w-md w-full mx-4 p-6 border border-border-light dark:border-stone-700">
+        <div className="flex items-start gap-4">
+          <div className={`flex-shrink-0 p-2 rounded-full ${
+            isEnabling 
+              ? "bg-green-100 dark:bg-green-900/30" 
+              : "bg-amber-100 dark:bg-amber-900/30"
+          }`}>
+            <AlertTriangle className={`w-6 h-6 ${
+              isEnabling 
+                ? "text-green-600 dark:text-green-400" 
+                : "text-amber-600 dark:text-amber-400"
+            }`} />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-content-dark dark:text-white mb-2">
+              {isEnabling ? "Enable Mobile Detailing?" : "Disable Mobile Detailing?"}
+            </h3>
+            <p className="text-sm text-content-light dark:text-stone-400 mb-4">
+              {isEnabling 
+                ? "Customers will be able to book mobile detailing services at their location. This includes address validation, service area checks, and payment processing."
+                : "Customers will only be able to book drive-in services. The mobile detailing option will be hidden from the booking flow. Any bookings currently in progress will still be completed."
+              }
+            </p>
+            
+            {/* Error message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              </div>
+            )}
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={onClose}
+                disabled={isSaving}
+                className="px-4 py-2 text-sm font-medium text-content-DEFAULT dark:text-stone-300 
+                         bg-stone-100 dark:bg-stone-700 rounded-lg 
+                         hover:bg-stone-200 dark:hover:bg-stone-600 transition-colors
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onConfirm}
+                disabled={isSaving}
+                className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors 
+                           disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
+                  isEnabling
+                    ? "bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
+                    : "bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700"
+                }`}
+              >
+                {isSaving && (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                )}
+                {isSaving ? "Saving..." : (isEnabling ? "Enable" : "Disable")}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ConfigurationManager = () => {
   const [error, setError] = useState(null);
@@ -21,9 +99,36 @@ const ConfigurationManager = () => {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [loading, setLoading] = useState(true);
+  // Default business hours - matches server defaults
+  const DEFAULT_BUSINESS_HOURS = [
+    "9:00 AM",
+    "10:00 AM",
+    "11:00 AM",
+    "12:00 PM",
+    "1:00 PM",
+    "2:00 PM",
+    "3:00 PM",
+    "4:00 PM",
+    "5:00 PM",
+    "6:00 PM",
+  ];
+
   const [businessSettings, setBusinessSettings] = useState({
     unavailableDay: null,
+    mobileDetailingEnabled: false,
+    businessHours: DEFAULT_BUSINESS_HOURS,
   });
+  const [showMobileToggleConfirm, setShowMobileToggleConfirm] = useState(false);
+  const [pendingMobileToggleValue, setPendingMobileToggleValue] = useState(false);
+  const [mobileToggleSaving, setMobileToggleSaving] = useState(false);
+  const [mobileToggleError, setMobileToggleError] = useState(null);
+  
+  // Business hours editing state
+  const [businessHoursEditing, setBusinessHoursEditing] = useState(false);
+  const [editedBusinessHours, setEditedBusinessHours] = useState([]);
+  const [businessHoursSaving, setBusinessHoursSaving] = useState(false);
+  const [businessHoursError, setBusinessHoursError] = useState(null);
+  const [newTimeSlot, setNewTimeSlot] = useState("");
 
   useEffect(() => {
     fetchConfigurations();
@@ -962,8 +1067,55 @@ const ConfigurationManager = () => {
             <h3 className="text-lg font-semibold text-content-dark dark:text-white">
               Business Settings
             </h3>
+            
+            {/* Mobile Detailing Toggle */}
             <div className="w-full bg-background-light dark:bg-stone-800 rounded-lg border border-border-light dark:border-stone-700 p-4">
-              <label className="block mb-2 text-sm text-content-dark dark:text-stone-200">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 mr-4">
+                  <label className="block text-sm font-medium text-content-dark dark:text-stone-200">
+                    Mobile Detailing Service
+                  </label>
+                  <p className="text-xs text-content-light dark:text-stone-400 mt-1">
+                    Allow customers to book mobile detailing services at their location. 
+                    When disabled, only drive-in bookings are available.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* Status Badge */}
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    businessSettings?.mobileDetailingEnabled
+                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                      : "bg-stone-100 text-stone-600 dark:bg-stone-700 dark:text-stone-400"
+                  }`}>
+                    {businessSettings?.mobileDetailingEnabled ? "Enabled" : "Disabled"}
+                  </span>
+                  {/* Toggle Switch */}
+                  <button
+                    onClick={() => {
+                      setPendingMobileToggleValue(!businessSettings?.mobileDetailingEnabled);
+                      setShowMobileToggleConfirm(true);
+                    }}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-orange-500 focus:ring-offset-2 ${
+                      businessSettings?.mobileDetailingEnabled
+                        ? "bg-green-600 dark:bg-green-600"
+                        : "bg-stone-300 dark:bg-stone-600"
+                    }`}
+                    role="switch"
+                    aria-checked={businessSettings?.mobileDetailingEnabled}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        businessSettings?.mobileDetailingEnabled ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Unavailable Day Setting */}
+            <div className="w-full bg-background-light dark:bg-stone-800 rounded-lg border border-border-light dark:border-stone-700 p-4">
+              <label className="block mb-2 text-sm font-medium text-content-dark dark:text-stone-200">
                 Unavailable Day (Closed)
               </label>
               <div className="flex items-center gap-2">
@@ -1010,9 +1162,245 @@ const ConfigurationManager = () => {
                 booking form.
               </p>
             </div>
+
+            {/* Business Hours Configuration */}
+            <div className="w-full bg-background-light dark:bg-stone-800 rounded-lg border border-border-light dark:border-stone-700 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-primary-light dark:text-orange-500" />
+                  <label className="text-sm font-medium text-content-dark dark:text-stone-200">
+                    Available Booking Times
+                  </label>
+                </div>
+                {!businessHoursEditing ? (
+                  <button
+                    onClick={() => {
+                      setEditedBusinessHours([...(businessSettings?.businessHours || DEFAULT_BUSINESS_HOURS)]);
+                      setBusinessHoursEditing(true);
+                      setBusinessHoursError(null);
+                    }}
+                    className="px-3 py-1.5 text-sm bg-stone-100 dark:bg-stone-700 text-content-DEFAULT dark:text-stone-300 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-600 transition-colors flex items-center gap-1"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Edit
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setBusinessHoursEditing(false);
+                        setEditedBusinessHours([]);
+                        setBusinessHoursError(null);
+                        setNewTimeSlot("");
+                      }}
+                      disabled={businessHoursSaving}
+                      className="px-3 py-1.5 text-sm bg-stone-100 dark:bg-stone-700 text-content-DEFAULT dark:text-stone-300 rounded-lg hover:bg-stone-200 dark:hover:bg-stone-600 transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (editedBusinessHours.length === 0) {
+                          setBusinessHoursError("At least one time slot is required");
+                          return;
+                        }
+                        setBusinessHoursSaving(true);
+                        setBusinessHoursError(null);
+                        try {
+                          await api.put(
+                            CONFIG.ENDPOINTS.CONFIG.BUSINESS_SETTINGS,
+                            { businessHours: editedBusinessHours },
+                            {}
+                          );
+                          await fetchConfigurations();
+                          setBusinessHoursEditing(false);
+                          setEditedBusinessHours([]);
+                          setNewTimeSlot("");
+                        } catch (err) {
+                          console.error("Failed to update business hours", err);
+                          setBusinessHoursError(err.message || "Failed to save. Please try again.");
+                        } finally {
+                          setBusinessHoursSaving(false);
+                        }
+                      }}
+                      disabled={businessHoursSaving || editedBusinessHours.length === 0}
+                      className="px-3 py-1.5 text-sm bg-primary-light dark:bg-orange-500 text-white rounded-lg hover:bg-primary-DEFAULT dark:hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {businessHoursSaving && (
+                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      )}
+                      {businessHoursSaving ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-xs text-content-light dark:text-stone-400 mb-3">
+                Configure the time slots available for customer bookings. Adjust these seasonally as needed.
+              </p>
+
+              {businessHoursError && (
+                <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-sm text-red-600 dark:text-red-400">{businessHoursError}</p>
+                </div>
+              )}
+
+              {!businessHoursEditing ? (
+                /* Display mode - show current business hours */
+                <div className="flex flex-wrap gap-2">
+                  {(businessSettings?.businessHours || DEFAULT_BUSINESS_HOURS).map((time, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1.5 bg-stone-100 dark:bg-stone-700 text-content-DEFAULT dark:text-stone-300 rounded-lg text-sm"
+                    >
+                      {time}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                /* Edit mode - allow adding/removing time slots */
+                <div className="space-y-3">
+                  {/* Current time slots */}
+                  <div className="flex flex-wrap gap-2">
+                    {editedBusinessHours.map((time, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-stone-100 dark:bg-stone-700 text-content-DEFAULT dark:text-stone-300 rounded-lg text-sm group"
+                      >
+                        <span>{time}</span>
+                        <button
+                          onClick={() => {
+                            setEditedBusinessHours(editedBusinessHours.filter((_, i) => i !== index));
+                          }}
+                          className="ml-1 p-0.5 text-stone-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                          title="Remove time slot"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add new time slot */}
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={newTimeSlot}
+                      onChange={(e) => setNewTimeSlot(e.target.value)}
+                      className="p-2 border rounded-md bg-background-light dark:bg-stone-800 border-border-DEFAULT dark:border-stone-700 text-content-DEFAULT dark:text-white text-sm"
+                    >
+                      <option value="">Select time to add...</option>
+                      {/* Generate all possible time slots */}
+                      {[
+                        "6:00 AM", "6:30 AM", "7:00 AM", "7:30 AM", "8:00 AM", "8:30 AM",
+                        "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
+                        "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM", "2:00 PM", "2:30 PM",
+                        "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM",
+                        "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM", "8:00 PM", "8:30 PM",
+                        "9:00 PM"
+                      ]
+                        .filter((time) => !editedBusinessHours.includes(time))
+                        .map((time) => (
+                          <option key={time} value={time}>
+                            {time}
+                          </option>
+                        ))}
+                    </select>
+                    <button
+                      onClick={() => {
+                        if (newTimeSlot && !editedBusinessHours.includes(newTimeSlot)) {
+                          // Robust time parsing - handles various formats
+                          const timeToMinutes = (timeStr) => {
+                            // Split on whitespace (handles multiple spaces or tabs)
+                            const parts = timeStr.trim().split(/\s+/);
+                            const time = parts[0] || "";
+                            const periodRaw = parts[1] || "";
+                            const period = periodRaw.toUpperCase();
+                            
+                            const timeParts = time.split(":");
+                            let hours = parseInt(timeParts[0], 10) || 0;
+                            const minutes = parseInt(timeParts[1], 10) || 0;
+                            
+                            // Handle invalid/missing period gracefully
+                            if (period === "PM" && hours !== 12) hours += 12;
+                            if (period === "AM" && hours === 12) hours = 0;
+                            
+                            // Return large number for invalid times to sort them to the end
+                            if (isNaN(hours) || isNaN(minutes)) return Number.MAX_SAFE_INTEGER;
+                            
+                            return hours * 60 + minutes;
+                          };
+                          const newHours = [...editedBusinessHours, newTimeSlot].sort(
+                            (a, b) => timeToMinutes(a) - timeToMinutes(b)
+                          );
+                          setEditedBusinessHours(newHours);
+                          setNewTimeSlot("");
+                        }
+                      }}
+                      disabled={!newTimeSlot}
+                      className="px-3 py-2 text-sm bg-stone-200 dark:bg-stone-600 text-content-DEFAULT dark:text-white rounded-lg hover:bg-stone-300 dark:hover:bg-stone-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add
+                    </button>
+                  </div>
+
+                  {/* Quick actions */}
+                  <div className="flex gap-2 pt-2 border-t border-border-light dark:border-stone-700">
+                    <button
+                      onClick={() => setEditedBusinessHours([...DEFAULT_BUSINESS_HOURS])}
+                      className="text-xs text-primary-light dark:text-orange-400 hover:underline"
+                    >
+                      Reset to defaults
+                    </button>
+                    <span className="text-stone-300 dark:text-stone-600">|</span>
+                    <button
+                      onClick={() => setEditedBusinessHours([])}
+                      className="text-xs text-red-500 dark:text-red-400 hover:underline"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
+
+      {/* Mobile Detailing Toggle Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showMobileToggleConfirm}
+        onClose={() => {
+          if (!mobileToggleSaving) {
+            setShowMobileToggleConfirm(false);
+            setMobileToggleError(null);
+          }
+        }}
+        isEnabling={pendingMobileToggleValue}
+        isSaving={mobileToggleSaving}
+        error={mobileToggleError}
+        onConfirm={async () => {
+          setMobileToggleSaving(true);
+          setMobileToggleError(null);
+          try {
+            await api.put(
+              CONFIG.ENDPOINTS.CONFIG.BUSINESS_SETTINGS,
+              { mobileDetailingEnabled: pendingMobileToggleValue },
+              {}
+            );
+            await fetchConfigurations();
+            setShowMobileToggleConfirm(false);
+            setMobileToggleError(null);
+          } catch (err) {
+            console.error("Failed to update mobile detailing setting", err);
+            setMobileToggleError(
+              err.message || "Failed to update setting. Please try again."
+            );
+          } finally {
+            setMobileToggleSaving(false);
+          }
+        }}
+      />
     </div>
   );
 };

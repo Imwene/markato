@@ -187,8 +187,9 @@ export const getBusinessSettings = async (req, res) => {
 
 export const updateBusinessSettings = async (req, res) => {
   try {
-    const { unavailableDay } = req.body;
+    const { unavailableDay, mobileDetailingEnabled, businessHours } = req.body;
 
+    // Validate unavailableDay if provided
     if (
       unavailableDay !== null &&
       unavailableDay !== undefined &&
@@ -202,10 +203,85 @@ export const updateBusinessSettings = async (req, res) => {
       });
     }
 
+    // Strict validation for mobileDetailingEnabled - must be a boolean
+    if (mobileDetailingEnabled !== undefined && typeof mobileDetailingEnabled !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        error: "mobileDetailingEnabled must be a boolean (true or false)",
+      });
+    }
+
+    // Validate and normalize businessHours if provided
+    let normalizedBusinessHours;
+    if (businessHours !== undefined) {
+      if (!Array.isArray(businessHours)) {
+        return res.status(400).json({
+          success: false,
+          error: "businessHours must be an array of time strings",
+        });
+      }
+
+      if (businessHours.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "businessHours must contain at least one time slot",
+        });
+      }
+
+      // Validate each time string format (allows flexible input)
+      const timeRegex = /^(1[0-2]|[1-9]):([0-5][0-9])\s?(AM|PM)$/i;
+      const invalidTimes = businessHours.filter((time) => !timeRegex.test(time?.trim?.() || ""));
+      if (invalidTimes.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid time format: ${invalidTimes.join(", ")}. Use format like '9:00 AM' or '12:30 PM'`,
+        });
+      }
+
+      // Normalize time strings to canonical format: "H:MM AM" or "HH:MM PM"
+      // - Trim whitespace
+      // - Ensure single space before AM/PM
+      // - Uppercase AM/PM
+      const normalizeTime = (timeStr) => {
+        const match = timeStr.trim().match(/^(1[0-2]|[1-9]):([0-5][0-9])\s?(AM|PM)$/i);
+        if (!match) return timeStr; // Should not happen after validation
+        const [, hours, minutes, period] = match;
+        return `${hours}:${minutes} ${period.toUpperCase()}`;
+      };
+
+      // Helper to convert time to minutes for sorting
+      const timeToMinutes = (timeStr) => {
+        const [time, period] = timeStr.split(" ");
+        let [hours, minutes] = time.split(":").map(Number);
+        if (period === "PM" && hours !== 12) hours += 12;
+        if (period === "AM" && hours === 12) hours = 0;
+        return hours * 60 + minutes;
+      };
+
+      // Normalize, deduplicate, and sort
+      normalizedBusinessHours = [...new Set(businessHours.map(normalizeTime))]
+        .sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
+    }
+
+    // Build update object with only provided fields
+    const updateData = {};
+
+    if (unavailableDay !== undefined) {
+      updateData.unavailableDay = unavailableDay === "" ? null : unavailableDay;
+    }
+
+    if (mobileDetailingEnabled !== undefined) {
+      updateData.mobileDetailingEnabled = mobileDetailingEnabled;
+    }
+
+    if (normalizedBusinessHours !== undefined) {
+      updateData.businessHours = normalizedBusinessHours;
+    }
+
     const updated = await BusinessSettings.findOneAndUpdate(
       {},
-      { unavailableDay: unavailableDay === "" ? null : unavailableDay },
-      { new: true, upsert: true }
+      updateData,
+      { new: true, upsert: true, runValidators: true }
     );
 
     res.json({ success: true, data: updated });

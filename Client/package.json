@@ -28,6 +28,7 @@
     "react-hook-form": "^7.54.1",
     "react-hot-toast": "^2.4.1",
     "react-router-dom": "^7.0.2",
+    "react-square-web-payments-sdk": "^3.2.4-beta.1",
     "recharts": "^2.15.0",
     "sharp": "^0.33.5",
     "tailwind-merge": "^2.5.5",

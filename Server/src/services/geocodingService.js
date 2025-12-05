@@ -35,8 +35,12 @@ export const geocodeAddress = async (address) => {
       },
     });
 
-    if (response.data.status !== "OK" || response.data.results.length === 0) {
-      throw new Error("Address not found or geocoding failed");
+    if (response.data.status === "ZERO_RESULTS" || response.data.results.length === 0) {
+      throw new Error("We couldn't find this address. Please check the spelling and include the full street address, city, and state.");
+    }
+    
+    if (response.data.status !== "OK") {
+      throw new Error(`Address lookup failed: ${response.data.status}. Please try again.`);
     }
 
     const result = response.data.results[0];
@@ -190,6 +194,10 @@ export const validateAddressAndServiceArea = async (address) => {
       formattedAddress: geocodeResult.formattedAddress,
       addressComponents: geocodeResult.addressComponents,
       storeLocation: serviceAreaResult.storeLocation,
+      // Pass through validation status and message for more informative errors
+      validationStatus: serviceAreaResult.validationStatus,
+      validationMessage: serviceAreaResult.validationMessage,
+      eastBayValidation: serviceAreaResult.eastBayValidation,
     };
   } catch (error) {
     console.error("Address validation error:", error);

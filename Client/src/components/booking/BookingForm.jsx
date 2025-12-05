@@ -47,14 +47,29 @@ const BookingForm = ({
     },
   });
 
+  // Default business hours - fallback if settings fail to load
+  const DEFAULT_BUSINESS_HOURS = [
+    "9:00 AM",
+    "10:00 AM",
+    "11:00 AM",
+    "12:00 PM",
+    "1:00 PM",
+    "2:00 PM",
+    "3:00 PM",
+    "4:00 PM",
+    "5:00 PM",
+    "6:00 PM",
+  ];
+
   // State for availability checking
   const [timeSlots, setTimeSlots] = useState({});
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const watchedDate = watch("date");
   const watchedTime = watch("time");
   const [unavailableDay, setUnavailableDay] = useState(null);
+  const [businessHours, setBusinessHours] = useState(DEFAULT_BUSINESS_HOURS);
 
-  // Load business settings
+  // Load business settings (unavailable day and business hours)
   useEffect(() => {
     const fetchBusinessSettings = async () => {
       try {
@@ -68,27 +83,18 @@ const BookingForm = ({
         if (res.ok) {
           const data = await res.json();
           setUnavailableDay(data?.data?.unavailableDay ?? null);
+          // Set business hours from settings, fallback to defaults if empty
+          if (data?.data?.businessHours?.length > 0) {
+            setBusinessHours(data.data.businessHours);
+          }
         }
       } catch (e) {
-        // ignore and keep default null
+        // ignore and keep defaults
+        console.error("Failed to load business settings:", e);
       }
     };
     fetchBusinessSettings();
   }, []);
-
-  // Business hours
-  const businessHours = [
-    "9:00 AM",
-    "10:00 AM",
-    "11:00 AM",
-    "12:00 PM",
-    "1:00 PM",
-    "2:00 PM",
-    "3:00 PM",
-    "4:00 PM",
-    "5:00 PM",
-    "6:00 PM",
-  ];
 
   // NEW: Enhanced form validation rules with mobile service validation
   const validationRules = {

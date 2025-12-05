@@ -221,7 +221,7 @@ export const useBookingState = () => {
 
   // External data hooks
   const { services } = useServices();
-  const { vehicleTypes, scents, optionalServices } = useConfig();
+  const { vehicleTypes, scents, optionalServices, mobileDetailingEnabled } = useConfig();
 
   // AbortController ref for address validation
   const addressValidationAbortRef = useRef(null);
@@ -235,6 +235,29 @@ export const useBookingState = () => {
       }
     };
   }, []);
+
+  // Handle mobile detailing toggle - skip service-type step when disabled
+  // Also reset any in-progress mobile bookings to prevent stale sessions
+  useEffect(() => {
+    if (!mobileDetailingEnabled) {
+      // Force service type to drive-in when mobile is disabled
+      if (state.serviceType !== "drive-in") {
+        dispatch({ type: "SET_SERVICE_TYPE", payload: "drive-in" });
+      }
+      
+      // If user was in the payment step (mid-mobile-booking), reset to service step
+      // This prevents stale sessions from completing mobile bookings
+      if (state.bookingStep === "payment") {
+        dispatch({ type: "SET_BOOKING_STEP", payload: "service" });
+        // Clear pending payload to prevent any lingering mobile booking data
+        dispatch({ type: "SET_PENDING_PAYLOAD", payload: null });
+      }
+      // Skip service-type step and go directly to service selection
+      else if (state.bookingStep === "service-type") {
+        dispatch({ type: "SET_BOOKING_STEP", payload: "service" });
+      }
+    }
+  }, [mobileDetailingEnabled, state.serviceType, state.bookingStep]);
 
   // -- Handlers --
 
@@ -387,7 +410,11 @@ export const useBookingState = () => {
   const handleBack = () => {
     switch (state.bookingStep) {
       case "service":
-        setBookingStep("service-type");
+        // Only go back to service-type if mobile detailing is enabled
+        if (mobileDetailingEnabled) {
+          setBookingStep("service-type");
+        }
+        // If mobile is disabled, there's no previous step to go back to
         break;
       case "options":
         setBookingStep("service");
@@ -703,10 +730,18 @@ export const useBookingState = () => {
 
   // Progress Calculation
   const getProgress = () => {
-    const steps =
-      state.serviceType === "mobile"
-        ? ["service-type", "service", "options", "details", "payment"]
-        : ["service-type", "service", "options", "details"];
+    // Determine available steps based on mobile detailing availability
+    let steps;
+    if (!mobileDetailingEnabled) {
+      // When mobile is disabled, skip service-type step entirely
+      steps = ["service", "options", "details"];
+    } else if (state.serviceType === "mobile") {
+      // Mobile flow includes payment step
+      steps = ["service-type", "service", "options", "details", "payment"];
+    } else {
+      // Drive-in flow (when mobile is enabled but user chose drive-in)
+      steps = ["service-type", "service", "options", "details"];
+    }
     const currentIndex = steps.indexOf(state.bookingStep);
     return ((currentIndex + 1) / steps.length) * 100;
   };
@@ -718,6 +753,7 @@ export const useBookingState = () => {
     vehicleTypes,
     scents,
     optionalServices,
+    mobileDetailingEnabled, // Expose mobile detailing toggle state
 
     // Computed
     canProceedToDetails,

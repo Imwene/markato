@@ -141,7 +141,17 @@ export async function suggestAddresses(req, res) {
 
 export async function createBooking(req, res) {
   try {
-    //console.log('Received booking:', req.body);
+    // Server-side enforcement: Reject mobile bookings when mobile detailing is disabled
+    if (req.body.serviceType === "mobile") {
+      const businessSettings = await BusinessSettings.findOne();
+      if (!businessSettings?.mobileDetailingEnabled) {
+        return res.status(400).json({
+          success: false,
+          error: "Mobile detailing service is currently unavailable. Please book a drive-in service instead.",
+          code: "MOBILE_DETAILING_DISABLED",
+        });
+      }
+    }
 
     const basePrice = parseFloat(req.body.servicePrice);
     const optionalServicesTotal = (req.body.optionalServices || []).reduce(

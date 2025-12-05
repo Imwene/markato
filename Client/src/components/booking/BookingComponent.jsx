@@ -54,6 +54,9 @@ const BookingComponent = () => {
     finalizeMobileBooking,
     mobileDetails,
     totalPrice,
+
+    // Mobile detailing toggle
+    mobileDetailingEnabled,
   } = useBookingState();
 
   // Track previous step to handle scroll transitions
@@ -203,18 +206,21 @@ const BookingComponent = () => {
 
         {bookingStep === "service" && (
           <div className="flex flex-col sm:flex-row gap-3 w-full px-1 sm:px-0">
-            <motion.button
-              onClick={handleBack}
-              className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold bg-white dark:bg-stone-800 text-stone-700 dark:text-white border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all duration-200 shadow-sm hover:shadow-md"
-              whileHover={{ scale: 1.015 }}
-              whileTap={{ scale: 0.98 }}
-              style={{
-                minHeight: 48,
-                letterSpacing: 0.02,
-              }}
-            >
-              Back to Service Type
-            </motion.button>
+            {/* Only show back button if mobile detailing is enabled */}
+            {mobileDetailingEnabled && (
+              <motion.button
+                onClick={handleBack}
+                className="w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold bg-white dark:bg-stone-800 text-stone-700 dark:text-white border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                whileHover={{ scale: 1.015 }}
+                whileTap={{ scale: 0.98 }}
+                style={{
+                  minHeight: 48,
+                  letterSpacing: 0.02,
+                }}
+              >
+                Back to Service Type
+              </motion.button>
+            )}
             <motion.button
               onClick={handleNext}
               className={`w-full sm:flex-1 py-3 px-4 rounded-xl sm:rounded-lg text-base font-semibold transition-all duration-200 ${
@@ -331,7 +337,7 @@ const BookingComponent = () => {
     );
   };
 
-  // NEW: Enhanced step titles and descriptions
+  // Enhanced step titles and descriptions
   const getStepInfo = () => {
     switch (bookingStep) {
       case "service-type":
@@ -343,9 +349,10 @@ const BookingComponent = () => {
       case "service":
         return {
           title: "Select Your Service Package",
-          description: `Choose the ${
-            serviceType === "mobile" ? "mobile " : ""
-          }service that best fits your needs`,
+          // Simplified description when mobile is disabled
+          description: mobileDetailingEnabled
+            ? `Choose the ${serviceType === "mobile" ? "mobile " : ""}service that best fits your needs`
+            : "Choose the service that best fits your needs",
         };
       case "options":
         return {
@@ -394,8 +401,8 @@ const BookingComponent = () => {
           {stepInfo.description}
         </p>
 
-        {/* NEW: Service type indicator */}
-        {bookingStep !== "service-type" && bookingStep !== "confirmation" && (
+        {/* Service type indicator - only show when mobile detailing is enabled */}
+        {mobileDetailingEnabled && bookingStep !== "service-type" && bookingStep !== "confirmation" && (
           <div className="mt-4 flex justify-center">
             <div
               className={`
