@@ -1,7 +1,7 @@
 // src/components/admin/services/ServiceManager.jsx
 import React, { useState, useEffect } from "react";
 import ServiceFormModal from "./ServiceFormModal";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -23,7 +23,10 @@ const ServiceManager = () => {
   const [error, setError] = useState(null);
 
   const renderMobileCard = (service) => (
-    <div key={service._id} className="p-4 bg-white dark:bg-stone-800 rounded-lg border border-border-light dark:border-stone-700 mb-4">
+    <div
+      key={service._id}
+      className="p-4 bg-white dark:bg-stone-800 rounded-lg border border-border-light dark:border-stone-700 mb-4"
+    >
       {/* Service Header */}
       <div className="flex justify-between items-start mb-4">
         <div>
@@ -42,6 +45,20 @@ const ServiceManager = () => {
         </div>
         <div className="flex gap-2">
           <button
+            onClick={() => handleSort(service._id, "up")}
+            className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors text-content-light dark:text-stone-400"
+            title="Move up"
+          >
+            <ArrowUp className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => handleSort(service._id, "down")}
+            className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors text-content-light dark:text-stone-400"
+            title="Move down"
+          >
+            <ArrowDown className="w-4 h-4" />
+          </button>
+          <button
             onClick={() => handleEditService(service)}
             className="p-2 hover:bg-background-dark dark:hover:bg-stone-700 rounded-lg transition-colors text-content-light dark:text-stone-400"
           >
@@ -55,7 +72,7 @@ const ServiceManager = () => {
           </button>
         </div>
       </div>
-  
+
       {/* Features */}
       <div className="mb-4">
         <h4 className="text-sm font-medium text-content-light dark:text-stone-400 mb-2">
@@ -63,13 +80,16 @@ const ServiceManager = () => {
         </h4>
         <ul className="list-disc list-inside space-y-1">
           {service.features.map((feature, index) => (
-            <li key={index} className="text-sm text-content-DEFAULT dark:text-stone-300">
+            <li
+              key={index}
+              className="text-sm text-content-DEFAULT dark:text-stone-300"
+            >
               {feature}
             </li>
           ))}
         </ul>
       </div>
-  
+
       {/* Pricing */}
       <div>
         <h4 className="text-sm font-medium text-content-light dark:text-stone-400 mb-2">
@@ -149,6 +169,24 @@ const ServiceManager = () => {
     }
   };
 
+  const handleSort = async (id, direction) => {
+    try {
+      const items = services;
+      const currentIndex = items.findIndex((item) => item._id === id);
+      if (currentIndex === -1) return;
+
+      const currentOrder = items[currentIndex].sortOrder || 0;
+      const newOrder = direction === "up" ? currentOrder - 1 : currentOrder + 1;
+
+      await api.put(CONFIG.ENDPOINTS.SERVICES.BY_ID(id), {
+        sortOrder: newOrder,
+      });
+      await fetchServices();
+    } catch (error) {
+      console.error("Error updating sort order:", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -172,39 +210,78 @@ const ServiceManager = () => {
         >
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">Add Service</span>
-        <span className="sm:hidden">Add</span>
+          <span className="sm:hidden">Add</span>
         </button>
       </div>
 
       {/* Mobile View */}
-    <div className="lg:hidden space-y-4">
-      {services.map(renderMobileCard)}
-    </div>
+      <div className="lg:hidden space-y-4">
+        {services.map(renderMobileCard)}
+      </div>
 
-      <div className="hidden lg:block w-full overflow-x-auto 
+      <div
+        className="hidden lg:block w-full overflow-x-auto 
                   bg-background-light dark:bg-stone-800 
                   rounded-lg border border-border-light dark:border-stone-700 
-                  relative z-0">
+                  relative z-0"
+      >
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-content-light dark:text-stone-400">Service Name</TableHead>
-              <TableHead className="text-content-light dark:text-stone-400">Features</TableHead>
-              <TableHead className="text-content-light dark:text-stone-400">Pricing</TableHead>
-              <TableHead className="text-content-light dark:text-stone-400">Status</TableHead>
-              <TableHead className="text-right text-content-light dark:text-stone-400">Actions</TableHead>
+              <TableHead className="text-content-light dark:text-stone-400">
+                Sort
+              </TableHead>
+              <TableHead className="text-content-light dark:text-stone-400">
+                Service Name
+              </TableHead>
+              <TableHead className="text-content-light dark:text-stone-400">
+                Features
+              </TableHead>
+              <TableHead className="text-content-light dark:text-stone-400">
+                Pricing
+              </TableHead>
+              <TableHead className="text-content-light dark:text-stone-400">
+                Status
+              </TableHead>
+              <TableHead className="text-content-light dark:text-stone-400">
+                Mobile Available
+              </TableHead>
+              <TableHead className="text-right text-content-light dark:text-stone-400">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {services.map((service) => (
               <TableRow key={service._id}>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleSort(service._id, "up")}
+                      className="p-1 hover:bg-background-dark dark:hover:bg-stone-700 rounded"
+                      title="Move up"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleSort(service._id, "down")}
+                      className="p-1 hover:bg-background-dark dark:hover:bg-stone-700 rounded"
+                      title="Move down"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                </TableCell>
                 <TableCell className="font-medium text-content-DEFAULT dark:text-white">
                   {service.name}
                 </TableCell>
                 <TableCell>
                   <ul className="list-disc list-inside">
                     {service.features.map((feature, index) => (
-                      <li key={index} className="text-sm text-content-light dark:text-stone-400">
+                      <li
+                        key={index}
+                        className="text-sm text-content-light dark:text-stone-400"
+                      >
                         {feature}
                       </li>
                     ))}
@@ -233,6 +310,17 @@ const ServiceManager = () => {
                     }`}
                   >
                     {service.isActive ? "Active" : "Inactive"}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      service.isMobileAvailable !== false
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
+                    }`}
+                  >
+                    {service.isMobileAvailable !== false ? "Yes" : "No"}
                   </span>
                 </TableCell>
                 <TableCell className="text-right">

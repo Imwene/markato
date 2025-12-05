@@ -13,7 +13,7 @@ const BusinessMap = () => {
     width: '100%'
   };
   const defaultCenter = businessLocation;
-  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY1;
   const address = "1901 Park Blvd, Oakland, CA 94606"; // Combine address for Google Maps link
   const mapsLink = `https://www.google.com/maps/place/${encodeURIComponent(address)}`;
   return (

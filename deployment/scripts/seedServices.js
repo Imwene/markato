@@ -25,6 +25,7 @@ const services = [
     },
     duration: 45,
     sortOrder: 1,
+    isMobileAvailable: false,
   },
   {
     name: "COMPLETE",
@@ -48,6 +49,7 @@ const services = [
     },
     duration: 60,
     sortOrder: 2,
+    isMobileAvailable: false,
   },
   {
     name: "ULTIMATE",
@@ -60,6 +62,7 @@ const services = [
     },
     duration: 100,
     sortOrder: 3,
+    isMobileAvailable: true,
   },
   {
     name: "DEEP CLEAN",
@@ -72,6 +75,7 @@ const services = [
     },
     duration: 200,
     sortOrder: 4,
+    isMobileAvailable: true,
   },
   {
     name: "POLISH",
@@ -84,6 +88,7 @@ const services = [
     },
     duration: 250,
     sortOrder: 5,
+    isMobileAvailable: true,
   },
 ];
 

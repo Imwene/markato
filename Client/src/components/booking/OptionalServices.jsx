@@ -2,28 +2,69 @@ import React from "react";
 import { motion } from "framer-motion";
 import { CheckCircle, Plus } from "lucide-react";
 import { useConfig } from "../../hooks/useConfig";
+import { CONFIG } from "../../config/config";
 
 const OptionalServices = ({
   selectedOptions,
   onOptionSelect,
-  onContinue,
-  onBack,
+  optionQuantities,
+  onQuantityChange,
+  serviceType = "drive-in", // NEW: Add service type prop
+  selectedServicePrice = 0, // NEW: Base service price for total calculation
 }) => {
   const { optionalServices, loading } = useConfig();
 
-  const handleOptionToggle = (optionId) => {
-    if (selectedOptions.includes(optionId)) {
+  const isSeatShampoo = (service) =>
+    service?.name?.toLowerCase?.() === "seat cloth shampoo";
+
+  const handleServiceToggle = (service) => {
+    const optionId = service.id.toString();
+    const isSelected = selectedOptions.includes(optionId);
+
+    if (isSelected) {
       onOptionSelect(selectedOptions.filter((id) => id !== optionId));
     } else {
       onOptionSelect([...selectedOptions, optionId]);
+      if (
+        isSeatShampoo(service) &&
+        (!optionQuantities || !optionQuantities[optionId])
+      ) {
+        onQuantityChange?.(optionId, 1);
+      }
     }
   };
 
-  const calculateTotal = () => {
+  const clampQty = (q) => Math.max(1, Math.min(4, Number(q) || 1));
+
+  // Enhanced total calculation including mobile service fee and seat quantities
+  const calculateOptionalServicesTotal = () => {
     const total = optionalServices
       .filter((service) => selectedOptions.includes(service.id.toString()))
-      .reduce((total, service) => total + parseFloat(service.price), 0);
-    return total.toFixed(2);
+      .reduce((sum, service) => {
+        const base = parseFloat(service.price);
+        if (isSeatShampoo(service)) {
+          const q = clampQty(optionQuantities?.[service.id.toString()] || 1);
+          return sum + base * q;
+        }
+        return sum + base;
+      }, 0);
+    return total;
+  };
+
+  const calculateTotal = () => {
+    return calculateOptionalServicesTotal().toFixed(2);
+  };
+
+  const calculateGrandTotal = () => {
+    const optionalTotal = calculateOptionalServicesTotal();
+    let totalServicePrice = selectedServicePrice;
+
+    // Add mobile service upcharge if applicable
+    if (serviceType === "mobile") {
+      totalServicePrice += CONFIG.MOBILE_SERVICE.UPCHARGE;
+    }
+
+    return totalServicePrice + optionalTotal;
   };
 
   if (loading) {
@@ -32,93 +73,184 @@ const OptionalServices = ({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-4">
-        {optionalServices.map((service) => (
-          <motion.div
-            key={service.id}
-            className={`relative p-4 rounded-lg border-2 cursor-pointer transition-colors duration-200
-              ${selectedOptions.includes(service.id.toString())
-                ? "bg-primary-light/5 dark:bg-orange-500/10 border-primary-light dark:border-orange-500"
-                : "bg-white dark:bg-stone-800 border-primary-light/50 dark:border-orange-500/20 hover:border-primary-light/80 dark:hover:border-orange-500/40"
-              }`}
-            onClick={() => handleOptionToggle(service.id.toString())}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-grow">
-                <h4 className="text-lg font-medium text-content-dark dark:text-white">
-                  {service.name}
-                </h4>
-                <p className="text-sm text-content-light dark:text-stone-400 mt-1">
-                  {service.description}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-lg font-bold text-primary-DEFAULT dark:text-orange-500">
-                  ${service.price}
-                </span>
-                <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center
-                  ${selectedOptions.includes(service.id.toString())
-                    ? "bg-primary-light dark:bg-orange-500"
-                    : "border-2 border-primary-light/50 dark:border-orange-500/20"
-                  }`}
-                >
-                  {selectedOptions.includes(service.id.toString()) ? (
-                    <CheckCircle className="w-4 h-4 text-content-dark dark:text-white" />
-                  ) : (
-                    <Plus className="w-4 h-4 text-content-light dark:text-stone-400" />
-                  )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {selectedOptions.length > 0 && (
-        <div className="py-3 border-t border-primary-light/30 dark:border-stone-700">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-content-light dark:text-stone-400">
-              Additional Services Total:
+      {/* NEW: Service type and pricing info */}
+      {serviceType === "mobile" && (
+        <div className="p-4 bg-orange-50/50 dark:bg-orange-900/10 border border-orange-200/50 dark:border-orange-800/30 rounded-lg backdrop-blur-sm">
+          <div className="text-sm">
+            <p className="font-semibold text-orange-800 dark:text-orange-300 mb-1">
+              Mobile Service Selected
             </p>
-            <p className="text-xl font-bold text-primary-DEFAULT dark:text-orange-500">
-              ${calculateTotal()}
+            <p className="text-orange-700 dark:text-orange-400">
+              A ${CONFIG.MOBILE_SERVICE.UPCHARGE} mobile service fee is included
+              in your total. A 50% deposit will be required at booking
+              confirmation.
             </p>
           </div>
         </div>
       )}
 
-      <div className="sticky bottom-0 left-0 right-0 p-4 
-                bg-background-light/95 dark:bg-stone-900/95 
-                backdrop-blur-sm border-t border-primary-light/30 dark:border-stone-700">
-        <div className="space-y-3">
-          <motion.button
-            onClick={onContinue}
-            className="w-full p-3 rounded-lg bg-primary-light dark:bg-orange-500 
-            text-white hover:bg-primary-DEFAULT dark:hover:bg-orange-600 
-            transition-colors duration-200"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            Continue to Booking Details
-          </motion.button>
-          <motion.button
-            onClick={onBack}
-            className="w-full p-3 rounded-lg bg-background-DEFAULT dark:bg-stone-800 
-            text-content-DEFAULT dark:text-white 
-            border border-primary-light/50 dark:border-stone-700 
-            hover:bg-background-dark dark:hover:bg-stone-700 
-            transition-colors duration-200"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            Back to Services
-          </motion.button>
-        </div>
+      <div className="space-y-4">
+        {optionalServices.map((service) => {
+          const idStr = service.id.toString();
+          const selected = selectedOptions.includes(idStr);
+          const qty = clampQty(optionQuantities?.[idStr] || 1);
+          const perSeat = parseFloat(service.price);
+          const displayPrice =
+            isSeatShampoo(service) && selected
+              ? (perSeat * qty).toFixed(2)
+              : service.price;
+
+          return (
+            <motion.div
+              key={service.id}
+              className={`relative p-4 rounded-lg border cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md
+              ${
+                selected
+                  ? "bg-white/80 dark:bg-stone-800/80 border-primary-light/60 dark:border-orange-500/60"
+                  : "bg-white/60 dark:bg-stone-800/60 border-stone-200/60 dark:border-stone-700/60 hover:border-primary-light/40 dark:hover:border-orange-500/40"
+              }`}
+              onClick={() => handleServiceToggle(service)}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-grow">
+                  <h4 className="text-lg font-medium text-content-dark dark:text-white">
+                    {service.name}
+                  </h4>
+                  <p className="text-sm text-content-light dark:text-stone-400 mt-1">
+                    {service.description}
+                  </p>
+
+                  {isSeatShampoo(service) && selected && (
+                    <div
+                      className="mt-2 flex items-center gap-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <label className="text-sm text-content-light dark:text-stone-400">
+                        Seats (max 4):
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onQuantityChange?.(idStr, clampQty(qty - 1))
+                          }
+                          className="px-2 py-1 rounded border border-stone-300 dark:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors duration-150"
+                          aria-label="Decrease seats"
+                        >
+                          -
+                        </button>
+                        <span className="min-w-[2ch] text-center font-medium">
+                          {qty}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onQuantityChange?.(idStr, clampQty(qty + 1))
+                          }
+                          className="px-2 py-1 rounded border border-stone-300 dark:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors duration-150"
+                          aria-label="Increase seats"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <span className="text-xs text-content-light dark:text-stone-400">
+                        ${perSeat} per seat
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-lg font-bold text-primary-DEFAULT dark:text-orange-500">
+                    ${displayPrice}
+                  </span>
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200
+                  ${
+                    selected
+                      ? "bg-primary-light dark:bg-orange-500 shadow-sm"
+                      : "border-2 border-stone-300 dark:border-stone-600"
+                  }`}
+                  >
+                    {selected ? (
+                      <CheckCircle className="w-4 h-4 text-white" />
+                    ) : (
+                      <Plus className="w-4 h-4 text-content-light dark:text-stone-400" />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
+
+      {/* NEW: Enhanced pricing breakdown */}
+      {(selectedOptions.length > 0 || serviceType === "mobile") && (
+        <div className="p-4 bg-stone-50/80 dark:bg-stone-700/60 rounded-lg space-y-3 border border-stone-200/50 dark:border-stone-600/50 backdrop-blur-sm">
+          <h4 className="font-semibold text-content-dark dark:text-white">
+            Pricing Breakdown:
+          </h4>
+
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-content-light dark:text-stone-400">
+                Base Service:
+              </span>
+              <span className="text-content-DEFAULT dark:text-white">
+                ${selectedServicePrice.toFixed(2)}
+              </span>
+            </div>
+
+            {serviceType === "mobile" && (
+              <div className="flex justify-between">
+                <span className="text-content-light dark:text-stone-400">
+                  Mobile Service Fee:
+                </span>
+                <span className="text-orange-600 dark:text-orange-400">
+                  +${CONFIG.MOBILE_SERVICE.UPCHARGE.toFixed(2)}
+                </span>
+              </div>
+            )}
+
+            {selectedOptions.length > 0 && (
+              <div className="flex justify-between">
+                <span className="text-content-light dark:text-stone-400">
+                  Optional Services:
+                </span>
+                <span className="text-content-DEFAULT dark:text-white">
+                  +${calculateOptionalServicesTotal().toFixed(2)}
+                </span>
+              </div>
+            )}
+
+            <div className="border-t border-stone-300/50 dark:border-stone-600/50 pt-2 mt-1">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-content-dark dark:text-white">
+                  Total:
+                </span>
+                <span className="text-xl font-bold text-primary-DEFAULT dark:text-orange-500">
+                  ${calculateGrandTotal().toFixed(2)}
+                </span>
+              </div>
+
+              {serviceType === "mobile" && (
+                <div className="mt-2 text-xs font-medium text-orange-700 dark:text-orange-400">
+                  Deposit Required: $
+                  {(
+                    calculateGrandTotal() *
+                    CONFIG.MOBILE_SERVICE.DEPOSIT_PERCENTAGE
+                  ).toFixed(2)}{" "}
+                  (50%)
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    
   );
 };
 

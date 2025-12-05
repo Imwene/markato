@@ -1,7 +1,7 @@
 // src/services/smsService.js
 import twilio from "twilio";
 import dotenv from "dotenv";
-import numberFormatterService from './numberFormatterService.js'; // Use YOUR actual path
+import numberFormatterService from "./numberFormatterService.js"; // Use YOUR actual path
 
 dotenv.config();
 
@@ -25,11 +25,12 @@ const client = twilio(
 
 // 2. Add specific status messages
 const STATUS_MESSAGES = {
-  pending: "is pending",
-  confirmed: "has been confirmed",
+  pending: "is pending confirmation",
+  confirmed: "has been confirmed by Markato Auto Detail",
   cancelled: "has been cancelled",
-  in_progress: "is now in progress",
-  completed: "has been completed",
+  in_progress: "service is in progress",
+  completed:
+    "service has been completed. Thank you for choosing Markato Auto Detail!",
 };
 
 // 3. Add rate limiting
@@ -66,6 +67,96 @@ async function sendWithRetry(fn, maxRetries = 3) {
   }
 }
 
+export async function sendBookingConfirmationSMS(booking) {
+  // Validate inputs
+  if (!booking?.confirmationNumber) {
+    throw new Error("Missing booking confirmation number");
+  }
+
+  if (!booking?.contact) {
+    throw new Error("Missing contact information");
+  }
+
+  if (!booking?.serviceName) {
+    throw new Error("Missing service name");
+  }
+
+  if (!booking?.dateTime) {
+    throw new Error("Missing appointment date/time");
+  }
+
+  try {
+    const countryCode = booking.countryCode || "US";
+    const e164Contact = numberFormatterService(booking.contact, countryCode);
+
+    if (!e164Contact) {
+      throw new Error(`Invalid phone number format: ${booking.contact}`);
+    }
+
+    if (!checkRateLimit(e164Contact)) {
+      throw new Error(`Rate limit exceeded for ${e164Contact}`);
+    }
+
+    // Build the confirmation message
+    let messageBody = `Markato Auto Detail - Booking Confirmed
+
+Booking #${booking.confirmationNumber}
+Service: ${booking.serviceName}
+Date & Time: ${booking.dateTime}`;
+
+    // Add optional services if any
+    if (booking.optionalServices && booking.optionalServices.length > 0) {
+      messageBody += `\nAdd-ons:`;
+      booking.optionalServices.forEach((service) => {
+        if (service.name === "Seat Cloth Shampoo" && service.seatCount) {
+          messageBody += `\n• ${service.name} (${service.seatCount} seats): $${service.price}`;
+        } else {
+          messageBody += `\n• ${service.name}: $${service.price}`;
+        }
+      });
+    }
+
+    messageBody += `\nTotal: $${booking.totalPrice}
+
+Location: 1901 Park Blvd, Oakland, CA 94606
+Questions? Call (415) 889-9108
+
+Please arrive 5-10 minutes early. Thank you for choosing Markato Auto Detail!`;
+
+    const message = await sendWithRetry(async () => {
+      return client.messages.create({
+        body: messageBody,
+        messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
+        to: e164Contact,
+      });
+    });
+
+    console.log({
+      event: "booking_confirmation_sms_sent",
+      messageId: message.sid,
+      booking: booking.confirmationNumber,
+      customer: booking.name,
+      timestamp: new Date().toISOString(),
+    });
+
+    return {
+      success: true,
+      messageId: message.sid,
+      sentTo: e164Contact,
+      bookingNumber: booking.confirmationNumber,
+    };
+  } catch (error) {
+    console.error({
+      event: "booking_confirmation_sms_error",
+      error: error.message,
+      booking: booking.confirmationNumber,
+      customer: booking.name,
+      timestamp: new Date().toISOString(),
+    });
+    throw error;
+  }
+}
+
 export async function sendStatusUpdateSMS(booking, newStatus, note = "") {
   // Validate inputs
   if (!booking?.confirmationNumber) {
@@ -93,11 +184,11 @@ export async function sendStatusUpdateSMS(booking, newStatus, note = "") {
     }
 
     // Build the message body and include the note if provided
-    let messageBody = `Booking #${booking.confirmationNumber} ${STATUS_MESSAGES[newStatus]}`;
+    let messageBody = `Markato Auto Detail: Booking #${booking.confirmationNumber} ${STATUS_MESSAGES[newStatus]}`;
     if (note && note.trim().length > 0) {
-      messageBody += `. Note: ${note}`;
+      messageBody += `\nNote: ${note}`;
     }
-    messageBody += `. Need help? Reply HELP`;
+    messageBody += `\n\nQuestions? Call (415) 889-9108`;
 
     const message = await sendWithRetry(async () => {
       return client.messages.create({

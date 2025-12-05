@@ -1,167 +1,183 @@
 // vite.config.js
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { visualizer } from 'rollup-plugin-visualizer';
-import { VitePWA } from 'vite-plugin-pwa';
-import path from 'path';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { visualizer } from "rollup-plugin-visualizer";
+import { VitePWA } from "vite-plugin-pwa";
+import path from "path";
 
 // Production base path - keep as '/' unless deploying to a subdirectory
-const base = '/';
+const base = "/";
 
 // This configuration will switch between two completely different setups
 // based on the command and/or mode being used
 export default defineConfig(({ command, mode }) => {
   // For npm run dev - Use the simpler development configuration
-  if (command === 'serve' && mode !== 'production') {
-    console.log('🚀 Using DEVELOPMENT configuration');
+  if (command === "serve" && mode !== "production") {
+    console.log("🚀 Using DEVELOPMENT configuration");
     return {
       plugins: [react()],
       resolve: {
         alias: {
-          '@': path.resolve(__dirname, './src'),
+          "@": path.resolve(__dirname, "./src"),
         },
       },
       server: {
         host: true,
+        allowedHosts: [
+          "localhost",
+          "127.0.0.1",
+          "petrogenetic-danae-inexact.ngrok-free.dev", // Your permanent ngrok domain
+          ".ngrok-free.app", // Allows any ngrok-free.app subdomain
+          ".ngrok-free.dev", // Allows any ngrok-free.dev subdomain
+        ],
         proxy: {
-          '/api': {
-            target: 'http://localhost:8080',
+          "/api": {
+            target: "http://localhost:8080",
             changeOrigin: true,
-            secure: false
-          }
-        }
-      }
+            secure: false,
+          },
+        },
+      },
     };
   }
-  
+
   // For npm run build:production or other build commands - Use the full production configuration
-  console.log('🏗️ Using PRODUCTION configuration');
+  console.log("🏗️ Using PRODUCTION configuration");
   return {
     plugins: [
       react(),
       VitePWA({
-        registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
+        registerType: "autoUpdate",
+        includeAssets: ["favicon.ico", "robots.txt", "apple-touch-icon.png"],
         manifest: {
-          name: 'Markato Auto Detailing',
-          short_name: 'Markato',
-          description: 'Professional Auto Detailing Services',
-          theme_color: '#0cc0df',
-          background_color: '#ffffff',
-          display: 'standalone',
-          start_url: '/',
+          name: "Markato Auto Detailing",
+          short_name: "Markato",
+          description: "Professional Auto Detailing Services",
+          theme_color: "#0cc0df",
+          background_color: "#ffffff",
+          display: "standalone",
+          start_url: "/",
           icons: [
             {
-              src: '/android-chrome-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any maskable'
+              src: "/android-chrome-192x192.png",
+              sizes: "192x192",
+              type: "image/png",
+              purpose: "any maskable",
             },
             {
-              src: '/android-chrome-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any maskable'
-            }
-          ]
+              src: "/android-chrome-512x512.png",
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "any maskable",
+            },
+          ],
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+          globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/api\.markatodetailing\.com\/.*/i,
-              handler: 'NetworkFirst',
+              handler: "NetworkFirst",
               options: {
-                cacheName: 'api-cache',
+                cacheName: "api-cache",
                 expiration: {
                   maxEntries: 100,
-                  maxAgeSeconds: 60 * 60 * 24 // 24 hours
-                }
-              }
-            }
-          ]
+                  maxAgeSeconds: 60 * 60 * 24, // 24 hours
+                },
+              },
+            },
+          ],
         },
         publicPath: base,
       }),
-      mode === 'analyze' && visualizer({
-        open: true,
-        filename: 'dist/stats.html',
-        gzipSize: true,
-        brotliSize: true
-      })
+      mode === "analyze" &&
+        visualizer({
+          open: true,
+          filename: "dist/stats.html",
+          gzipSize: true,
+          brotliSize: true,
+        }),
     ].filter(Boolean), // Filter out false values
     base,
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src'),
+        "@": path.resolve(__dirname, "./src"),
       },
     },
     build: {
-      outDir: 'dist',
-      sourcemap: mode === 'development',
-      minify: 'terser',
-      target: 'es2015', // Ensures wider browser compatibility
+      outDir: "dist",
+      sourcemap: mode === "development",
+      minify: "terser",
+      target: "es2015", // Ensures wider browser compatibility
       terserOptions: {
         compress: {
-          drop_console: mode === 'production',
-          drop_debugger: mode === 'production',
-          pure_funcs: mode === 'production' ? ['console.log'] : []
-        }
+          drop_console: mode === "production",
+          drop_debugger: mode === "production",
+          pure_funcs: mode === "production" ? ["console.log"] : [],
+        },
       },
       rollupOptions: {
         output: {
           manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'ui-vendor': ['framer-motion', 'lucide-react', 'recharts'],
-            'map-vendor': ['@react-google-maps/api'],
-            'auth-vendor': ['jwt-decode'],
-            'utils': ['lodash']
+            "react-vendor": ["react", "react-dom", "react-router-dom"],
+            "ui-vendor": ["framer-motion", "lucide-react", "recharts"],
+            "map-vendor": ["@react-google-maps/api"],
+            "auth-vendor": ["jwt-decode"],
+            utils: ["lodash"],
           },
           // Customize chunk file naming
           chunkFileNames: (chunkInfo) => {
-            const prefix = chunkInfo.name.includes('vendor') ? 'vendor' : 'chunk';
+            const prefix = chunkInfo.name.includes("vendor")
+              ? "vendor"
+              : "chunk";
             return `assets/${prefix}/[name]-[hash].js`;
           },
           assetFileNames: (assetInfo) => {
-            const extType = assetInfo.name.split('.').at(1);
+            const extType = assetInfo.name.split(".").at(1);
             if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
-              return 'assets/images/[name]-[hash][extname]';
+              return "assets/images/[name]-[hash][extname]";
             }
             if (/css/i.test(extType)) {
-              return 'assets/css/[name]-[hash][extname]';
+              return "assets/css/[name]-[hash][extname]";
             }
-            return 'assets/[name]-[hash][extname]';
-          }
-        }
+            return "assets/[name]-[hash][extname]";
+          },
+        },
       },
       // Added performance optimizations
       cssCodeSplit: true,
       chunkSizeWarningLimit: 500,
       assetsInlineLimit: 4096, // 4kb
-      reportCompressedSize: false // Speeds up build
+      reportCompressedSize: false, // Speeds up build
     },
     server: {
       port: 5173,
       strictPort: true,
       host: true,
       proxy: {
-        '/api': {
-          target: process.env.VITE_API_URL || 'http://localhost:8080',
+        "/api": {
+          target: process.env.VITE_API_URL || "http://localhost:8080",
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/api/, '')
-        }
-      }
+        },
+      },
     },
     // Added preview configuration
     preview: {
       port: 4173,
       strictPort: true,
-      host: true
+      host: true,
+      proxy: {
+        "/api": {
+          target: process.env.VITE_API_URL || "http://localhost:8080",
+          changeOrigin: true,
+          secure: false,
+        },
+      },
     },
     // Added environment directory configuration
-    envDir: '.',
+    envDir: ".",
     // Added better error overlay
-    clearScreen: false
+    clearScreen: false,
   };
 });

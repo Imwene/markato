@@ -7,6 +7,25 @@ export const ConfigProvider = ({ children }) => {
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [scents, setScents] = useState([]);
   const [optionalServices, setOptionalServices] = useState([]);
+  // Default business hours - matches server defaults
+  const DEFAULT_BUSINESS_HOURS = [
+    "9:00 AM",
+    "10:00 AM",
+    "11:00 AM",
+    "12:00 PM",
+    "1:00 PM",
+    "2:00 PM",
+    "3:00 PM",
+    "4:00 PM",
+    "5:00 PM",
+    "6:00 PM",
+  ];
+
+  const [businessSettings, setBusinessSettings] = useState({
+    unavailableDay: null,
+    mobileDetailingEnabled: false, // Default to false for launch preparation
+    businessHours: DEFAULT_BUSINESS_HOURS,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -16,13 +35,15 @@ export const ConfigProvider = ({ children }) => {
       setError(null);
 
       // Fetch all config data in parallel with Promise.allSettled
-      const [vehicleTypesResult, scentsResult, optionalServicesResult] =
+      const [vehicleTypesResult, scentsResult, optionalServicesResult, businessSettingsResult] =
         await Promise.allSettled([
           fetch(`${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.VEHICLE_TYPES}`)
             .then((res) => res.json()),
           fetch(`${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.SCENTS}`)
             .then((res) => res.json()),
           fetch(`${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.OPTIONAL_SERVICES}`)
+            .then((res) => res.json()),
+          fetch(`${CONFIG.API_URL}${CONFIG.ENDPOINTS.CONFIG.BUSINESS_SETTINGS}`)
             .then((res) => res.json()),
         ]);
 
@@ -57,11 +78,24 @@ export const ConfigProvider = ({ children }) => {
         );
       }
 
+      if (
+        businessSettingsResult.status === "fulfilled" &&
+        businessSettingsResult.value.success
+      ) {
+        setBusinessSettings(businessSettingsResult.value.data);
+      } else {
+        console.error(
+          "Failed to load business settings:",
+          businessSettingsResult.reason
+        );
+      }
+
       // Check if any requests failed
       const failures = [
         vehicleTypesResult,
         scentsResult,
         optionalServicesResult,
+        businessSettingsResult,
       ]
         .filter((result) => result.status === "rejected")
         .map((result) => result.reason);
@@ -97,6 +131,13 @@ export const ConfigProvider = ({ children }) => {
     vehicleTypes: vehicleTypes.filter((type) => type.isActive),
     scents: scents.filter((scent) => scent.isActive),
     optionalServices: optionalServices.filter((service) => service.isActive),
+    businessSettings,
+    // Convenience accessor for mobile detailing toggle
+    mobileDetailingEnabled: businessSettings?.mobileDetailingEnabled ?? false,
+    // Convenience accessor for business hours with fallback to defaults
+    businessHours: businessSettings?.businessHours?.length > 0 
+      ? businessSettings.businessHours 
+      : DEFAULT_BUSINESS_HOURS,
     loading,
     error,
     refreshConfig: fetchConfig,

@@ -3,7 +3,19 @@ import Service from '../models/serviceModel.js';
 import Booking from '../models/bookingModel.js';
 export async function getAllServices(req, res) {
   try {
-    const services = await Service.find({ isActive: true })
+    const { serviceType } = req.query;
+    
+    // Build query filter
+    const query = { isActive: true };
+    
+    // If serviceType is "mobile", only return services where isMobileAvailable is true or not set (defaults to true)
+    // Use $ne: false to include services where field is true or doesn't exist
+    if (serviceType === "mobile") {
+      query.isMobileAvailable = { $ne: false };
+    }
+    // If serviceType is "drive-in" or not provided, return all active services (no additional filter)
+    
+    const services = await Service.find(query)
       .sort({ sortOrder: 1 });
       
     res.json({

@@ -1,4 +1,5 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useCallback } from 'react';
+import { CONFIG } from '../config/config';
 
 export const ServicesContext = createContext(null);
 
@@ -9,9 +10,14 @@ export const ServicesProvider = ({ children }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingService, setEditingService] = useState(null);
 
-    const fetchServices = async () => {
+    const fetchServices = useCallback(async (serviceType = null) => {
         try {
-            const response = await fetch('/api/services');
+            setLoading(true);
+            const url = serviceType 
+                ? `${CONFIG.API_URL}${CONFIG.ENDPOINTS.SERVICES.BASE}?serviceType=${serviceType}`
+                : `${CONFIG.API_URL}${CONFIG.ENDPOINTS.SERVICES.BASE}`;
+            
+            const response = await fetch(url);
             const data = await response.json();
             
             if (data.success) {
@@ -25,7 +31,11 @@ export const ServicesProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    const fetchServicesByType = useCallback(async (serviceType) => {
+        await fetchServices(serviceType);
+    }, [fetchServices]);
 
     useEffect(() => {
         fetchServices();
@@ -36,6 +46,7 @@ export const ServicesProvider = ({ children }) => {
         loading,
         error,
         refreshServices: fetchServices,
+        fetchServicesByType,
         isModalOpen,
         editingService,
         openModal: (service = null) => {

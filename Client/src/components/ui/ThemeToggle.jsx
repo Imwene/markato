@@ -22,7 +22,7 @@ const ThemeToggle = () => {
     <button
       onClick={toggleTheme}
       className="fixed bottom-4 right-4 p-3 rounded-full
-                z-50
+                z-[60]
                 bg-primary-light text-white
                 hover:bg-primary-DEFAULT
                 dark:bg-orange-500 dark:hover:bg-orange-600

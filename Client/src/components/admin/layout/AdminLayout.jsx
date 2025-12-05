@@ -5,10 +5,12 @@ import {
   Calendar,
   Settings,
   Sliders,
+  Users,
   Menu,
   X,
   LogOut,
   ChevronRight,
+  Truck,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -33,10 +35,22 @@ const AdminLayout = () => {
       description: "Manage customer bookings",
     },
     {
+      icon: <Users size={20} />,
+      label: "Customers",
+      path: "/admin/customers",
+      description: "Manage customer profiles",
+    },
+    {
       icon: <Settings size={20} />,
       label: "Services",
       path: "/admin/services",
       description: "Configure available services",
+    },
+    {
+      icon: <Truck size={20} />,
+      label: "Mobile Bookings",
+      path: "/admin/mobile-bookings",
+      description: "Manage mobile service bookings",
     },
     {
       icon: <Sliders size={20} />,
