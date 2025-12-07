@@ -78,6 +78,7 @@ const AddressInput = ({
   onValidateAddress,
   validationStatus,
   className = "",
+  disabled = false,
 }) => {
   const [isValidating, setIsValidating] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -298,6 +299,7 @@ const AddressInput = ({
               validationMessage ? "address-validation-message" : undefined
             }
             aria-invalid={hasErrorStatus}
+            disabled={disabled}
           />
 
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -400,6 +402,7 @@ AddressInput.propTypes = {
     addressComponents: PropTypes.object,
   }),
   className: PropTypes.string,
+  disabled: PropTypes.bool,
 };
 
 export default AddressInput;

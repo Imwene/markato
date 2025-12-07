@@ -381,6 +381,7 @@ const BookingForm = ({
                 onAddressChange={onAddressChange}
                 onValidateAddress={onValidateAddress}
                 validationStatus={addressValidation}
+                disabled={true}
               />
 
               {/* Address validation error */}
