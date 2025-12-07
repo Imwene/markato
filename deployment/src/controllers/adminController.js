@@ -35,12 +35,17 @@ export const getDashboardStats = async (req, res) => {
       status: "completed",
     });
 
-    // Calculate total revenue
-    const bookings = await Booking.find();
-    const totalRevenue = bookings.reduce(
-      (sum, booking) => sum + (booking.totalPrice || 0),
-      0
-    );
+    // Calculate total revenue using aggregation
+    const totalRevenueResult = await Booking.aggregate([
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$totalPrice" },
+        },
+      },
+    ]);
+    const totalRevenue =
+      totalRevenueResult.length > 0 ? totalRevenueResult[0].total : 0;
 
     // Get daily bookings for the last 7 days
     const dailyBookings = await Booking.aggregate([
@@ -126,33 +131,49 @@ export const getDashboardStats = async (req, res) => {
     const weekAgo = new Date(today);
     weekAgo.setDate(weekAgo.getDate() - 7);
 
-    const weeklyBookings = await Booking.find({
-      createdAt: {
-        $gte: weekAgo,
-        $lt: tomorrow,
+    const weeklyRevenueResult = await Booking.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: weekAgo,
+            $lt: tomorrow,
+          },
+        },
       },
-    });
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$totalPrice" },
+        },
+      },
+    ]);
 
-    const weeklyRevenue = weeklyBookings.reduce(
-      (sum, booking) => sum + (booking.totalPrice || 0),
-      0
-    );
+    const weeklyRevenue =
+      weeklyRevenueResult.length > 0 ? weeklyRevenueResult[0].total : 0;
 
     // Get monthly revenue (current month) - use createdAt for historical data
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    const monthlyBookings = await Booking.find({
-      createdAt: {
-        $gte: monthStart,
-        $lte: monthEnd,
+    const monthlyRevenueResult = await Booking.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: monthStart,
+            $lte: monthEnd,
+          },
+        },
       },
-    });
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$totalPrice" },
+        },
+      },
+    ]);
 
-    const monthlyRevenue = monthlyBookings.reduce(
-      (sum, booking) => sum + (booking.totalPrice || 0),
-      0
-    );
+    const monthlyRevenue =
+      monthlyRevenueResult.length > 0 ? monthlyRevenueResult[0].total : 0;
 
     // Get popular services
     const popularServices = await Booking.aggregate([
