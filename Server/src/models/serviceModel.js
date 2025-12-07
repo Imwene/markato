@@ -46,6 +46,10 @@ const serviceSchema = new Schema({
     type: Boolean,
     default: true
   },
+  duration: {
+    type: Number,
+    default: 0
+  },
   sortOrder: {
     type: Number,
     default: 0

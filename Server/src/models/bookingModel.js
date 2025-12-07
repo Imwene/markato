@@ -89,6 +89,7 @@ const bookingSchema = new Schema(
       enum: ["drive-in", "mobile"],
       default: "drive-in",
     },
+    features: [String],
     customerAddress: {
       street: {
         type: String,
@@ -129,6 +130,27 @@ const bookingSchema = new Schema(
         },
       },
     },
+    mobileDetails: {
+      parkingType: {
+        type: String,
+        required: function () {
+          return this.serviceType === "mobile";
+        },
+      },
+      hasWater: {
+        type: Boolean,
+        default: false,
+      },
+      hasPower: {
+        type: Boolean,
+        default: false,
+      },
+      accessNotes: String,
+      arriveContactMethod: {
+        type: String,
+        default: "call",
+      },
+    },
     depositAmount: {
       type: Number,
       default: 0,
@@ -136,6 +158,14 @@ const bookingSchema = new Schema(
     depositRequired: {
       type: Boolean,
       default: false,
+    },
+    depositPaid: {
+      type: Boolean,
+      default: false,
+    },
+    depositToken: String,
+    paymentDetails: {
+      type: Schema.Types.Mixed,
     },
     distanceFromStore: {
       type: Number,
