@@ -68,6 +68,16 @@ const BookingComponent = () => {
   useEffect(() => {
     // Only scroll if the step has actually changed
     if (previousStep.current !== bookingStep) {
+      // Don't scroll on initial auto-redirect from service-type to service when mobile is disabled
+      if (
+        previousStep.current === "service-type" &&
+        bookingStep === "service" &&
+        !mobileDetailingEnabled
+      ) {
+        previousStep.current = bookingStep;
+        return;
+      }
+
       const element = document.getElementById("booking-component");
       if (element) {
         const yOffset = -80;
