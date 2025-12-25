@@ -70,9 +70,9 @@ USER nginx
 # Expose unprivileged port
 EXPOSE 8080
 
-# Health check
+# Health check (use 127.0.0.1 to force IPv4, localhost may resolve to IPv6)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/health || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

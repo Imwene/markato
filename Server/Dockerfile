@@ -45,9 +45,9 @@ EXPOSE 8080
 # Switch to non-root user
 USER nodejs
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
+# Health check (use 127.0.0.1 to force IPv4, localhost may resolve to IPv6)
+HEALTHCHECK --interval=30s --timeout=60s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/api/health || exit 1
 
 # Start the server
 CMD ["bun", "run", "server.js"]
