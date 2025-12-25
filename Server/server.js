@@ -29,7 +29,13 @@ console.log("[STARTUP] Express app created");
 app.set('trust proxy', true);
 
 // Connect to database
-connectDB();
+console.log("[STARTUP] Connecting to MongoDB...");
+console.log("[STARTUP] MONGODB_URI:", process.env.MONGODB_URI ? "SET (hidden)" : "NOT SET");
+connectDB().then(() => {
+  console.log("[STARTUP] MongoDB connected successfully");
+}).catch((err) => {
+  console.error("[STARTUP] MongoDB connection FAILED:", err.message);
+});
 
 // Apply compression
 app.use(compression());
