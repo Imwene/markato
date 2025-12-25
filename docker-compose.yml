@@ -1,0 +1,85 @@
+# Docker Compose for Markato Admin Settings
+# Orchestrates Client and Server services
+# MongoDB is managed externally via Coolify
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # Backend API Server
+  # ===========================================
+  server:
+    build:
+      context: ./Server
+      dockerfile: Dockerfile
+    container_name: markato-server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      # MongoDB - Use Coolify's MongoDB connection string
+      MONGODB_URI: ${MONGODB_URI:?MONGODB_URI is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      # Email Configuration
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_DOMAIN: ${RESEND_DOMAIN:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      # Twilio Configuration
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+      # Square Payment Configuration
+      SQUARE_ACCESS_TOKEN: ${SQUARE_ACCESS_TOKEN:-}
+      SQUARE_LOCATION_ID: ${SQUARE_LOCATION_ID:-}
+      # Google Maps
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      # Frontend URLs for CORS
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      FRONTEND_URL2: ${FRONTEND_URL2:-}
+      FRONTEND_URL3: ${FRONTEND_URL3:-}
+      # Security
+      TRUSTED_IPS: ${TRUSTED_IPS:-}
+    networks:
+      - markato-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ===========================================
+  # Frontend Client (Nginx)
+  # ===========================================
+  client:
+    build:
+      context: ./Client
+      dockerfile: Dockerfile
+      args:
+        # Only public keys should be passed here - these are baked into the bundle
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:-}
+        VITE_SQUARE_APP_ID: ${VITE_SQUARE_APP_ID:-}
+        VITE_SQUARE_LOCATION_ID: ${VITE_SQUARE_LOCATION_ID:-}
+    container_name: markato-client
+    restart: unless-stopped
+    ports:
+      - "80:8080"
+    networks:
+      - markato-network
+    depends_on:
+      server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  markato-network:
+    driver: bridge

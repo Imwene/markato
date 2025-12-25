@@ -1,0 +1,72 @@
+# Dependencies
+node_modules
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Build output (will be created during build)
+dist
+build
+
+# Logs
+*.log
+logs
+
+# IDE and editor files
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+README*
+CHANGELOG*
+LICENSE*
+
+# Test files
+test
+tests
+__tests__
+*.test.js
+*.test.jsx
+*.spec.js
+*.spec.jsx
+coverage
+.nyc_output
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Debug files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+tmp
+temp
+*.tmp
+
+# Docker files (not needed inside container)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# ESLint cache
+.eslintcache
+
+# Storybook
+.storybook
+storybook-static
+
+# Bundle analyzer output
+stats.html

@@ -1,0 +1,61 @@
+# Dependencies
+node_modules
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs
+server.log
+
+# IDE and editor files
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+README*
+CHANGELOG*
+LICENSE*
+
+# Test files
+test
+tests
+__tests__
+*.test.js
+*.spec.js
+coverage
+.nyc_output
+
+# Build artifacts
+dist
+build
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Debug files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+tmp
+temp
+*.tmp
+
+# Docker files (not needed inside container)
+Dockerfile
+docker-compose*.yml
+.dockerignore
