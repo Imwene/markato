@@ -73,7 +73,7 @@ const customerSchema = new Schema({
 });
 
 // Indexes for performance
-customerSchema.index({ phone: 1 });
+// Note: phone index is already created by unique: true constraint
 customerSchema.index({ name: 1 });
 customerSchema.index({ 'statistics.lastBookingDate': -1 });
 customerSchema.index({ 'statistics.totalBookings': -1 });
