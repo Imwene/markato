@@ -74,10 +74,10 @@ export const securityHeaders = (req, res, next) => {
     ].join('; ')
   );
 
-  // Cross-Origin policies
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+  // Cross-Origin policies - allow cross-origin for API access
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  // Note: Cross-Origin-Embedder-Policy removed as it blocks cross-origin API requests
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   next();
