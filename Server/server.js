@@ -1,15 +1,29 @@
 // server.js
+console.log("[STARTUP] Server starting...");
+console.log("[STARTUP] NODE_ENV:", process.env.NODE_ENV);
+console.log("[STARTUP] PORT:", process.env.PORT);
+
 import "dotenv/config";
+console.log("[STARTUP] dotenv loaded");
+
 import express from "express";
 import cors from "cors";
 import compression from 'compression';
+console.log("[STARTUP] Importing routes...");
 import routes from "./src/routes/index.js";
+console.log("[STARTUP] Routes imported");
+
+console.log("[STARTUP] Importing database config...");
 import connectDB from "./src/config/database.js";
+console.log("[STARTUP] Database config imported");
+
 import corsOptions from "./src/middlewares/cors.js";
 import { securityMiddleware } from "./src/middlewares/security.js";
 import mongoose from 'mongoose';
+console.log("[STARTUP] All imports complete");
 
 const app = express();
+console.log("[STARTUP] Express app created");
 
 // Trust proxy - IMPORTANT for correct IP handling behind Nginx
 app.set('trust proxy', true);
