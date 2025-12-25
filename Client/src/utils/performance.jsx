@@ -1,6 +1,5 @@
 // src/utils/performance.js
 import React from "react";
-import process from "process";
 // Image optimization utility
 export const optimizeImage = async (file, options = {}) => {
   const { maxWidth = 1200, quality = 0.8, format = "webp" } = options;
@@ -95,7 +94,7 @@ export const performanceMonitor = {
 
   // Log performance data
   logPerformance: (metric) => {
-    if (process.env.NODE_ENV === "production") {
+    if (import.meta.env.PROD) {
       // Send to analytics service
       //console.log('Performance metric:', metric);
     }
@@ -162,8 +161,8 @@ export const lazyLoadComponent = (importFunc) => {
 
 // Bundle analyzer for development
 export const analyzeBundleSize = () => {
-  if (process.env.NODE_ENV !== "production") {
-    const stats = require("../stats.json");
-    //console.log('Bundle size analysis:', stats);
+  if (!import.meta.env.PROD) {
+    // Only available in development
+    //console.log('Bundle size analysis available in dev mode');
   }
 };

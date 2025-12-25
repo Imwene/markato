@@ -1,5 +1,6 @@
 # Client Dockerfile
 # Multi-stage build for optimized production image
+# Cache bust: 2025-12-25-v1
 
 # ============================================
 # Stage 1: Dependencies
